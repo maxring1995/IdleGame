@@ -1,0 +1,95 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Authentication Edge Cases', () => {
+  test('should handle account creation with localStorage cleared', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.waitForLoadState('networkidle');
+
+    // Clear localStorage to simulate fresh browser
+    await page.evaluate(() => localStorage.clear());
+
+    const email = `edge${Date.now()}@example.com`;
+    const username = 'edgeuser';
+
+    console.log('Testing with cleared localStorage');
+
+    await page.locator('#email').fill(email);
+    await page.locator('#username').fill(username);
+    await page.getByRole('button', { name: 'Create Account' }).click();
+
+    // Wait for either success or error (max 10 seconds)
+    const result = await Promise.race([
+      page.waitForSelector('text=Create Your Hero', { timeout: 10000 }).then(() => 'success'),
+      page.waitForSelector('.bg-red-500\\/10', { timeout: 10000 }).then(() => 'error'),
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000))
+    ]);
+
+    console.log('Result:', result);
+
+    if (result === 'timeout') {
+      await page.screenshot({ path: 'test-timeout.png', fullPage: true });
+      console.log('⚠️ Test timed out - likely stuck in loading state');
+    } else if (result === 'success') {
+      console.log('✅ Successfully created account and reached character creation');
+    } else if (result === 'error') {
+      const errorText = await page.locator('.bg-red-500\\/10').textContent();
+      console.log('❌ Error:', errorText);
+    }
+
+    expect(result).not.toBe('timeout');
+  });
+
+  test('should not get stuck on repeated signup attempts', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.waitForLoadState('networkidle');
+
+    const email = `repeat${Date.now()}@example.com`;
+    const username = 'repeatuser';
+
+    // First attempt
+    await page.locator('#email').fill(email);
+    await page.locator('#username').fill(username);
+    await page.getByRole('button', { name: 'Create Account' }).click();
+
+    // Wait for response
+    await page.waitForTimeout(5000);
+
+    // Check if we got a response (success or error)
+    const hasSuccess = await page.getByText('Create Your Hero').isVisible().catch(() => false);
+    const hasError = await page.locator('.bg-red-500\\/10').isVisible().catch(() => false);
+    const isStillLoading = await page.getByText('Loading...').isVisible().catch(() => false);
+
+    console.log('After signup:', { hasSuccess, hasError, isStillLoading });
+
+    expect(isStillLoading).toBe(false);
+    expect(hasSuccess || hasError).toBe(true);
+  });
+
+  test('should properly handle rapid button clicks', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.waitForLoadState('networkidle');
+
+    const email = `rapid${Date.now()}@example.com`;
+    const username = 'rapiduser';
+
+    await page.locator('#email').fill(email);
+    await page.locator('#username').fill(username);
+
+    const button = page.getByRole('button', { name: 'Create Account' });
+
+    // Rapidly click the button (simulating impatient user)
+    await button.click();
+    await button.click().catch(() => {}); // Might be disabled
+    await button.click().catch(() => {}); // Might be disabled
+
+    // Wait for response
+    const result = await Promise.race([
+      page.waitForSelector('text=Create Your Hero', { timeout: 10000 }).then(() => 'success'),
+      page.waitForSelector('.bg-red-500\\/10', { timeout: 10000 }).then(() => 'error'),
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000))
+    ]);
+
+    console.log('Rapid click result:', result);
+    expect(result).not.toBe('timeout');
+  });
+});

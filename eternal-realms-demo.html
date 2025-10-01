@@ -1,0 +1,3409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eternal Realms - Demo</title>
+    <style>
+        /* Modern Design System with CSS Custom Properties */
+        :root {
+            /* Color palette */
+            --color-primary: #ffd700;
+            --color-primary-dark: #d4af37;
+            --color-bg-dark: #0f0f0f;
+            --color-bg-panel: rgba(20, 20, 30, 0.85);
+            --color-bg-card: rgba(30, 30, 40, 0.7);
+            --color-bg-card-hover: rgba(40, 40, 50, 0.85);
+
+            /* Spacing system (8px base) */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+
+            /* Border radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --shadow-glow: 0 0 24px rgba(255, 215, 0, 0.2);
+
+            /* Typography */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 2rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--color-bg-dark);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--space-lg);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .game-container {
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.95) 0%, rgba(15, 15, 25, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            max-width: 1400px;
+            width: 100%;
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle animated background pattern */
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(52, 152, 219, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .game-container > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+            border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+            padding-bottom: var(--space-md);
+        }
+
+        .header h1 {
+            color: var(--color-primary);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            color: #b3b3b3;
+            font-size: var(--font-size-sm);
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--color-bg-panel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: rgba(255, 215, 0, 0.15);
+        }
+
+        .panel h2 {
+            color: var(--color-primary);
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            margin-bottom: var(--space-lg);
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+            padding-bottom: var(--space-sm);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Character Stats Panel */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--color-bg-card);
+            border-radius: var(--radius-sm);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .stat-item:hover {
+            background: var(--color-bg-card-hover);
+            transform: translateX(2px);
+        }
+
+        .stat-name {
+            color: #c0c0c0;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .stat-value {
+            color: #4CAF50;
+            font-weight: 700;
+            font-size: var(--font-size-lg);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .health-bar, .mana-bar, .exp-bar {
+            height: 28px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: var(--space-md);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated shimmer effect */
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .health-fill {
+            background: linear-gradient(90deg, #c0392b 0%, #e74c3c 50%, #ec7063 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .mana-fill {
+            background: linear-gradient(90deg, #2980b9 0%, #3498db 50%, #5dade2 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .exp-fill {
+            background: linear-gradient(90deg, #27ae60 0%, #2ecc71 50%, #58d68d 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .bar-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 28px;
+            font-size: var(--font-size-sm);
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Skills Panel */
+        .skill-item {
+            margin-bottom: var(--space-md);
+            padding: var(--space-md);
+            background: linear-gradient(135deg, rgba(30, 30, 40, 0.6) 0%, rgba(40, 40, 50, 0.4) 100%);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Skill glow effect */
+        .skill-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.5) 50%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .skill-item:hover {
+            background: linear-gradient(135deg, rgba(40, 40, 50, 0.8) 0%, rgba(50, 50, 60, 0.6) 100%);
+            transform: translateX(4px);
+            border-color: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .skill-item:hover::before {
+            opacity: 1;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-sm);
+        }
+
+        .skill-name {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: var(--font-size-base);
+            text-transform: capitalize;
+            letter-spacing: 0.5px;
+        }
+
+        .skill-level {
+            color: #4CAF50;
+            font-weight: 700;
+            font-size: var(--font-size-sm);
+            background: rgba(76, 175, 80, 0.15);
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .skill-progress {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .skill-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f39c12 0%, #f1c40f 50%, #f7dc6f 100%);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        /* Pulse animation when near level up */
+        .skill-progress-fill.near-levelup {
+            animation: progressPulse 1.5s infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(241, 196, 15, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(241, 196, 15, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        /* Action Panel */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .action-btn {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(44, 62, 80, 0.9) 0%, rgba(52, 73, 94, 0.95) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            text-align: center;
+            min-height: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Ripple effect background */
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .action-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, rgba(52, 73, 94, 1) 0%, rgba(44, 62, 80, 1) 100%);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.1);
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-btn.active {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.95) 0%, rgba(46, 204, 113, 1) 100%);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: activeGlow 2s infinite;
+        }
+
+        @keyframes activeGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(46, 204, 113, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(46, 204, 113, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        /* Focus styles for accessibility */
+        *:focus-visible {
+            outline: 2px solid #ffd700;
+            outline-offset: 2px;
+        }
+
+        .action-btn:focus-visible {
+            border-color: #ffd700;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Combat Area */
+        .combat-area {
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.9) 0%, rgba(30, 20, 20, 0.95) 100%);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            min-height: 200px;
+            border: 1px solid rgba(231, 76, 60, 0.2);
+            box-shadow: inset 0 0 40px rgba(231, 76, 60, 0.05), 0 4px 16px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Battle flash effect */
+        .combat-area.attacking::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            animation: battleFlash 0.3s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes battleFlash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .enemy-container {
+            text-align: center;
+            padding: var(--space-lg);
+            animation: enemyAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes enemyAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .enemy-sprite {
+            font-size: 4em;
+            margin-bottom: var(--space-md);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+            animation: enemyIdle 3s ease-in-out infinite;
+        }
+
+        @keyframes enemyIdle {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-8px) scale(1.02); }
+        }
+
+        /* Damage shake animation */
+        .enemy-sprite.taking-damage {
+            animation: damageShake 0.4s ease-in-out;
+        }
+
+        @keyframes damageShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .enemy-name {
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: var(--font-size-xl);
+            margin-bottom: var(--space-md);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+        }
+
+        .enemy-health-bar {
+            max-width: 280px;
+            margin: 0 auto;
+            height: 24px;
+        }
+
+        /* Floating damage numbers */
+        @keyframes damageFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.5);
+            }
+        }
+
+        /* Inventory */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-sm);
+            padding: var(--space-xs);
+        }
+
+        .inventory-slot {
+            aspect-ratio: 1;
+            min-height: 48px;
+            background: linear-gradient(135deg, rgba(30, 30, 40, 0.6) 0%, rgba(40, 40, 50, 0.4) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Empty slot pattern */
+        .inventory-slot:empty::before {
+            content: '';
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+        }
+
+        .inventory-slot:hover {
+            background: linear-gradient(135deg, rgba(40, 40, 50, 0.8) 0%, rgba(50, 50, 60, 0.6) 100%);
+            border-color: rgba(255, 215, 0, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.1);
+            z-index: 10;
+        }
+
+        .inventory-slot:active {
+            transform: scale(0.95);
+        }
+
+        .inventory-slot:focus-visible {
+            border-color: #ffd700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.4);
+        }
+
+        .item-icon {
+            font-size: 1.8em;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+            transition: transform 0.2s ease;
+        }
+
+        .inventory-slot:hover .item-icon {
+            transform: scale(1.1);
+        }
+
+        .item-quantity {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.95);
+            color: var(--color-primary);
+            font-size: var(--font-size-xs);
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Log Messages */
+        .log-container {
+            max-height: 180px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom scrollbar */
+        .log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.5);
+        }
+
+        .log-message {
+            padding: var(--space-sm);
+            margin-bottom: 6px;
+            border-left: 3px solid #444;
+            font-size: var(--font-size-sm);
+            color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0 4px 4px 0;
+            opacity: 0;
+            animation: logSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes logSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Log type styling with icons */
+        .log-combat {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.05);
+        }
+        .log-combat::before {
+            content: '⚔️ ';
+        }
+
+        .log-skill {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.05);
+        }
+        .log-skill::before {
+            content: '📊 ';
+        }
+
+        .log-loot {
+            border-left-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.05);
+        }
+        .log-loot::before {
+            content: '💰 ';
+        }
+
+        .log-system {
+            border-left-color: #3498db;
+            background: rgba(52, 152, 219, 0.05);
+        }
+        .log-system::before {
+            content: 'ℹ️ ';
+        }
+
+        /* Timer Display */
+        .timer-display {
+            text-align: center;
+            padding: 10px;
+            background: rgba(30, 30, 30, 0.6);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .timer-display:hover {
+            background: rgba(50, 50, 50, 0.8);
+            transform: scale(1.02);
+        }
+
+        .timer-display:active {
+            transform: scale(0.98);
+        }
+
+        .timer-text {
+            color: #f39c12;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        @keyframes clickBoost {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); background: rgba(255, 215, 0, 0.3); }
+            100% { transform: scale(1); }
+        }
+
+        .timer-display.boosted {
+            animation: clickBoost 0.3s ease;
+        }
+
+        /* Death Popup */
+        .death-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 0, 0, 0.95);
+            border: 3px solid #8b0000;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .death-popup h2 {
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        .death-popup p {
+            margin-bottom: 20px;
+        }
+
+        .respawn-btn {
+            padding: 10px 30px;
+            background: #2c3e50;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
+        .respawn-btn:hover {
+            background: #34495e;
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 998;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: block;
+        }
+
+        /* Crafting Window */
+        .crafting-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            z-index: 999;
+            display: none;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .crafting-recipes {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .recipe-item {
+            background: rgba(30, 30, 30, 0.8);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .recipe-item:hover {
+            background: rgba(50, 50, 50, 0.8);
+        }
+
+        .recipe-name {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .recipe-requirements {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            width: 36px;
+            height: 36px;
+            background: rgba(231, 76, 60, 0.9);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 0;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            line-height: 32px;
+            text-align: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .close-btn:hover {
+            background: rgba(192, 57, 43, 1);
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+        }
+
+        /* Zone Display */
+        .zone-display {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: var(--radius-md);
+            padding: var(--space-md) var(--space-lg);
+            margin-bottom: var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background shimmer */
+        .zone-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.1) 50%, transparent 100%);
+            animation: zoneShimmer 3s infinite;
+        }
+
+        @keyframes zoneShimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .zone-current {
+            font-size: var(--font-size-lg);
+            color: var(--color-primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            z-index: 1;
+        }
+
+        .zone-current #zone-icon {
+            font-size: 1.5em;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        .zone-switch-btn {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            border: 2px solid #ffd700;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .zone-switch-btn:hover {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            transform: scale(1.05);
+        }
+
+        /* Zone Selection Modal */
+        .zone-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            z-index: 1000;
+            display: none;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zone-modal h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .zone-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .zone-item {
+            background: linear-gradient(135deg, rgba(30, 30, 40, 0.6) 0%, rgba(40, 40, 50, 0.4) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hover shimmer effect */
+        .zone-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.1) 50%, transparent 100%);
+            transition: left 0.5s ease;
+        }
+
+        .zone-item:hover:not(.zone-locked)::before {
+            left: 100%;
+        }
+
+        .zone-item:hover:not(.zone-locked) {
+            background: linear-gradient(135deg, rgba(40, 40, 50, 0.9) 0%, rgba(50, 50, 60, 0.7) 100%);
+            border-color: rgba(255, 215, 0, 0.4);
+            transform: translateX(8px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), -4px 0 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .zone-item.zone-current-selected {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.2);
+        }
+
+        .zone-item.zone-locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .zone-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .zone-item-name {
+            font-size: 1.2em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .zone-item-icon {
+            font-size: 1.5em;
+        }
+
+        .zone-item-desc {
+            color: #aaa;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .zone-requirements {
+            font-size: 0.85em;
+            color: #e74c3c;
+            font-style: italic;
+        }
+
+        .zone-requirements.met {
+            color: #2ecc71;
+        }
+
+        .zone-unlocked-badge {
+            background: #27ae60;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .zone-locked-badge {
+            background: #e74c3c;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        /* Zone Unlock Notification */
+        .zone-unlock-notification {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f39c12, #f1c40f);
+            border: 3px solid #ffd700;
+            padding: 30px 40px;
+            border-radius: 10px;
+            z-index: 2000;
+            display: none;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.8);
+            animation: unlockPulse 0.5s ease-in-out;
+        }
+
+        @keyframes unlockPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .zone-unlock-notification h2 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .zone-unlock-notification p {
+            color: #fff;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        /* Merchant Window */
+        .merchant-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            z-index: 999;
+            display: none;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .merchant-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .merchant-header h2 {
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .merchant-greeting {
+            color: #aaa;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        .merchant-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .merchant-tab {
+            flex: 1;
+            padding: 10px;
+            background: rgba(40, 40, 40, 0.8);
+            border: 2px solid #444;
+            color: #aaa;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .merchant-tab:hover {
+            background: rgba(60, 60, 60, 0.9);
+        }
+
+        .merchant-tab.active {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+
+        .merchant-content {
+            min-height: 300px;
+        }
+
+        .merchant-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .merchant-item {
+            background: rgba(30, 30, 30, 0.8);
+            border: 2px solid #444;
+            border-radius: 5px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .merchant-item:hover:not(.unavailable) {
+            background: rgba(50, 50, 50, 0.9);
+            border-color: #ffd700;
+        }
+
+        .merchant-item.unavailable {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .merchant-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .merchant-item-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .merchant-item-icon {
+            font-size: 1.5em;
+        }
+
+        .merchant-item-price {
+            color: #f39c12;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .merchant-item-desc {
+            color: #aaa;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .merchant-buy-btn {
+            width: 100%;
+            padding: 8px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .merchant-buy-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            transform: scale(1.05);
+        }
+
+        .merchant-buy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #555;
+        }
+
+        .merchant-sell-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .merchant-sell-item {
+            background: rgba(30, 30, 30, 0.8);
+            border: 2px solid #444;
+            border-radius: 5px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .merchant-sell-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .merchant-sell-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .merchant-sell-btn {
+            padding: 5px 12px;
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+            border: none;
+            color: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .merchant-sell-btn:hover {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            transform: scale(1.05);
+        }
+
+        .merchant-gold-display {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .merchant-gold-display span {
+            color: #ffd700;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        /* Tooltip System */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: rgba(20, 20, 30, 0.98);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(20, 20, 30, 0.98);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .tooltip:hover::after,
+        .tooltip:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        .tooltip:hover::before {
+            transform: translateX(-50%);
+        }
+
+        /* Loading states */
+        .panel.loading {
+            opacity: 0.5;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .panel.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            margin: -20px 0 0 -20px;
+            border: 3px solid rgba(255, 215, 0, 0.2);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Particle effects placeholder */
+        @keyframes particleFly {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--vx), var(--vy)) scale(0);
+            }
+        }
+
+        /* Float up animation for boost */
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -150%) scale(1.3);
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-md);
+            }
+
+            .panel:first-child {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: var(--space-sm);
+                align-items: flex-start;
+            }
+
+            .game-container {
+                padding: var(--space-md);
+                border-radius: var(--radius-md);
+            }
+
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: var(--space-md);
+            }
+
+            .action-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--space-sm);
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            /* Make modals mobile-friendly */
+            .crafting-window,
+            .zone-modal,
+            .merchant-window {
+                width: 95%;
+                max-height: 90vh;
+                padding: var(--space-md);
+            }
+
+            /* Larger touch targets on mobile */
+            .action-btn {
+                padding: 14px 18px;
+                min-height: 48px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .inventory-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .merchant-items {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Screen reader only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" data-testid="game-container">
+        <div class="header" data-testid="header">
+            <h1 data-testid="game-title">⚔️ ETERNAL REALMS ⚔️</h1>
+            <div class="subtitle" data-testid="game-subtitle">A RuneScape × Tibia Inspired Adventure</div>
+        </div>
+
+        <div class="main-layout" data-testid="main-layout">
+            <!-- Left Panel - Character Stats -->
+            <div class="panel" data-testid="character-panel">
+                <h2 data-testid="character-heading">Character</h2>
+                <div class="health-bar" data-testid="health-bar">
+                    <div class="health-fill bar-fill" style="width: 100%" data-testid="health-fill"></div>
+                    <div class="bar-text" data-testid="health-text">HP: <span id="current-hp" data-testid="current-hp">100</span>/<span id="max-hp" data-testid="max-hp">100</span></div>
+                </div>
+                <div class="mana-bar" data-testid="mana-bar">
+                    <div class="mana-fill bar-fill" style="width: 100%" data-testid="mana-fill"></div>
+                    <div class="bar-text" data-testid="mana-text">MP: <span id="current-mp" data-testid="current-mp">50</span>/<span id="max-mp" data-testid="max-mp">50</span></div>
+                </div>
+                <div class="exp-bar" data-testid="exp-bar">
+                    <div class="exp-fill bar-fill" style="width: 0%" data-testid="exp-fill"></div>
+                    <div class="bar-text" data-testid="exp-text">EXP: <span id="current-exp" data-testid="current-exp">0</span>/<span id="next-level-exp" data-testid="next-level-exp">100</span></div>
+                </div>
+
+                <div class="stat-item" data-testid="stat-level">
+                    <span class="stat-name" data-testid="stat-level-name">Level</span>
+                    <span class="stat-value" id="player-level" data-testid="player-level">1</span>
+                </div>
+                <div class="stat-item" data-testid="stat-gold">
+                    <span class="stat-name" data-testid="stat-gold-name">Gold</span>
+                    <span class="stat-value" id="gold" data-testid="gold">100</span>
+                </div>
+                <div class="stat-item" data-testid="stat-combat-power">
+                    <span class="stat-name" data-testid="stat-combat-power-name">Combat Power</span>
+                    <span class="stat-value" id="combat-power" data-testid="combat-power">10</span>
+                </div>
+                <div class="stat-item" data-testid="stat-deaths">
+                    <span class="stat-name" data-testid="stat-deaths-name">Deaths</span>
+                    <span class="stat-value" id="death-count" data-testid="death-count">0</span>
+                </div>
+
+                <h2 style="margin-top: 20px;" data-testid="skills-heading">Skills</h2>
+                <div id="skills-container" data-testid="skills-container">
+                    <!-- Skills will be generated here -->
+                </div>
+            </div>
+
+            <!-- Center Panel - Main Game Area -->
+            <div class="panel" data-testid="main-game-panel">
+                <div class="zone-display" data-testid="zone-display">
+                    <div class="zone-current" id="zone-current" data-testid="zone-current">
+                        <span id="zone-icon" data-testid="zone-icon">🏘️</span>
+                        <span id="zone-name" data-testid="zone-name">Town Square</span>
+                    </div>
+                    <button class="zone-switch-btn" onclick="game.openZoneSelection()" data-testid="zone-switch-btn">Switch Zone</button>
+                </div>
+
+                <div class="timer-display" onclick="game.boostAction()" id="timer-display" data-testid="timer-display">
+                    <div class="timer-text" data-testid="timer-text">⏱️ <span id="timer" data-testid="timer">Ready</span></div>
+                    <div style="font-size: 0.7em; color: #888; margin-top: 5px;" data-testid="timer-boost-hint">Click to speed up!</div>
+                </div>
+
+                <div class="combat-area" id="combat-area" data-testid="combat-area">
+                    <div id="combat-content" data-testid="combat-content">
+                        <div style="text-align: center; padding: 40px;" data-testid="combat-empty-state">
+                            <p style="color: #888;" data-testid="combat-empty-message">No enemy encountered</p>
+                            <p style="color: #666; font-size: 0.9em; margin-top: 10px;" data-testid="combat-empty-hint">Start exploring to find enemies!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-grid" data-testid="action-grid">
+                    <button class="action-btn" onclick="game.startAction('woodcutting')" data-testid="action-btn-woodcutting">🪓 Woodcut</button>
+                    <button class="action-btn" onclick="game.startAction('mining')" data-testid="action-btn-mining">⛏️ Mine</button>
+                    <button class="action-btn" onclick="game.startAction('fishing')" data-testid="action-btn-fishing">🎣 Fish</button>
+                    <button class="action-btn" onclick="game.startAction('hunting')" data-testid="action-btn-hunting">🏹 Hunt</button>
+                    <button class="action-btn" onclick="game.startAction('combat')" data-testid="action-btn-combat">⚔️ Combat</button>
+                    <button class="action-btn" onclick="game.startAction('magic')" data-testid="action-btn-magic">✨ Magic</button>
+                    <button class="action-btn" onclick="game.openCrafting()" data-testid="action-btn-craft">🔨 Craft</button>
+                    <button class="action-btn" onclick="game.openMerchant()" data-testid="action-btn-merchant">🏪 Merchant</button>
+                    <button class="action-btn" onclick="game.startAction('alchemy')" data-testid="action-btn-alchemy">🧪 Alchemy</button>
+                    <button class="action-btn" onclick="game.startAction('explore')" data-testid="action-btn-explore">🗺️ Explore</button>
+                </div>
+
+                <h2 data-testid="activity-log-heading">Activity Log</h2>
+                <div class="log-container" id="log-container" data-testid="log-container">
+                    <div class="log-message log-system" data-testid="log-welcome-message">Welcome to Eternal Realms! Choose an action to begin.</div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Inventory -->
+            <div class="panel" data-testid="inventory-panel">
+                <h2 data-testid="inventory-heading">Inventory</h2>
+                <div class="inventory-grid" id="inventory" data-testid="inventory-grid">
+                    <!-- Inventory slots will be generated here -->
+                </div>
+
+                <h2 style="margin-top: 20px;" data-testid="equipment-heading">Equipment</h2>
+                <div class="stat-item" data-testid="equipment-weapon">
+                    <span class="stat-name" data-testid="equipment-weapon-label">Weapon</span>
+                    <span class="stat-value" id="equipped-weapon" data-testid="equipped-weapon">Fists</span>
+                </div>
+                <div class="stat-item" data-testid="equipment-armor">
+                    <span class="stat-name" data-testid="equipment-armor-label">Armor</span>
+                    <span class="stat-value" id="equipped-armor" data-testid="equipped-armor">Clothes</span>
+                </div>
+                <div class="stat-item" data-testid="equipment-accessory">
+                    <span class="stat-name" data-testid="equipment-accessory-label">Accessory</span>
+                    <span class="stat-value" id="equipped-accessory" data-testid="equipped-accessory">None</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Death Popup -->
+    <div class="death-popup" id="death-popup" data-testid="death-popup">
+        <h2 data-testid="death-popup-title">☠️ YOU HAVE DIED ☠️</h2>
+        <p data-testid="death-popup-penalty">You lost <span id="death-penalty" data-testid="death-penalty">%</span>% of your experience and gold!</p>
+        <p data-testid="death-popup-items">Your items have been dropped at your death location.</p>
+        <button class="respawn-btn" onclick="game.respawn()" data-testid="respawn-btn">Respawn</button>
+    </div>
+
+    <!-- Crafting Window -->
+    <div class="crafting-window" id="crafting-window" data-testid="crafting-window">
+        <button class="close-btn" onclick="game.closeCrafting()" data-testid="crafting-close-btn">✕</button>
+        <h2 style="color: #ffd700; margin-bottom: 15px;" data-testid="crafting-title">Crafting</h2>
+        <div class="crafting-recipes" id="crafting-recipes" data-testid="crafting-recipes">
+            <!-- Recipes will be generated here -->
+        </div>
+    </div>
+
+    <!-- Zone Selection Modal -->
+    <div class="zone-modal" id="zone-modal" data-testid="zone-modal">
+        <button class="close-btn" onclick="game.closeZoneSelection()" data-testid="zone-modal-close-btn">✕</button>
+        <h2 data-testid="zone-modal-title">🗺️ Travel to Zone</h2>
+        <div class="zone-list" id="zone-list" data-testid="zone-list">
+            <!-- Zones will be generated here -->
+        </div>
+    </div>
+
+    <!-- Zone Unlock Notification -->
+    <div class="zone-unlock-notification" id="zone-unlock-notification" data-testid="zone-unlock-notification">
+        <h2 data-testid="zone-unlock-title">🎉 NEW ZONE UNLOCKED! 🎉</h2>
+        <p id="zone-unlock-name" data-testid="zone-unlock-name"></p>
+        <p id="zone-unlock-desc" data-testid="zone-unlock-desc"></p>
+    </div>
+
+    <!-- Merchant Window -->
+    <div class="merchant-window" id="merchant-window" data-testid="merchant-window">
+        <button class="close-btn" onclick="game.closeMerchant()" data-testid="merchant-close-btn">✕</button>
+        <div class="merchant-header" data-testid="merchant-header">
+            <h2 id="merchant-name" data-testid="merchant-name">Merchant</h2>
+            <p class="merchant-greeting" id="merchant-greeting" data-testid="merchant-greeting">Welcome!</p>
+        </div>
+
+        <div class="merchant-tabs" data-testid="merchant-tabs">
+            <div class="merchant-tab active" onclick="game.switchMerchantTab('buy')" id="tab-buy" data-testid="merchant-tab-buy">
+                💰 Buy
+            </div>
+            <div class="merchant-tab" onclick="game.switchMerchantTab('sell')" id="tab-sell" data-testid="merchant-tab-sell">
+                💸 Sell
+            </div>
+        </div>
+
+        <div class="merchant-content" data-testid="merchant-content">
+            <div id="merchant-buy-content" style="display: block;" data-testid="merchant-buy-content">
+                <div class="merchant-items" id="merchant-items-list" data-testid="merchant-items-list">
+                    <!-- Buy items will be generated here -->
+                </div>
+            </div>
+
+            <div id="merchant-sell-content" style="display: none;" data-testid="merchant-sell-content">
+                <div class="merchant-sell-list" id="merchant-sell-list" data-testid="merchant-sell-list">
+                    <!-- Sell items will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="merchant-gold-display" data-testid="merchant-gold-display">
+            Your Gold: <span id="merchant-player-gold" data-testid="merchant-player-gold">0</span> 🪙
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            player: {
+                level: 1,
+                exp: 0,
+                hp: 100,
+                maxHp: 100,
+                mp: 50,
+                maxMp: 50,
+                gold: 100,
+                combatPower: 10,
+                deaths: 0
+            },
+            skills: {
+                woodcutting: { level: 1, exp: 0, nextLevel: 100 },
+                mining: { level: 1, exp: 0, nextLevel: 100 },
+                fishing: { level: 1, exp: 0, nextLevel: 100 },
+                combat: { level: 1, exp: 0, nextLevel: 100 },
+                magic: { level: 1, exp: 0, nextLevel: 100 },
+                crafting: { level: 1, exp: 0, nextLevel: 100 },
+                alchemy: { level: 1, exp: 0, nextLevel: 100 },
+                hunting: { level: 1, exp: 0, nextLevel: 100 }
+            },
+            inventory: [],
+            equipment: {
+                weapon: null,
+                armor: null,
+                accessory: null
+            },
+            currentAction: null,
+            actionTimer: null,
+            actionTimeLeft: 0,
+            currentEnemy: null,
+            combatTimer: null,
+            combatTimeLeft: 0,
+            currentZone: 'townSquare',
+            unlockedZones: ['townSquare'],
+            inventoryExpansions: 0
+        };
+
+        // Item Database
+        const items = {
+            // Resources
+            wood: { name: "Wood", icon: "🪵", stackable: true, value: 2 },
+            ore: { name: "Ore", icon: "🪨", stackable: true, value: 3 },
+            fish: { name: "Fish", icon: "🐟", stackable: true, value: 5 },
+            herb: { name: "Herb", icon: "🌿", stackable: true, value: 4 },
+            essence: { name: "Essence", icon: "💎", stackable: true, value: 10 },
+            hide: { name: "Hide", icon: "🦌", stackable: true, value: 8 },
+            
+            // Crafted Items
+            potion: { name: "Health Potion", icon: "🧪", stackable: true, value: 15, heal: 30 },
+            manaPotion: { name: "Mana Potion", icon: "💙", stackable: true, value: 20, mana: 25 },
+
+            // Merchant Items - Consumables
+            healingSalve: { name: "Healing Salve", icon: "💊", stackable: true, value: 25, heal: 20 },
+            basicRation: { name: "Basic Ration", icon: "🍞", stackable: true, value: 15, heal: 15 },
+
+            // Equipment
+            woodenSword: { name: "Wooden Sword", icon: "🗡️", type: "weapon", power: 5, value: 50 },
+            ironSword: { name: "Iron Sword", icon: "⚔️", type: "weapon", power: 15, value: 200 },
+            leatherArmor: { name: "Leather Armor", icon: "🦺", type: "armor", defense: 5, value: 100 },
+            ironArmor: { name: "Iron Armor", icon: "🛡️", type: "armor", defense: 15, value: 400 },
+            ring: { name: "Magic Ring", icon: "💍", type: "accessory", magic: 10, value: 300 },
+
+            // Merchant Equipment
+            apprenticeStaff: { name: "Apprentice Staff", icon: "🪄", type: "weapon", power: 3, value: 80 },
+            clothRobe: { name: "Cloth Robe", icon: "👘", type: "armor", defense: 2, value: 60 },
+            luckCharm: { name: "Beginner's Luck Charm", icon: "🍀", type: "accessory", goldBonus: 0.05, value: 200 },
+
+            // Utility Items
+            inventoryPouch: { name: "Inventory Pouch", icon: "🎒", permanent: true, inventorySlots: 4, value: 500 }
+        };
+
+        // Enemy Database
+        const enemies = {
+            rat: { name: "Giant Rat", icon: "🐀", hp: 30, damage: 5, exp: 15, loot: ["hide", "gold"] },
+            goblin: { name: "Goblin", icon: "👺", hp: 50, damage: 10, exp: 30, loot: ["ore", "gold", "woodenSword"] },
+            wolf: { name: "Wolf", icon: "🐺", hp: 75, damage: 15, exp: 50, loot: ["hide", "gold"] },
+            orc: { name: "Orc Warrior", icon: "👹", hp: 120, damage: 25, exp: 100, loot: ["ironSword", "gold", "ore"] },
+            dragon: { name: "Young Dragon", icon: "🐲", hp: 300, damage: 50, exp: 500, loot: ["essence", "gold", "ironArmor", "ring"] }
+        };
+
+        // Zone Database
+        const zones = {
+            townSquare: {
+                id: 'townSquare',
+                name: 'Town Square',
+                icon: '🏘️',
+                description: 'A safe starting area with basic resources',
+                requirements: {}, // Always unlocked
+                enemies: ['rat'],
+                resources: {
+                    wood: { multiplier: 1.0, baseAmount: [1, 3] },
+                    ore: { multiplier: 1.0, baseAmount: [1, 2] },
+                    fish: { multiplier: 1.0, baseAmount: 1 },
+                    hide: { multiplier: 0.5, baseAmount: [1, 2] }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #1e3c72, #2a5298)',
+                    primaryColor: '#3498db'
+                }
+            },
+            forest: {
+                id: 'forest',
+                name: 'The Forest',
+                icon: '🌲',
+                description: 'Dense woodland teeming with resources',
+                requirements: { or: [{ woodcutting: 3 }, { combat: 2 }] },
+                enemies: ['rat', 'goblin'],
+                resources: {
+                    wood: { multiplier: 1.5, baseAmount: [2, 4] },
+                    hide: { multiplier: 1.2, baseAmount: [1, 2] },
+                    herb: { multiplier: 1.0, baseAmount: [1, 2] }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #1e5631, #2d7a4b)',
+                    primaryColor: '#27ae60'
+                }
+            },
+            mines: {
+                id: 'mines',
+                name: 'The Mines',
+                icon: '⛏️',
+                description: 'Dark underground caverns rich with ore',
+                requirements: { or: [{ mining: 5 }, { combat: 4 }] },
+                enemies: ['goblin', 'wolf'],
+                resources: {
+                    ore: { multiplier: 1.8, baseAmount: [2, 3] },
+                    essence: { multiplier: 1.0, baseAmount: 1, chance: 0.15 }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #2c1810, #4a2918)',
+                    primaryColor: '#8b4513'
+                }
+            },
+            wilderness: {
+                id: 'wilderness',
+                name: 'The Wilderness',
+                icon: '🏔️',
+                description: 'Dangerous wild frontier with valuable game',
+                requirements: { or: [{ hunting: 7 }, { combat: 6 }] },
+                enemies: ['wolf', 'orc'],
+                resources: {
+                    hide: { multiplier: 2.0, baseAmount: [2, 3] },
+                    herb: { multiplier: 1.5, baseAmount: [1, 3] },
+                    fish: { multiplier: 1.3, baseAmount: [1, 2] }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #4a4a4a, #6b6b6b)',
+                    primaryColor: '#95a5a6'
+                }
+            },
+            mysticLake: {
+                id: 'mysticLake',
+                name: 'The Mystic Lake',
+                icon: '🌊',
+                description: 'Shimmering magical waters filled with essence',
+                requirements: { and: [{ magic: 5 }, { fishing: 8 }] },
+                enemies: ['orc', 'dragon'],
+                resources: {
+                    essence: { multiplier: 2.0, baseAmount: [1, 2], chance: 0.4 },
+                    fish: { multiplier: 2.0, baseAmount: [2, 3] },
+                    herb: { multiplier: 1.8, baseAmount: [1, 3] }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #1a4d7a, #2980b9)',
+                    primaryColor: '#3498db'
+                }
+            },
+            ancientRuins: {
+                id: 'ancientRuins',
+                name: 'The Ancient Ruins',
+                icon: '🏛️',
+                description: 'Mysterious ancient civilization with legendary treasures',
+                requirements: { and: [{ crafting: 10 }, { combat: 10 }] },
+                enemies: ['orc', 'dragon'],
+                resources: {
+                    wood: { multiplier: 1.8, baseAmount: [2, 4] },
+                    ore: { multiplier: 2.0, baseAmount: [2, 4] },
+                    hide: { multiplier: 1.8, baseAmount: [2, 3] },
+                    essence: { multiplier: 2.5, baseAmount: [1, 3], chance: 0.5 }
+                },
+                theme: {
+                    bgGradient: 'linear-gradient(135deg, #6b4d8a, #8e44ad)',
+                    primaryColor: '#9b59b6'
+                }
+            }
+        };
+
+        // Crafting Recipes
+        const recipes = {
+            woodenSword: {
+                name: "Wooden Sword",
+                requires: { wood: 5 },
+                skillReq: { crafting: 1 },
+                exp: 10
+            },
+            ironSword: {
+                name: "Iron Sword",
+                requires: { ore: 10, wood: 3 },
+                skillReq: { crafting: 3 },
+                exp: 50
+            },
+            leatherArmor: {
+                name: "Leather Armor",
+                requires: { hide: 5 },
+                skillReq: { crafting: 2 },
+                exp: 30
+            },
+            ironArmor: {
+                name: "Iron Armor",
+                requires: { ore: 15, hide: 5 },
+                skillReq: { crafting: 5 },
+                exp: 100
+            },
+            potion: {
+                name: "Health Potion",
+                requires: { herb: 2 },
+                skillReq: { alchemy: 1 },
+                exp: 15
+            },
+            manaPotion: {
+                name: "Mana Potion",
+                requires: { herb: 3, essence: 1 },
+                skillReq: { alchemy: 3 },
+                exp: 40
+            },
+            ring: {
+                name: "Magic Ring",
+                requires: { essence: 5, ore: 3 },
+                skillReq: { crafting: 7, magic: 5 },
+                exp: 200
+            }
+        };
+
+        // Merchants Database
+        const merchants = {
+            marcus: {
+                name: "Marcus the General Merchant",
+                zone: "townSquare",
+                greeting: "Welcome to my shop! I've got all the basics you need.",
+                buyRate: 0.30, // Buys items at 30% of value
+
+                // Items merchant sells (item ID: sell price)
+                sells: {
+                    healingSalve: 25,
+                    basicRation: 15,
+                    apprenticeStaff: 80,
+                    clothRobe: 60,
+                    luckCharm: 200,
+                    inventoryPouch: 500
+                },
+
+                // Items merchant buys (resource types only)
+                buys: ['wood', 'ore', 'fish', 'herb', 'hide']
+            }
+        };
+
+        // Game Class
+        class Game {
+            constructor() {
+                this.state = gameState;
+                this.initialize();
+            }
+
+            initialize() {
+                this.updateUI();
+                this.generateInventorySlots();
+                this.updateSkillsDisplay();
+                this.updateZoneDisplay();
+                this.addLog("Welcome to Eternal Realms! Choose an action to begin.", "system");
+                this.setupKeyboardNavigation();
+                this.setupAccessibility();
+            }
+
+            // Keyboard Navigation
+            setupKeyboardNavigation() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeCrafting();
+                        this.closeMerchant();
+                        this.closeZoneSelection();
+                    }
+                });
+
+                // Make action buttons keyboard accessible
+                document.querySelectorAll('.action-btn').forEach((btn, index) => {
+                    btn.setAttribute('tabindex', '0');
+                    btn.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            btn.click();
+                        }
+                    });
+                });
+
+                // Make inventory slots keyboard accessible
+                document.querySelectorAll('.inventory-slot').forEach((slot) => {
+                    slot.setAttribute('tabindex', '0');
+                });
+            }
+
+            // Accessibility helpers
+            setupAccessibility() {
+                // Add aria-labels to key elements
+                const addAriaLabel = (selector, label) => {
+                    const el = document.querySelector(selector);
+                    if (el) el.setAttribute('aria-label', label);
+                };
+
+                addAriaLabel('#timer-display', 'Action timer - click to speed up');
+                addAriaLabel('.zone-switch-btn', 'Switch to different zone');
+            }
+
+            announceToScreenReader(message) {
+                const announcement = document.createElement('div');
+                announcement.setAttribute('role', 'status');
+                announcement.setAttribute('aria-live', 'polite');
+                announcement.className = 'sr-only';
+                announcement.textContent = message;
+                document.body.appendChild(announcement);
+                setTimeout(() => announcement.remove(), 1000);
+            }
+
+            // Sound effect placeholder system
+            playSound(soundId) {
+                // Future: Implement Web Audio API
+                // For now, just log
+                console.log(`[SFX] ${soundId}`);
+            }
+
+            // Particle effects system
+            createParticles(x, y, color, count = 10) {
+                const container = document.body;
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.cssText = `
+                        position: fixed;
+                        left: ${x}px;
+                        top: ${y}px;
+                        width: 6px;
+                        height: 6px;
+                        background: ${color};
+                        border-radius: 50%;
+                        pointer-events: none;
+                        z-index: 9999;
+                        box-shadow: 0 0 8px ${color};
+                    `;
+
+                    const angle = (Math.PI * 2 * i) / count;
+                    const velocity = 2 + Math.random() * 2;
+                    const vx = Math.cos(angle) * velocity;
+                    const vy = Math.sin(angle) * velocity;
+
+                    particle.style.animation = 'particleFly 0.8s ease-out forwards';
+                    particle.style.setProperty('--vx', `${vx * 40}px`);
+                    particle.style.setProperty('--vy', `${vy * 40}px`);
+
+                    container.appendChild(particle);
+                    setTimeout(() => particle.remove(), 800);
+                }
+            }
+
+            // Damage number display
+            showDamageNumber(damage, isPlayerDamage) {
+                const combatArea = document.getElementById('combat-area');
+                if (!combatArea) return;
+
+                const damageNum = document.createElement('div');
+                damageNum.textContent = `-${damage}`;
+                damageNum.style.cssText = `
+                    position: absolute;
+                    ${isPlayerDamage ? 'top: 30%; left: 60%;' : 'top: 30%; left: 40%;'}
+                    color: ${isPlayerDamage ? '#e74c3c' : '#f39c12'};
+                    font-size: 2em;
+                    font-weight: bold;
+                    pointer-events: none;
+                    animation: damageFloat 1s ease-out forwards;
+                    text-shadow: 0 0 8px ${isPlayerDamage ? 'rgba(231, 76, 60, 0.8)' : 'rgba(243, 156, 18, 0.8)'},
+                                 0 2px 4px rgba(0, 0, 0, 0.8);
+                    z-index: 100;
+                `;
+                combatArea.appendChild(damageNum);
+                setTimeout(() => damageNum.remove(), 1000);
+            }
+
+            generateInventorySlots() {
+                const container = document.getElementById('inventory');
+                container.innerHTML = '';
+
+                // Calculate max inventory slots (base 16 + expansions)
+                const baseSlots = 16;
+                const expansions = this.state.inventoryExpansions || 0;
+                const maxSlots = baseSlots + (expansions * 4);
+
+                for (let i = 0; i < maxSlots; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot';
+                    slot.onclick = () => this.useItem(i);
+
+                    if (this.state.inventory[i]) {
+                        const item = this.state.inventory[i];
+                        const itemData = items[item.id];
+
+                        slot.innerHTML = `
+                            <span class="item-icon">${itemData.icon}</span>
+                            ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                        `;
+                    }
+
+                    container.appendChild(slot);
+                }
+            }
+
+            updateSkillsDisplay() {
+                const container = document.getElementById('skills-container');
+                container.innerHTML = '';
+
+                Object.entries(this.state.skills).forEach(([skillName, skillData]) => {
+                    const skillDiv = document.createElement('div');
+                    skillDiv.className = 'skill-item';
+
+                    const progress = (skillData.exp / skillData.nextLevel) * 100;
+                    const progressClass = progress > 90 ? 'near-levelup' : '';
+
+                    skillDiv.innerHTML = `
+                        <div class="skill-header">
+                            <span class="skill-name">${this.capitalize(skillName)}</span>
+                            <span class="skill-level">Lv. ${skillData.level}</span>
+                        </div>
+                        <div class="skill-progress">
+                            <div class="skill-progress-fill ${progressClass}" style="width: ${progress}%"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.75em; color: #888;">
+                            <span>${skillData.exp} / ${skillData.nextLevel} XP</span>
+                            <span>${Math.floor(progress)}%</span>
+                        </div>
+                    `;
+
+                    container.appendChild(skillDiv);
+                });
+            }
+
+            // Zone Management
+            checkZoneRequirements(zoneId) {
+                const zone = zones[zoneId];
+                if (!zone || !zone.requirements) return true;
+
+                const reqs = zone.requirements;
+
+                // Handle OR requirements
+                if (reqs.or) {
+                    return reqs.or.some(req => {
+                        return Object.entries(req).every(([skill, level]) => {
+                            return this.state.skills[skill].level >= level;
+                        });
+                    });
+                }
+
+                // Handle AND requirements
+                if (reqs.and) {
+                    return reqs.and.every(req => {
+                        return Object.entries(req).every(([skill, level]) => {
+                            return this.state.skills[skill].level >= level;
+                        });
+                    });
+                }
+
+                // No requirements (like townSquare)
+                return true;
+            }
+
+            checkZoneUnlocks() {
+                let newUnlocks = false;
+
+                Object.keys(zones).forEach(zoneId => {
+                    // Skip if already unlocked
+                    if (this.state.unlockedZones.includes(zoneId)) return;
+
+                    // Check if requirements are met
+                    if (this.checkZoneRequirements(zoneId)) {
+                        this.state.unlockedZones.push(zoneId);
+                        newUnlocks = true;
+
+                        const zone = zones[zoneId];
+                        this.addLog(`🎉 New Zone Discovered: ${zone.name}!`, "system");
+                        this.showZoneUnlockNotification(zone);
+                    }
+                });
+
+                return newUnlocks;
+            }
+
+            canAccessZone(zoneId) {
+                return this.state.unlockedZones.includes(zoneId);
+            }
+
+            switchZone(zoneId) {
+                // Validate zone exists
+                if (!zones[zoneId]) {
+                    this.addLog("Zone not found!", "system");
+                    return false;
+                }
+
+                // Check if zone is unlocked
+                if (!this.canAccessZone(zoneId)) {
+                    this.addLog("This zone is locked! Meet the requirements to unlock it.", "system");
+                    return false;
+                }
+
+                // Stop current action when switching zones
+                if (this.state.currentAction) {
+                    this.stopAction();
+                }
+
+                const oldZone = zones[this.state.currentZone];
+                const newZone = zones[zoneId];
+
+                this.state.currentZone = zoneId;
+                this.addLog(`You travel to ${newZone.name} ${newZone.icon}`, "system");
+
+                // Update UI
+                this.updateZoneDisplay();
+                this.updateCombatDisplay();
+
+                return true;
+            }
+
+            showZoneUnlockNotification(zone) {
+                const notification = document.getElementById('zone-unlock-notification');
+                document.getElementById('zone-unlock-name').textContent = `${zone.icon} ${zone.name}`;
+                document.getElementById('zone-unlock-desc').textContent = zone.description;
+
+                notification.style.display = 'block';
+
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+
+            updateZoneDisplay() {
+                const zone = zones[this.state.currentZone];
+                if (zone) {
+                    // Update zone name and icon in header
+                    document.getElementById('zone-icon').textContent = zone.icon;
+                    document.getElementById('zone-name').textContent = zone.name;
+
+                    // Update background theme
+                    document.body.style.background = zone.theme.bgGradient;
+                }
+            }
+
+            openZoneSelection() {
+                const modal = document.getElementById('zone-modal');
+                const zoneList = document.getElementById('zone-list');
+                zoneList.innerHTML = '';
+
+                // Generate zone list
+                Object.entries(zones).forEach(([zoneId, zone]) => {
+                    const isUnlocked = this.canAccessZone(zoneId);
+                    const isCurrent = this.state.currentZone === zoneId;
+                    const meetsRequirements = this.checkZoneRequirements(zoneId);
+
+                    const zoneItem = document.createElement('div');
+                    zoneItem.className = 'zone-item';
+
+                    if (!isUnlocked) {
+                        zoneItem.classList.add('zone-locked');
+                    }
+                    if (isCurrent) {
+                        zoneItem.classList.add('zone-current-selected');
+                    }
+
+                    // Build requirements text
+                    let requirementsText = '';
+                    if (!isUnlocked && zone.requirements) {
+                        if (zone.requirements.or) {
+                            const reqTexts = zone.requirements.or.map(req => {
+                                return Object.entries(req).map(([skill, level]) => {
+                                    const hasLevel = this.state.skills[skill].level >= level;
+                                    return `${this.capitalize(skill)} Lv.${level}`;
+                                }).join(' AND ');
+                            });
+                            requirementsText = `🔒 Requires: ${reqTexts.join(' OR ')}`;
+                        } else if (zone.requirements.and) {
+                            const reqTexts = zone.requirements.and.map(req => {
+                                return Object.entries(req).map(([skill, level]) => {
+                                    return `${this.capitalize(skill)} Lv.${level}`;
+                                }).join(' AND ');
+                            });
+                            requirementsText = `🔒 Requires: ${reqTexts.join(' AND ')}`;
+                        }
+                    }
+
+                    // Build enemies text
+                    const enemiesText = zone.enemies.map(e => enemies[e].icon).join(' ');
+
+                    zoneItem.innerHTML = `
+                        <div class="zone-item-header">
+                            <div>
+                                <span class="zone-item-icon">${zone.icon}</span>
+                                <span class="zone-item-name">${zone.name}</span>
+                            </div>
+                            <div>
+                                ${isCurrent ? '<span class="zone-unlocked-badge">CURRENT</span>' : ''}
+                                ${isUnlocked && !isCurrent ? '<span class="zone-unlocked-badge">UNLOCKED</span>' : ''}
+                                ${!isUnlocked ? '<span class="zone-locked-badge">LOCKED</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="zone-item-desc">${zone.description}</div>
+                        <div class="zone-item-desc">Enemies: ${enemiesText}</div>
+                        ${requirementsText ? `<div class="zone-requirements ${meetsRequirements ? 'met' : ''}">${requirementsText}</div>` : ''}
+                    `;
+
+                    if (isUnlocked && !isCurrent) {
+                        zoneItem.onclick = () => {
+                            this.switchZone(zoneId);
+                            this.closeZoneSelection();
+                        };
+                    }
+
+                    zoneList.appendChild(zoneItem);
+                });
+
+                modal.style.display = 'block';
+            }
+
+            closeZoneSelection() {
+                document.getElementById('zone-modal').style.display = 'none';
+            }
+
+            startAction(action) {
+                if (this.state.currentAction) {
+                    this.stopAction();
+                }
+
+                this.state.currentAction = action;
+                
+                // Update button states
+                document.querySelectorAll('.action-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+
+                switch(action) {
+                    case 'woodcutting':
+                        this.startTimer(3, () => this.completeWoodcutting());
+                        this.addLog("You begin chopping wood...", "skill");
+                        break;
+                    case 'mining':
+                        this.startTimer(4, () => this.completeMining());
+                        this.addLog("You start mining for ore...", "skill");
+                        break;
+                    case 'fishing':
+                        this.startTimer(5, () => this.completeFishing());
+                        this.addLog("You cast your line into the water...", "skill");
+                        break;
+                    case 'hunting':
+                        this.startTimer(6, () => this.completeHunting());
+                        this.addLog("You track your prey through the wilderness...", "skill");
+                        break;
+                    case 'combat':
+                        this.startCombat();
+                        break;
+                    case 'magic':
+                        this.startMagicTraining();
+                        break;
+                    case 'alchemy':
+                        this.startAlchemy();
+                        break;
+                    case 'explore':
+                        this.startExploration();
+                        break;
+                }
+            }
+
+            startTimer(seconds, callback) {
+                this.state.actionTimeLeft = seconds;
+                const timerElement = document.getElementById('timer');
+
+                this.state.actionTimer = setInterval(() => {
+                    this.state.actionTimeLeft--;
+                    timerElement.textContent = `${this.state.actionTimeLeft}s`;
+
+                    if (this.state.actionTimeLeft <= 0) {
+                        clearInterval(this.state.actionTimer);
+                        this.state.actionTimer = null;
+                        this.state.actionTimeLeft = 0;
+                        timerElement.textContent = 'Ready';
+                        callback();
+                    }
+                }, 1000);
+
+                timerElement.textContent = `${this.state.actionTimeLeft}s`;
+            }
+
+            stopAction() {
+                if (this.state.actionTimer) {
+                    clearInterval(this.state.actionTimer);
+                    this.state.actionTimer = null;
+                }
+                if (this.state.combatTimer) {
+                    clearInterval(this.state.combatTimer);
+                    this.state.combatTimer = null;
+                }
+                this.state.currentAction = null;
+                this.state.actionTimeLeft = 0;
+                this.state.combatTimeLeft = 0;
+                this.state.currentEnemy = null;
+                document.getElementById('timer').textContent = 'Ready';
+
+                // Clear combat display
+                this.updateCombatDisplay();
+
+                document.querySelectorAll('.action-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            }
+
+            boostAction() {
+                // Only boost if there's an active non-combat action with a timer
+                if (this.state.actionTimer && this.state.actionTimeLeft > 0) {
+                    // Reduce timer by 0.5 seconds per click
+                    this.state.actionTimeLeft = Math.max(0, this.state.actionTimeLeft - 0.5);
+                    document.getElementById('timer').textContent = `${this.state.actionTimeLeft.toFixed(1)}s`;
+
+                    // Visual feedback
+                    const timerDisplay = document.getElementById('timer-display');
+                    timerDisplay.classList.add('boosted');
+
+                    // Create floating -0.5s indicator
+                    const indicator = document.createElement('div');
+                    indicator.textContent = '-0.5s';
+                    indicator.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        color: #2ecc71;
+                        font-weight: bold;
+                        font-size: 1.2em;
+                        pointer-events: none;
+                        animation: floatUp 0.8s ease-out forwards;
+                        text-shadow: 0 0 8px rgba(46, 204, 113, 0.8);
+                    `;
+                    timerDisplay.appendChild(indicator);
+
+                    // Play sound and show particles
+                    this.playSound('boost');
+                    const rect = timerDisplay.getBoundingClientRect();
+                    this.createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, '#2ecc71', 8);
+
+                    setTimeout(() => {
+                        timerDisplay.classList.remove('boosted');
+                        indicator.remove();
+                    }, 800);
+                }
+            }
+
+            // Helper to get resource amount from zone
+            getZoneResourceAmount(resourceType) {
+                const currentZone = zones[this.state.currentZone];
+                const resource = currentZone.resources[resourceType];
+
+                if (!resource) {
+                    // Resource not available in this zone
+                    return 0;
+                }
+
+                // Calculate base amount
+                let amount;
+                if (Array.isArray(resource.baseAmount)) {
+                    const [min, max] = resource.baseAmount;
+                    amount = Math.floor(Math.random() * (max - min + 1)) + min;
+                } else {
+                    amount = resource.baseAmount;
+                }
+
+                // Apply zone multiplier
+                amount = Math.floor(amount * resource.multiplier);
+
+                // Check for chance-based resources (like essence)
+                if (resource.chance !== undefined) {
+                    if (Math.random() < resource.chance) {
+                        return amount;
+                    }
+                    return 0;
+                }
+
+                return amount;
+            }
+
+            completeWoodcutting() {
+                const currentZone = zones[this.state.currentZone];
+                const amount = this.getZoneResourceAmount('wood');
+
+                if (amount === 0) {
+                    this.addLog(`No trees to chop in ${currentZone.name}!`, "system");
+                    this.stopAction();
+                    return;
+                }
+
+                this.addItem('wood', amount);
+                this.gainSkillExp('woodcutting', 10);
+                this.addLog(`You gathered ${amount} wood in ${currentZone.name}!`, "loot");
+
+                if (this.state.currentAction === 'woodcutting') {
+                    this.startTimer(3, () => this.completeWoodcutting());
+                }
+            }
+
+            completeMining() {
+                const currentZone = zones[this.state.currentZone];
+                const oreAmount = this.getZoneResourceAmount('ore');
+
+                if (oreAmount === 0) {
+                    this.addLog(`No ore to mine in ${currentZone.name}!`, "system");
+                    this.stopAction();
+                    return;
+                }
+
+                this.addItem('ore', oreAmount);
+                this.gainSkillExp('mining', 15);
+                this.addLog(`You mined ${oreAmount} ore in ${currentZone.name}!`, "loot");
+
+                // Check for essence drops in zones that have it
+                const essenceAmount = this.getZoneResourceAmount('essence');
+                if (essenceAmount > 0) {
+                    this.addItem('essence', essenceAmount);
+                    this.addLog(`You found ${essenceAmount} magical essence!`, "loot");
+                }
+
+                if (this.state.currentAction === 'mining') {
+                    this.startTimer(4, () => this.completeMining());
+                }
+            }
+
+            completeFishing() {
+                const currentZone = zones[this.state.currentZone];
+                const fishAmount = this.getZoneResourceAmount('fish');
+
+                if (fishAmount === 0) {
+                    this.addLog(`No fish in ${currentZone.name}!`, "system");
+                    this.stopAction();
+                    return;
+                }
+
+                this.addItem('fish', fishAmount);
+                this.gainSkillExp('fishing', 12);
+                this.addLog(`You caught ${fishAmount} fish in ${currentZone.name}!`, "loot");
+
+                // Check for essence drops in magical zones
+                const essenceAmount = this.getZoneResourceAmount('essence');
+                if (essenceAmount > 0) {
+                    this.addItem('essence', essenceAmount);
+                    this.addLog(`You found ${essenceAmount} magical essence in the water!`, "loot");
+                }
+
+                // Check for herb drops in some zones
+                const herbAmount = this.getZoneResourceAmount('herb');
+                if (herbAmount > 0) {
+                    this.addItem('herb', herbAmount);
+                    this.addLog(`You found ${herbAmount} herb near the water!`, "loot");
+                }
+
+                if (this.state.currentAction === 'fishing') {
+                    this.startTimer(5, () => this.completeFishing());
+                }
+            }
+
+            completeHunting() {
+                const currentZone = zones[this.state.currentZone];
+                const hideAmount = this.getZoneResourceAmount('hide');
+
+                if (hideAmount === 0) {
+                    this.addLog(`No game to hunt in ${currentZone.name}!`, "system");
+                    this.stopAction();
+                    return;
+                }
+
+                this.addItem('hide', hideAmount);
+                this.gainSkillExp('hunting', 20);
+                this.addLog(`You collected ${hideAmount} hide in ${currentZone.name}!`, "loot");
+
+                // Check for herb drops in wilderness zones
+                const herbAmount = this.getZoneResourceAmount('herb');
+                if (herbAmount > 0) {
+                    this.addItem('herb', herbAmount);
+                    this.addLog(`You found ${herbAmount} herb while hunting!`, "loot");
+                }
+
+                if (this.state.currentAction === 'hunting') {
+                    this.startTimer(6, () => this.completeHunting());
+                }
+            }
+
+            startCombat() {
+                // Select random enemy from current zone's enemy pool
+                const currentZone = zones[this.state.currentZone];
+                const zoneEnemies = currentZone.enemies;
+
+                if (!zoneEnemies || zoneEnemies.length === 0) {
+                    this.addLog("No enemies in this zone!", "system");
+                    return;
+                }
+
+                const enemyType = zoneEnemies[Math.floor(Math.random() * zoneEnemies.length)];
+                const enemyData = enemies[enemyType];
+
+                this.state.currentEnemy = {
+                    type: enemyType,
+                    hp: enemyData.hp,
+                    maxHp: enemyData.hp,
+                    ...enemyData
+                };
+
+                this.updateCombatDisplay();
+                this.addLog(`A ${enemyData.name} appears in ${currentZone.name}!`, "combat");
+
+                this.state.combatTimeLeft = 2;
+                this.state.combatTimer = setInterval(() => {
+                    this.state.combatTimeLeft = 2; // Reset for next round
+                    this.combatRound();
+                }, 2000);
+            }
+
+            combatRound() {
+                if (!this.state.currentEnemy) return;
+
+                // Add battle flash effect
+                const combatArea = document.getElementById('combat-area');
+                combatArea.classList.add('attacking');
+                setTimeout(() => combatArea.classList.remove('attacking'), 300);
+
+                // Player attacks
+                const playerDamage = Math.floor(this.state.player.combatPower * (0.8 + Math.random() * 0.4));
+                this.state.currentEnemy.hp -= playerDamage;
+
+                // Shake enemy sprite
+                const enemySprite = document.querySelector('.enemy-sprite');
+                if (enemySprite) {
+                    enemySprite.classList.add('taking-damage');
+                    setTimeout(() => enemySprite.classList.remove('taking-damage'), 400);
+                }
+
+                // Show floating damage number
+                this.showDamageNumber(playerDamage, true);
+                this.playSound('combat-hit');
+
+                this.addLog(`You deal ${playerDamage} damage!`, "combat");
+
+                if (this.state.currentEnemy.hp <= 0) {
+                    this.enemyDefeated();
+                    return;
+                }
+
+                // Enemy attacks (after a delay for better flow)
+                setTimeout(() => {
+                    const enemyDamage = Math.floor(this.state.currentEnemy.damage * (0.8 + Math.random() * 0.4));
+                    this.state.player.hp -= enemyDamage;
+                    this.showDamageNumber(enemyDamage, false);
+                    this.playSound('player-hit');
+                    this.addLog(`${this.state.currentEnemy.name} deals ${enemyDamage} damage!`, "combat");
+
+                    if (this.state.player.hp <= 0) {
+                        this.playerDeath();
+                        return;
+                    }
+
+                    this.updateCombatDisplay();
+                    this.updateUI();
+                }, 600);
+
+                this.updateCombatDisplay();
+                this.updateUI();
+            }
+
+            enemyDefeated() {
+                const enemy = this.state.currentEnemy;
+                this.addLog(`You defeated the ${enemy.name}!`, "combat");
+                
+                // Grant exp
+                this.gainExp(enemy.exp);
+                this.gainSkillExp('combat', enemy.exp / 2);
+                
+                // Drop loot
+                enemy.loot.forEach(lootId => {
+                    if (lootId === 'gold') {
+                        const goldAmount = Math.floor(Math.random() * 20) + 10;
+                        this.state.player.gold += goldAmount;
+                        this.addLog(`You found ${goldAmount} gold!`, "loot");
+                    } else if (Math.random() < 0.5) {
+                        this.addItem(lootId, 1);
+                        this.addLog(`You found ${items[lootId].name}!`, "loot");
+                    }
+                });
+                
+                // Clear combat
+                clearInterval(this.state.combatTimer);
+                this.state.combatTimer = null;
+                this.state.currentEnemy = null;
+                
+                // Continue combat if still selected
+                if (this.state.currentAction === 'combat') {
+                    setTimeout(() => this.startCombat(), 2000);
+                }
+                
+                this.updateCombatDisplay();
+                this.updateUI();
+            }
+
+            startMagicTraining() {
+                if (this.state.player.mp < 10) {
+                    this.addLog("Not enough mana! Wait for it to regenerate.", "system");
+                    this.stopAction();
+                    return;
+                }
+                
+                this.startTimer(3, () => {
+                    this.state.player.mp -= 10;
+                    this.gainSkillExp('magic', 25);
+                    this.addItem('essence', Math.random() < 0.3 ? 1 : 0);
+                    this.addLog("You practice magical arts...", "skill");
+                    
+                    if (this.state.currentAction === 'magic') {
+                        this.startMagicTraining();
+                    }
+                    
+                    this.updateUI();
+                });
+            }
+
+            startAlchemy() {
+                const hasHerbs = this.getItemCount('herb') > 0;
+                
+                if (!hasHerbs) {
+                    this.addLog("You need herbs to practice alchemy!", "system");
+                    this.stopAction();
+                    return;
+                }
+                
+                this.startTimer(4, () => {
+                    if (this.getItemCount('herb') >= 2) {
+                        this.removeItem('herb', 2);
+                        this.addItem('potion', 1);
+                        this.gainSkillExp('alchemy', 20);
+                        this.addLog("You created a health potion!", "loot");
+                    }
+                    
+                    if (this.state.currentAction === 'alchemy') {
+                        this.startAlchemy();
+                    }
+                });
+            }
+
+            startExploration() {
+                this.startTimer(8, () => {
+                    const currentZone = zones[this.state.currentZone];
+
+                    // Zone-based exploration rewards
+                    const zoneMultipliers = {
+                        townSquare: { gold: 1.0, essence: 0.5, combat: 0.1 },
+                        forest: { gold: 1.3, essence: 0.8, combat: 0.25 },
+                        mines: { gold: 1.5, essence: 1.2, combat: 0.35 },
+                        wilderness: { gold: 1.8, essence: 1.5, combat: 0.5 },
+                        mysticLake: { gold: 2.0, essence: 2.0, combat: 0.4 },
+                        ancientRuins: { gold: 2.5, essence: 2.5, combat: 0.6 }
+                    };
+
+                    const multiplier = zoneMultipliers[this.state.currentZone] || { gold: 1.0, essence: 1.0, combat: 0.2 };
+
+                    const discoveries = [
+                        { type: 'treasure', weight: 25, reward: () => {
+                            const gold = Math.floor((Math.random() * 50 + 25) * multiplier.gold);
+                            this.state.player.gold += gold;
+                            this.addLog(`You found a treasure chest with ${gold} gold in ${currentZone.name}!`, "loot");
+                        }},
+                        { type: 'essence', weight: 20, reward: () => {
+                            const amount = Math.floor((Math.random() * 2 + 1) * multiplier.essence);
+                            this.addItem('essence', amount);
+                            this.addLog(`You discovered ${amount} magical essence in ${currentZone.name}!`, "loot");
+                        }},
+                        { type: 'resources', weight: 25, reward: () => {
+                            // Find random resources from the zone
+                            const availableResources = Object.keys(currentZone.resources);
+                            if (availableResources.length > 0) {
+                                const resourceType = availableResources[Math.floor(Math.random() * availableResources.length)];
+                                const amount = this.getZoneResourceAmount(resourceType);
+                                if (amount > 0) {
+                                    this.addItem(resourceType, amount);
+                                    this.addLog(`You found ${amount} ${items[resourceType].name} while exploring!`, "loot");
+                                }
+                            }
+                        }},
+                        { type: 'combat', weight: Math.floor(multiplier.combat * 100), reward: () => {
+                            this.addLog(`You encounter enemies in ${currentZone.name}!`, "combat");
+                            this.stopAction();
+                            this.startAction('combat');
+                        }},
+                        { type: 'nothing', weight: 30, reward: () => {
+                            this.addLog(`You explore ${currentZone.name} but find nothing of interest.`, "system");
+                        }}
+                    ];
+
+                    // Weighted random selection
+                    const totalWeight = discoveries.reduce((sum, d) => sum + d.weight, 0);
+                    let random = Math.random() * totalWeight;
+
+                    let discovery = discoveries[discoveries.length - 1]; // Default to nothing
+                    for (const d of discoveries) {
+                        random -= d.weight;
+                        if (random <= 0) {
+                            discovery = d;
+                            break;
+                        }
+                    }
+
+                    discovery.reward();
+
+                    if (this.state.currentAction === 'explore' && discovery.type !== 'combat') {
+                        this.startExploration();
+                    }
+                });
+            }
+
+            updateCombatDisplay() {
+                const combatArea = document.getElementById('combat-content');
+                
+                if (!this.state.currentEnemy) {
+                    combatArea.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <p style="color: #888;">No enemy encountered</p>
+                            <p style="color: #666; font-size: 0.9em; margin-top: 10px;">Start exploring to find enemies!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const enemy = this.state.currentEnemy;
+                const hpPercent = (enemy.hp / enemy.maxHp) * 100;
+                
+                combatArea.innerHTML = `
+                    <div class="enemy-container">
+                        <div class="enemy-sprite">${enemy.icon}</div>
+                        <div class="enemy-name">${enemy.name}</div>
+                        <div class="health-bar enemy-health-bar">
+                            <div class="health-fill bar-fill" style="width: ${hpPercent}%"></div>
+                            <div class="bar-text">HP: ${Math.max(0, enemy.hp)}/${enemy.maxHp}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            playerDeath() {
+                this.stopAction();
+                
+                // Tibia-style death penalty
+                const expLoss = Math.floor(this.state.player.exp * 0.1);
+                const goldLoss = Math.floor(this.state.player.gold * 0.3);
+                
+                this.state.player.exp = Math.max(0, this.state.player.exp - expLoss);
+                this.state.player.gold = Math.max(0, this.state.player.gold - goldLoss);
+                this.state.player.deaths++;
+                
+                // Drop some items
+                const itemsToDrop = Math.floor(this.state.inventory.length / 2);
+                this.state.inventory.splice(0, itemsToDrop);
+                
+                document.getElementById('death-penalty').textContent = '10';
+                document.getElementById('death-popup').style.display = 'block';
+                
+                this.addLog("☠️ You have died! ☠️", "combat");
+            }
+
+            respawn() {
+                this.state.player.hp = this.state.player.maxHp;
+                this.state.player.mp = this.state.player.maxMp;
+                this.state.currentEnemy = null;
+                
+                document.getElementById('death-popup').style.display = 'none';
+                
+                this.updateUI();
+                this.updateCombatDisplay();
+                this.generateInventorySlots();
+                
+                this.addLog("You have respawned at the town.", "system");
+            }
+
+            openCrafting() {
+                const recipesContainer = document.getElementById('crafting-recipes');
+                recipesContainer.innerHTML = '';
+                
+                Object.entries(recipes).forEach(([itemId, recipe]) => {
+                    const canCraft = this.canCraft(itemId);
+                    
+                    const recipeDiv = document.createElement('div');
+                    recipeDiv.className = 'recipe-item';
+                    recipeDiv.style.opacity = canCraft ? '1' : '0.5';
+                    
+                    let requirementsText = 'Requires: ';
+                    Object.entries(recipe.requires).forEach(([mat, qty]) => {
+                        const hasAmount = this.getItemCount(mat);
+                        const color = hasAmount >= qty ? '#2ecc71' : '#e74c3c';
+                        requirementsText += `<span style="color: ${color}">${items[mat].icon} ${items[mat].name} (${hasAmount}/${qty})</span> `;
+                    });
+                    
+                    let skillReqText = '';
+                    if (recipe.skillReq) {
+                        Object.entries(recipe.skillReq).forEach(([skill, level]) => {
+                            const hasLevel = this.state.skills[skill].level >= level;
+                            const color = hasLevel ? '#2ecc71' : '#e74c3c';
+                            skillReqText += `<span style="color: ${color}">${this.capitalize(skill)} Lv.${level}</span> `;
+                        });
+                    }
+                    
+                    recipeDiv.innerHTML = `
+                        <div class="recipe-name">${items[itemId].icon} ${recipe.name}</div>
+                        <div class="recipe-requirements">${requirementsText}</div>
+                        ${skillReqText ? `<div class="recipe-requirements">Skills: ${skillReqText}</div>` : ''}
+                    `;
+                    
+                    if (canCraft) {
+                        recipeDiv.onclick = () => this.craft(itemId);
+                    }
+                    
+                    recipesContainer.appendChild(recipeDiv);
+                });
+                
+                document.getElementById('crafting-window').style.display = 'block';
+            }
+
+            closeCrafting() {
+                document.getElementById('crafting-window').style.display = 'none';
+            }
+
+            canCraft(itemId) {
+                const recipe = recipes[itemId];
+                
+                // Check materials
+                for (let [mat, qty] of Object.entries(recipe.requires)) {
+                    if (this.getItemCount(mat) < qty) return false;
+                }
+                
+                // Check skill requirements
+                if (recipe.skillReq) {
+                    for (let [skill, level] of Object.entries(recipe.skillReq)) {
+                        if (this.state.skills[skill].level < level) return false;
+                    }
+                }
+                
+                return true;
+            }
+
+            craft(itemId) {
+                if (!this.canCraft(itemId)) return;
+                
+                const recipe = recipes[itemId];
+                
+                // Remove materials
+                Object.entries(recipe.requires).forEach(([mat, qty]) => {
+                    this.removeItem(mat, qty);
+                });
+                
+                // Add crafted item
+                this.addItem(itemId, 1);
+                
+                // Grant exp
+                this.gainSkillExp('crafting', recipe.exp);
+                
+                this.addLog(`You crafted ${items[itemId].name}!`, "loot");
+                
+                this.closeCrafting();
+                this.updateUI();
+                this.generateInventorySlots();
+            }
+
+            // Merchant System
+            openMerchant() {
+                const currentZone = this.state.currentZone;
+                let merchant = null;
+
+                // Find merchant for current zone
+                Object.values(merchants).forEach(m => {
+                    if (m.zone === currentZone) {
+                        merchant = m;
+                    }
+                });
+
+                if (!merchant) {
+                    this.addLog("No merchant in this zone!", "system");
+                    return;
+                }
+
+                // Set merchant info
+                document.getElementById('merchant-name').textContent = merchant.name;
+                document.getElementById('merchant-greeting').textContent = merchant.greeting;
+
+                // Generate buy items
+                this.generateMerchantBuyList(merchant);
+
+                // Generate sell items
+                this.generateMerchantSellList(merchant);
+
+                // Update gold display
+                document.getElementById('merchant-player-gold').textContent = this.state.player.gold;
+
+                // Show modal
+                document.getElementById('merchant-window').style.display = 'block';
+
+                // Default to buy tab
+                this.switchMerchantTab('buy');
+            }
+
+            closeMerchant() {
+                document.getElementById('merchant-window').style.display = 'none';
+            }
+
+            switchMerchantTab(tab) {
+                // Update tab styling
+                document.getElementById('tab-buy').classList.remove('active');
+                document.getElementById('tab-sell').classList.remove('active');
+                document.getElementById(`tab-${tab}`).classList.add('active');
+
+                // Show/hide content
+                if (tab === 'buy') {
+                    document.getElementById('merchant-buy-content').style.display = 'block';
+                    document.getElementById('merchant-sell-content').style.display = 'none';
+                } else {
+                    document.getElementById('merchant-buy-content').style.display = 'none';
+                    document.getElementById('merchant-sell-content').style.display = 'block';
+                }
+            }
+
+            generateMerchantBuyList(merchant) {
+                const container = document.getElementById('merchant-items-list');
+                container.innerHTML = '';
+
+                Object.entries(merchant.sells).forEach(([itemId, price]) => {
+                    const itemData = items[itemId];
+                    const canAfford = this.state.player.gold >= price;
+
+                    // Check if inventory pouch already purchased
+                    let alreadyOwned = false;
+                    if (itemData.permanent && itemData.inventorySlots) {
+                        // Check if player already has this upgrade
+                        // For now, we'll allow multiple purchases
+                    }
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'merchant-item';
+                    if (!canAfford) {
+                        itemDiv.classList.add('unavailable');
+                    }
+
+                    // Generate item description
+                    let description = '';
+                    if (itemData.heal) description = `Restores ${itemData.heal} HP`;
+                    if (itemData.mana) description = `Restores ${itemData.mana} MP`;
+                    if (itemData.power) description = `+${itemData.power} Attack Power`;
+                    if (itemData.defense) description = `+${itemData.defense} Defense`;
+                    if (itemData.goldBonus) description = `+${(itemData.goldBonus * 100).toFixed(0)}% Gold from Combat`;
+                    if (itemData.inventorySlots) description = `+${itemData.inventorySlots} Inventory Slots (Permanent)`;
+
+                    itemDiv.innerHTML = `
+                        <div class="merchant-item-header">
+                            <div class="merchant-item-name">
+                                <span class="merchant-item-icon">${itemData.icon}</span>
+                                <span>${itemData.name}</span>
+                            </div>
+                            <div class="merchant-item-price">${price}🪙</div>
+                        </div>
+                        <div class="merchant-item-desc">${description}</div>
+                        <button class="merchant-buy-btn" ${!canAfford ? 'disabled' : ''} onclick="game.buyItem('${itemId}', ${price})">
+                            ${canAfford ? 'Buy' : 'Not Enough Gold'}
+                        </button>
+                    `;
+
+                    container.appendChild(itemDiv);
+                });
+            }
+
+            generateMerchantSellList(merchant) {
+                const container = document.getElementById('merchant-sell-list');
+                container.innerHTML = '';
+
+                // Get player's sellable items
+                const sellableItems = this.state.inventory.filter(item => {
+                    return item && merchant.buys.includes(item.id);
+                });
+
+                if (sellableItems.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #aaa; padding: 20px;">You have no items this merchant wants to buy.</p>';
+                    return;
+                }
+
+                // Group identical items
+                const grouped = {};
+                sellableItems.forEach(item => {
+                    if (!grouped[item.id]) {
+                        grouped[item.id] = 0;
+                    }
+                    grouped[item.id] += item.quantity || 1;
+                });
+
+                Object.entries(grouped).forEach(([itemId, totalQty]) => {
+                    const itemData = items[itemId];
+                    const sellPrice = Math.floor(itemData.value * merchant.buyRate);
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'merchant-sell-item';
+
+                    itemDiv.innerHTML = `
+                        <div class="merchant-sell-info">
+                            <span style="font-size: 1.5em;">${itemData.icon}</span>
+                            <div>
+                                <div style="color: #ffd700; font-weight: bold;">${itemData.name}</div>
+                                <div style="color: #aaa; font-size: 0.85em;">You have: ${totalQty} | Merchant offers: ${sellPrice}🪙 each (${(merchant.buyRate * 100).toFixed(0)}% value)</div>
+                            </div>
+                        </div>
+                        <div class="merchant-sell-actions">
+                            <button class="merchant-sell-btn" onclick="game.sellItem('${itemId}', 1)">Sell 1</button>
+                            ${totalQty >= 10 ? `<button class="merchant-sell-btn" onclick="game.sellItem('${itemId}', 10)">Sell 10</button>` : ''}
+                            <button class="merchant-sell-btn" onclick="game.sellItem('${itemId}', ${totalQty})">Sell All (${totalQty})</button>
+                        </div>
+                    `;
+
+                    container.appendChild(itemDiv);
+                });
+            }
+
+            buyItem(itemId, price) {
+                // Check if player has enough gold
+                if (this.state.player.gold < price) {
+                    this.addLog("Not enough gold!", "system");
+                    return;
+                }
+
+                const itemData = items[itemId];
+
+                // Handle permanent upgrades (inventory pouch)
+                if (itemData.permanent && itemData.inventorySlots) {
+                    // Expand inventory
+                    const currentMaxSlots = 16 + (this.state.inventoryExpansions || 0) * 4;
+                    if (this.state.inventory.length >= currentMaxSlots) {
+                        // Player will get more slots
+                    }
+                    this.state.inventoryExpansions = (this.state.inventoryExpansions || 0) + 1;
+                    this.state.player.gold -= price;
+                    this.addLog(`You purchased ${itemData.name}! Inventory expanded!`, "loot");
+                    this.generateInventorySlots(); // Regenerate with more slots
+                } else {
+                    // Regular item purchase
+                    this.state.player.gold -= price;
+                    this.addItem(itemId, 1);
+                    this.addLog(`You bought ${itemData.name} for ${price} gold.`, "loot");
+                }
+
+                // Refresh merchant window
+                const currentZone = this.state.currentZone;
+                let merchant = null;
+                Object.values(merchants).forEach(m => {
+                    if (m.zone === currentZone) {
+                        merchant = m;
+                    }
+                });
+
+                if (merchant) {
+                    this.generateMerchantBuyList(merchant);
+                    this.generateMerchantSellList(merchant);
+                }
+
+                // Update gold display
+                document.getElementById('merchant-player-gold').textContent = this.state.player.gold;
+                this.updateUI();
+            }
+
+            sellItem(itemId, quantity) {
+                // Find merchant
+                const currentZone = this.state.currentZone;
+                let merchant = null;
+                Object.values(merchants).forEach(m => {
+                    if (m.zone === currentZone) {
+                        merchant = m;
+                    }
+                });
+
+                if (!merchant || !merchant.buys.includes(itemId)) {
+                    this.addLog("Merchant won't buy this item!", "system");
+                    return;
+                }
+
+                const itemData = items[itemId];
+                const itemCount = this.getItemCount(itemId);
+
+                if (itemCount < quantity) {
+                    this.addLog("You don't have that many!", "system");
+                    return;
+                }
+
+                // Calculate sell price
+                const pricePerItem = Math.floor(itemData.value * merchant.buyRate);
+                const totalPrice = pricePerItem * quantity;
+
+                // Remove items and add gold
+                this.removeItem(itemId, quantity);
+                this.state.player.gold += totalPrice;
+
+                this.addLog(`You sold ${quantity} ${itemData.name} for ${totalPrice} gold.`, "loot");
+
+                // Refresh merchant window
+                this.generateMerchantBuyList(merchant);
+                this.generateMerchantSellList(merchant);
+
+                // Update displays
+                document.getElementById('merchant-player-gold').textContent = this.state.player.gold;
+                this.updateUI();
+                this.generateInventorySlots();
+            }
+
+            useItem(slot) {
+                const item = this.state.inventory[slot];
+                if (!item) return;
+                
+                const itemData = items[item.id];
+                
+                if (itemData.heal) {
+                    this.state.player.hp = Math.min(this.state.player.maxHp, this.state.player.hp + itemData.heal);
+                    this.removeItem(item.id, 1);
+                    this.addLog(`You used ${itemData.name} and restored ${itemData.heal} HP!`, "system");
+                } else if (itemData.mana) {
+                    this.state.player.mp = Math.min(this.state.player.maxMp, this.state.player.mp + itemData.mana);
+                    this.removeItem(item.id, 1);
+                    this.addLog(`You used ${itemData.name} and restored ${itemData.mana} MP!`, "system");
+                } else if (itemData.type) {
+                    this.equipItem(item.id);
+                }
+                
+                this.updateUI();
+                this.generateInventorySlots();
+            }
+
+            equipItem(itemId) {
+                const itemData = items[itemId];
+                const slot = itemData.type;
+                
+                // Unequip current item
+                if (this.state.equipment[slot]) {
+                    this.addItem(this.state.equipment[slot], 1);
+                }
+                
+                // Equip new item
+                this.state.equipment[slot] = itemId;
+                this.removeItem(itemId, 1);
+                
+                // Update combat power
+                this.updateCombatPower();
+                
+                this.addLog(`You equipped ${itemData.name}!`, "system");
+                this.updateEquipmentDisplay();
+            }
+
+            updateCombatPower() {
+                let power = 10 + (this.state.skills.combat.level * 2);
+                
+                if (this.state.equipment.weapon) {
+                    power += items[this.state.equipment.weapon].power || 0;
+                }
+                if (this.state.equipment.accessory) {
+                    power += items[this.state.equipment.accessory].magic || 0;
+                }
+                
+                this.state.player.combatPower = power;
+            }
+
+            updateEquipmentDisplay() {
+                document.getElementById('equipped-weapon').textContent = 
+                    this.state.equipment.weapon ? items[this.state.equipment.weapon].name : "Fists";
+                document.getElementById('equipped-armor').textContent = 
+                    this.state.equipment.armor ? items[this.state.equipment.armor].name : "Clothes";
+                document.getElementById('equipped-accessory').textContent = 
+                    this.state.equipment.accessory ? items[this.state.equipment.accessory].name : "None";
+            }
+
+            addItem(itemId, quantity) {
+                const existingItem = this.state.inventory.find(item => item && item.id === itemId);
+                
+                if (existingItem && items[itemId].stackable) {
+                    existingItem.quantity += quantity;
+                } else {
+                    for (let i = 0; i < quantity; i++) {
+                        if (this.state.inventory.length < 16) {
+                            this.state.inventory.push({ id: itemId, quantity: 1 });
+                        } else {
+                            this.addLog("Inventory full!", "system");
+                            break;
+                        }
+                    }
+                }
+                
+                this.generateInventorySlots();
+            }
+
+            removeItem(itemId, quantity) {
+                for (let i = 0; i < this.state.inventory.length; i++) {
+                    const item = this.state.inventory[i];
+                    if (item && item.id === itemId) {
+                        if (item.quantity > quantity) {
+                            item.quantity -= quantity;
+                            return;
+                        } else {
+                            quantity -= item.quantity;
+                            this.state.inventory.splice(i, 1);
+                            i--;
+                            if (quantity <= 0) return;
+                        }
+                    }
+                }
+            }
+
+            getItemCount(itemId) {
+                return this.state.inventory
+                    .filter(item => item && item.id === itemId)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+            }
+
+            gainExp(amount) {
+                this.state.player.exp += amount;
+                
+                const nextLevel = this.state.player.level * 100;
+                if (this.state.player.exp >= nextLevel) {
+                    this.levelUp();
+                }
+            }
+
+            levelUp() {
+                this.state.player.level++;
+                this.state.player.maxHp += 20;
+                this.state.player.maxMp += 10;
+                this.state.player.hp = this.state.player.maxHp;
+                this.state.player.mp = this.state.player.maxMp;
+                
+                this.addLog(`🎉 LEVEL UP! You are now level ${this.state.player.level}!`, "system");
+                this.updateCombatPower();
+            }
+
+            gainSkillExp(skill, amount) {
+                const skillData = this.state.skills[skill];
+                skillData.exp += amount;
+
+                if (skillData.exp >= skillData.nextLevel) {
+                    skillData.level++;
+                    skillData.exp = 0;
+                    skillData.nextLevel = skillData.level * 100;
+                    this.addLog(`${this.capitalize(skill)} leveled up to ${skillData.level}!`, "skill");
+
+                    // Check for zone unlocks after leveling up
+                    this.checkZoneUnlocks();
+                }
+
+                this.updateSkillsDisplay();
+            }
+
+            addLog(message, type) {
+                const logContainer = document.getElementById('log-container');
+                const logDiv = document.createElement('div');
+                logDiv.className = `log-message log-${type}`;
+                logDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                logContainer.insertBefore(logDiv, logContainer.firstChild);
+                
+                // Keep only last 20 messages
+                while (logContainer.children.length > 20) {
+                    logContainer.removeChild(logContainer.lastChild);
+                }
+            }
+
+            updateUI() {
+                // Update player stats
+                document.getElementById('current-hp').textContent = Math.max(0, this.state.player.hp);
+                document.getElementById('max-hp').textContent = this.state.player.maxHp;
+                document.getElementById('current-mp').textContent = Math.max(0, this.state.player.mp);
+                document.getElementById('max-mp').textContent = this.state.player.maxMp;
+                document.getElementById('current-exp').textContent = this.state.player.exp;
+                document.getElementById('next-level-exp').textContent = this.state.player.level * 100;
+                document.getElementById('player-level').textContent = this.state.player.level;
+                document.getElementById('gold').textContent = this.state.player.gold;
+                document.getElementById('combat-power').textContent = this.state.player.combatPower;
+                document.getElementById('death-count').textContent = this.state.player.deaths;
+                
+                // Update bars
+                const hpPercent = (this.state.player.hp / this.state.player.maxHp) * 100;
+                const mpPercent = (this.state.player.mp / this.state.player.maxMp) * 100;
+                const expPercent = (this.state.player.exp / (this.state.player.level * 100)) * 100;
+                
+                document.querySelector('.health-fill').style.width = `${Math.max(0, hpPercent)}%`;
+                document.querySelector('.mana-fill').style.width = `${Math.max(0, mpPercent)}%`;
+                document.querySelector('.exp-fill').style.width = `${expPercent}%`;
+            }
+
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        }
+
+        // Initialize game
+        const game = new Game();
+
+        // Auto-regeneration
+        setInterval(() => {
+            if (game.state.player.hp < game.state.player.maxHp && !game.state.currentEnemy) {
+                game.state.player.hp = Math.min(game.state.player.maxHp, game.state.player.hp + 2);
+            }
+            if (game.state.player.mp < game.state.player.maxMp) {
+                game.state.player.mp = Math.min(game.state.player.maxMp, game.state.player.mp + 1);
+            }
+            game.updateUI();
+        }, 3000);
+
+        // Auto-save to memory (simulating localStorage)
+        let gameSave = {};
+        setInterval(() => {
+            gameSave = JSON.parse(JSON.stringify(game.state));
+            console.log('Game saved to memory');
+        }, 30000);
+    </script>
+</body>
+</html>
