@@ -4,8 +4,10 @@ An immersive idle RPG built with Next.js, Supabase, and TypeScript.
 
 ## Features
 
-✅ **Implemented (Phase 1)**
-- User authentication with username-based accounts
+✅ **Implemented**
+
+**Phase 1: Core Systems**
+- User authentication with email/username/password
 - Character creation and management
 - Real-time character stats tracking
 - Idle experience and gold generation
@@ -13,11 +15,29 @@ An immersive idle RPG built with Next.js, Supabase, and TypeScript.
 - Row-level security for data protection
 - Responsive UI with Tailwind CSS
 
+**Phase 2: Inventory & Equipment**
+- Complete inventory system with grid display
+- Equipment system with stat bonuses
+- Item catalog with rarity tiers
+- Smart item stacking for consumables
+- Equipment slots (weapon, armor, accessories)
+- Automatic stat calculation from equipped items
+
+**Phase 3: Combat System** ⚔️
+- Turn-based combat mechanics
+- 7 unique enemies with varying difficulty
+- Damage calculation with variance
+- Loot drop system with probability tables
+- Experience and gold rewards
+- Victory/defeat modals with rewards display
+- Combat history tracking
+- Health management and penalties
+
 🚧 **Coming Soon**
-- Combat system
+- Auto-battle and idle combat
+- Boss battles and dungeons
 - Quests and storylines
-- Equipment and inventory management
-- Skills and abilities
+- Skills and abilities system
 - Achievements system
 - Multiplayer features
 

@@ -84,3 +84,66 @@ export interface Achievement {
   achievement_id: string
   unlocked_at: string
 }
+
+// Combat System Types
+export interface Enemy {
+  id: string
+  name: string
+  description?: string
+  level: number
+  health: number
+  attack: number
+  defense: number
+  experience_reward: number
+  gold_min: number
+  gold_max: number
+  loot_table: Record<string, number> // item_id -> drop probability
+  required_player_level: number
+  image_url?: string
+  created_at: string
+}
+
+export interface CombatLog {
+  id: string
+  character_id: string
+  enemy_id: string
+  victory: boolean
+  turns_taken: number
+  damage_dealt: number
+  damage_taken: number
+  experience_gained: number
+  gold_gained: number
+  items_looted: string[] // array of item_ids
+  combat_duration_ms?: number
+  started_at: string
+  ended_at: string
+}
+
+export interface ActiveCombat {
+  character_id: string
+  enemy_id: string
+  player_current_health: number
+  enemy_current_health: number
+  turn_number: number
+  combat_log: CombatAction[]
+  started_at: string
+  updated_at: string
+}
+
+export interface CombatAction {
+  turn: number
+  actor: 'player' | 'enemy'
+  action: 'attack' | 'critical' | 'miss' | 'defeat'
+  damage?: number
+  message: string
+}
+
+export interface CombatResult {
+  victory: boolean
+  experience: number
+  gold: number
+  loot: string[] // item_ids
+  damageDealt: number
+  damageTaken: number
+  turns: number
+}

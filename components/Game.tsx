@@ -5,11 +5,12 @@ import { useGameStore } from '@/lib/store'
 import { signOut } from '@/lib/auth'
 import { addExperience, addGold } from '@/lib/character'
 import Inventory from './Inventory'
+import Combat from './Combat'
 
 export default function Game() {
   const { user, profile, character, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'combat' | 'inventory'>('adventure')
 
   // Auto-save and idle progress
   useEffect(() => {
@@ -154,6 +155,16 @@ export default function Game() {
                   Adventure
                 </button>
                 <button
+                  onClick={() => setActiveTab('combat')}
+                  className={`pb-3 px-4 font-medium transition ${
+                    activeTab === 'combat'
+                      ? 'text-primary border-b-2 border-primary'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  ⚔️ Combat
+                </button>
+                <button
                   onClick={() => setActiveTab('inventory')}
                   className={`pb-3 px-4 font-medium transition ${
                     activeTab === 'inventory'
@@ -175,6 +186,8 @@ export default function Game() {
                     Watch your stats grow automatically!
                   </p>
                 </div>
+              ) : activeTab === 'combat' ? (
+                <Combat />
               ) : (
                 <Inventory />
               )}

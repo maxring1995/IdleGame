@@ -203,7 +203,12 @@ const channel = supabase
 - `auth.spec.ts` - Authentication flows
 - `signin.spec.ts` - Sign-in specific tests
 - `inventory.spec.ts` - Inventory operations
+- `combat.spec.ts` - Combat system flows
 - `full-flow.spec.ts` - End-to-end user journey
+
+**Unit Tests** (`lib/__tests__/`):
+- `auth.test.ts` - Authentication utilities
+- `combat.test.ts` - Combat damage/loot calculations
 
 **Test Configuration:**
 - Single worker (avoid race conditions with Supabase)
@@ -232,16 +237,37 @@ if (error) {
 5. Zustand store updated
 6. UI re-renders with new stats
 
-### Idle Mechanics (Future)
-The game is designed for idle mechanics. Add timers in `Game.tsx`:
+### Combat System Flow (Phase 3)
+1. User clicks Combat tab → `Combat.tsx` renders
+2. `getAvailableEnemies()` fetches enemies for player level
+3. User selects enemy → `startCombat()` creates `active_combat` record
+4. Combat loop:
+   - User clicks Attack → `executeTurn()`
+   - Damage calculated: `attackerAttack - (defenderDefense / 2)` with ±15% variance
+   - Health updated, combat log grows
+   - Repeat until victory/defeat
+5. Combat ends → `endCombat()` distributes rewards
+   - Victory: Award XP, gold, roll loot from probability table
+   - Defeat: Reduce health to 50% max
+6. Results shown in `VictoryModal`, then return to enemy selection
+
+**Key Functions** (`lib/combat.ts`):
+- `startCombat(characterId, enemyId)` - Initialize battle
+- `executeTurn(characterId)` - Process one attack round
+- `endCombat(characterId, victory)` - Distribute rewards/penalties
+- `calculateDamage(attack, defense)` - Damage formula with variance
+- `rollLoot(lootTable)` - Probability-based item drops
+
+### Idle Mechanics
+The game has idle XP/gold generation in `Game.tsx`:
 ```typescript
 useEffect(() => {
-  const interval = setInterval(() => {
-    // Calculate idle gains
-    // Update character
-  }, 1000)
+  const interval = setInterval(async () => {
+    await addExperience(character.id, 5)
+    await addGold(character.id, 10)
+  }, 5000) // Every 5 seconds
   return () => clearInterval(interval)
-}, [])
+}, [character])
 ```
 
 ## Troubleshooting
