@@ -225,3 +225,93 @@ export interface MaterialWithDetails extends Material {
   isLocked: boolean
   lockReason?: string
 }
+
+// Adventure System Types
+export interface WorldZone {
+  id: string
+  name: string
+  zone_type: 'safe_haven' | 'wilderness' | 'dungeon' | 'raid' | 'pvp'
+  danger_level: number
+  required_level: number
+  parent_zone_id?: string
+  climate?: string
+  biome?: string
+  is_hidden: boolean
+  discovery_method?: string
+  discovery_requirement_id?: string
+  ambient_sound?: string
+  weather_patterns?: Record<string, number>
+  time_of_day_effects?: Record<string, any>
+  description?: string
+  lore_text?: string
+  flavor_messages?: string[]
+  created_at: string
+}
+
+export interface ZoneLandmark {
+  id: string
+  zone_id: string
+  name: string
+  landmark_type: 'shrine' | 'ruins' | 'vendor' | 'dungeon_entrance' | 'vista' | 'quest_giver' | 'teleport' | 'lore' | 'crafting'
+  is_hidden: boolean
+  discovery_chance?: number
+  provides_service?: string
+  service_data?: Record<string, any>
+  description?: string
+  flavor_text?: string
+  created_at: string
+}
+
+export interface CharacterZoneDiscovery {
+  id: string
+  character_id: string
+  zone_id: string
+  discovered_at: string
+  total_time_spent: number
+}
+
+export interface CharacterLandmarkDiscovery {
+  id: string
+  character_id: string
+  landmark_id: string
+  discovered_at: string
+}
+
+export interface ZoneConnection {
+  id: string
+  from_zone_id: string
+  to_zone_id: string
+  connection_type: 'path' | 'gate' | 'portal' | 'teleport' | 'secret_passage'
+  base_travel_time: number
+  required_item_id?: string
+  required_skill_level?: number
+  is_hidden: boolean
+  available_conditions?: Record<string, any>
+  description?: string
+}
+
+export interface WorldState {
+  key: string
+  value: any
+  expires_at?: string
+  updated_at: string
+}
+
+// Extended types with discovery info
+export interface WorldZoneWithDiscovery extends WorldZone {
+  isDiscovered: boolean
+  discoveredAt?: string
+  timeSpent?: number
+}
+
+export interface ZoneLandmarkWithDiscovery extends ZoneLandmark {
+  isDiscovered: boolean
+  discoveredAt?: string
+}
+
+export interface ZoneDetails {
+  zone: WorldZone
+  landmarks: ZoneLandmarkWithDiscovery[]
+  connections: ZoneConnection[]
+  discoveryInfo?: CharacterZoneDiscovery
+}

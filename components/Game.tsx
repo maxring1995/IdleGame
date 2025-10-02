@@ -7,6 +7,7 @@ import Inventory from './Inventory'
 import Combat from './Combat'
 import GatheringSimple from './GatheringSimple'
 import CharacterTab from './CharacterTab'
+import Adventure from './Adventure'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
 
@@ -331,19 +332,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
             {/* Content Panel */}
             <div className="panel p-6 min-h-[700px]">
               {activeTab === 'adventure' ? (
-                <div className="text-center py-32">
-                  <div className="inline-block p-8 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 mb-6">
-                    <span className="text-8xl animate-float">🗺️</span>
-                  </div>
-                  <h2 className="text-3xl font-bold text-white mb-3 text-shadow">Adventure Awaits!</h2>
-                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                    Explore the vast world, discover hidden treasures, and embark on epic quests.
-                  </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
-                    <span className="animate-pulse">⏳</span>
-                    <span>Coming Soon</span>
-                  </div>
-                </div>
+                <Adventure />
               ) : activeTab === 'character' ? (
                 <CharacterTab />
               ) : activeTab === 'combat' ? (
