@@ -21,23 +21,12 @@ export default function Inventory() {
   const [inventory, setInventory] = useState<InventoryItemWithDetails[]>([])
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'equipment' | 'materials'>('equipment')
+  const [activeTab, setActiveTab] = useState<'equipment' | 'consumables' | 'materials'>('equipment')
 
   useEffect(() => {
     if (character) {
       loadInventory()
     }
-  }, [character])
-
-  // Poll inventory every 3 seconds to catch gathering updates
-  useEffect(() => {
-    if (!character) return
-
-    const interval = setInterval(() => {
-      loadInventory()
-    }, 3000)
-
-    return () => clearInterval(interval)
   }, [character])
 
   async function loadInventory() {
@@ -103,9 +92,14 @@ export default function Inventory() {
     )
   }
 
-  const equipmentItems = inventory.filter(i => i.item.type !== 'material')
+  const equipmentItems = inventory.filter(i => i.item.type === 'weapon' || i.item.type === 'armor')
+  const consumableItems = inventory.filter(i => i.item.type === 'consumable')
   const materialItems = inventory.filter(i => i.item.type === 'material')
-  const displayItems = activeTab === 'equipment' ? equipmentItems : materialItems
+  const displayItems = activeTab === 'equipment'
+    ? equipmentItems
+    : activeTab === 'consumables'
+      ? consumableItems
+      : materialItems
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -123,6 +117,16 @@ export default function Inventory() {
               }`}
             >
               Equipment ({equipmentItems.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('consumables')}
+              className={`px-3 py-1 rounded text-sm ${
+                activeTab === 'consumables'
+                  ? 'bg-primary text-black'
+                  : 'bg-bg-card text-gray-400 hover:text-white'
+              }`}
+            >
+              Consumables ({consumableItems.length})
             </button>
             <button
               onClick={() => setActiveTab('materials')}

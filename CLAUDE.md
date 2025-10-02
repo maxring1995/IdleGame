@@ -451,3 +451,446 @@ NODE_ENV=development
 - **Client-side auth** - Tokens managed by Supabase Auth
 - **Generated passwords** stored in localStorage (low-security design, intentional for ease-of-use)
 - **UUID primary keys** prevent enumeration attacks
+
+---
+
+## 🎨 UI/UX Design Patterns
+
+This project follows professional game UI/UX design patterns inspired by AAA RPGs (World of Warcraft, Diablo, Path of Exile). All components use a unified design system for consistency.
+
+### Design System Foundation
+
+**Location**: [app/globals.css](app/globals.css:1-327)
+
+#### Color Palette
+```css
+/* Primary Colors */
+--color-gold: #f59e0b;         /* Main accent color (buttons, highlights) */
+--color-crimson: #dc2626;      /* Danger, HP, attack */
+--color-emerald: #10b981;      /* Success, positive actions */
+--color-sapphire: #3b82f6;     /* Info, MP, defense */
+--color-amethyst: #a855f7;     /* Special, rare items */
+
+/* Layered Backgrounds (creates depth) */
+--bg-world: #0a0a0f;           /* Base background */
+--bg-panel: rgba(20, 20, 30, 0.95);   /* Main panels */
+--bg-card: rgba(30, 30, 45, 0.80);    /* Cards */
+--bg-glass: rgba(15, 15, 25, 0.70);   /* Glass effect overlays */
+```
+
+#### Component Classes
+
+**Panels** (containers for content):
+```html
+<div class="panel">          <!-- Standard panel with backdrop blur -->
+<div class="panel-glass">    <!-- Semi-transparent glass effect -->
+```
+
+**Cards** (individual items, smaller containers):
+```html
+<div class="card">           <!-- Basic card -->
+<div class="card-hover">     <!-- Card with hover lift effect -->
+```
+
+**Buttons**:
+```html
+<button class="btn btn-primary">     <!-- Gold gradient, main actions -->
+<button class="btn btn-secondary">   <!-- Gray, secondary actions -->
+<button class="btn btn-danger">      <!-- Red, destructive actions -->
+<button class="btn btn-success">     <!-- Green, positive actions -->
+```
+
+**Progress Bars**:
+```html
+<div class="progress-bar">
+  <div class="progress-fill bg-gradient-to-r from-red-500 to-red-600" style="width: 75%"></div>
+</div>
+<!-- Includes animated shimmer effect -->
+```
+
+**Badges** (labels, tags):
+```html
+<span class="badge badge-common">Common</span>
+<span class="badge badge-uncommon">Uncommon</span>
+<span class="badge badge-rare">Rare</span>
+<span class="badge badge-epic">Epic</span>
+<span class="badge badge-legendary">Legendary</span>
+```
+
+**Stat Boxes** (stat displays):
+```html
+<div class="stat-box">
+  <span class="text-gray-400">Attack</span>
+  <span class="text-red-400 font-bold">150</span>
+</div>
+```
+
+### Layout Patterns
+
+#### 1. MMO-Style Main Layout
+**File**: [components/Game.tsx](components/Game.tsx:44-344)
+
+**Structure**:
+- **Sticky Header** (lines 46-132): Always-visible character info, HP/MP/XP bars, resources
+- **3-Column Grid** (lines 136-341):
+  - **Left Sidebar** (25%): Character portrait, stats, quick actions
+  - **Main Content** (75%): Tabbed interface (Adventure, Combat, Gathering, Inventory)
+  - **Responsive**: Collapses to single column on mobile
+
+**Key Features**:
+```tsx
+// Sticky header with real-time stats
+<div className="sticky top-0 z-40 panel-glass border-b">
+  {/* Character info, HP/MP/XP bars */}
+</div>
+
+// Mesh gradient background for depth
+<div className="min-h-screen bg-mesh-gradient">
+```
+
+#### 2. Equipment Overlay Pattern
+**File**: [components/EquipmentOverlay.tsx](components/EquipmentOverlay.tsx:231-714)
+
+**Structure** (3-column modal):
+- **Left** (33%): Categorized equipment slots (Offense/Defense/Accessories)
+- **Middle** (42%): Available items with search/filter/sort
+- **Right** (25%): Stats summary, item comparison, tips
+
+**Key Features**:
+- Equipment completion progress bar
+- Smart slot filtering (click slot → filter compatible items)
+- Hover preview system
+- Multi-sort options (rarity, name, level, attack, defense)
+
+#### 3. Combat Battle Arena
+**File**: [components/Combat.tsx](components/Combat.tsx:186-444)
+
+**Structure**:
+- **Battle Header** (lines 197-244): Enemy info, auto-battle toggle
+- **2-Column Combatants** (lines 247-389): Player vs Enemy cards
+- **Combat Log** (lines 392-398): Scrollable action history
+- **Attack Controls** (lines 401-433): Large centered button with animations
+
+**Visual Design**:
+```tsx
+// Grid pattern background for arena feel
+<div className="bg-[url('data:image/svg+xml...')]">
+
+// Color-coded health bars
+{playerHealthPercent <= 25 ? 'bg-red-600' : 'bg-green-500'}
+
+// Boss encounter styling
+{currentEnemy.is_boss && (
+  <div className="border-purple-500 bg-gradient-to-br from-purple-950/40">
+)}
+```
+
+#### 4. Inventory Grid System
+**File**: [components/Inventory.tsx](components/Inventory.tsx:188-489)
+
+**Structure**:
+- **Controls Bar** (lines 200-291): Tabs, search, sort, filter
+- **2-Column Layout** (lines 294-486):
+  - **Item Grid** (67%): 6-column responsive grid (lines 303-363)
+  - **Details Panel** (33%): Sticky item details with actions (lines 368-478)
+
+**Grid Features**:
+```tsx
+// Responsive grid (3→4→5→6 columns)
+<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+
+// Rarity-based styling
+<button className={`
+  ${getRarityBorder(item.rarity)}
+  ${getRarityBg(item.rarity)}
+  ${isSelected ? 'ring-2 ring-amber-500 scale-105' : ''}
+`}>
+```
+
+### Interaction Patterns
+
+#### Search, Filter & Sort
+**Implementation**: All list views (Inventory, Equipment)
+
+```tsx
+// State management
+const [searchQuery, setSearchQuery] = useState('')
+const [filterBy, setFilterBy] = useState<FilterOption>('all')
+const [sortBy, setSortBy] = useState<SortOption>('rarity')
+
+// Filter function
+function filterItems(items: Item[]) {
+  return items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesFilter = filterBy === 'all' || item.type === filterBy
+    return matchesSearch && matchesFilter
+  })
+}
+
+// Sort function (rarity example)
+function sortItems(items: Item[]) {
+  return [...items].sort((a, b) =>
+    getRarityValue(b.rarity) - getRarityValue(a.rarity)
+  )
+}
+```
+
+#### Hover Preview System
+**Implementation**: Equipment Overlay (lines 519, 623-679)
+
+```tsx
+// State
+const [compareItem, setCompareItem] = useState<Item | null>(null)
+
+// Trigger on hover
+<button onMouseEnter={() => setCompareItem(item)}>
+
+// Display in sidebar
+{compareItem && (
+  <div className="panel p-4">
+    {/* Full item details */}
+  </div>
+)}
+```
+
+#### Auto-Refresh Polling
+**Implementation**: Gathering, Combat
+
+```tsx
+useEffect(() => {
+  if (!character) return
+
+  const interval = setInterval(async () => {
+    const { data } = await checkProgress(character.id)
+    if (data) setActiveSession(data)
+  }, 1000) // Poll every second
+
+  return () => clearInterval(interval)
+}, [character])
+```
+
+### Visual Feedback Patterns
+
+#### 1. Loading States
+```tsx
+// Spinner
+<div className="flex items-center justify-center py-20">
+  <div className="w-16 h-16 border-4 border-amber-500/30 border-t-amber-500
+                  rounded-full animate-spin"></div>
+  <p className="text-gray-400">Loading...</p>
+</div>
+```
+
+#### 2. Empty States
+```tsx
+// Engaging empty state
+<div className="text-center py-32">
+  <div className="inline-block p-8 rounded-2xl bg-gradient-to-br
+                  from-amber-500/10 to-amber-600/5 border border-amber-500/20 mb-6">
+    <span className="text-8xl animate-float">🗺️</span>
+  </div>
+  <h2 className="text-3xl font-bold text-white mb-3">Adventure Awaits!</h2>
+  <p className="text-gray-400">Explore the vast world...</p>
+</div>
+```
+
+#### 3. Error Messages
+```tsx
+// Error banner
+<div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4
+                text-red-400 flex items-center gap-3 animate-pulse">
+  <span className="text-2xl">⚠️</span>
+  <span>{error}</span>
+</div>
+```
+
+#### 4. Success Feedback
+```tsx
+// Success badge on item
+{item.equipped && (
+  <div className="absolute top-1 right-1 w-3 h-3 bg-emerald-500
+                  rounded-full border-2 border-white shadow-lg"></div>
+)}
+```
+
+### Animation & Transitions
+
+**Timing Functions** (globals.css:82-84):
+```css
+--transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+--transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+--transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+```
+
+**Common Animations**:
+```css
+/* Floating effect (Coming Soon badges) */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Slow pulse (active indicators) */
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Progress bar shimmer */
+.progress-fill::after {
+  animation: shimmer 2s infinite;
+}
+```
+
+**Hover Effects**:
+```tsx
+// Card lift on hover
+<div className="card-hover">  {/* Auto-applies transform: translateY(-2px) */}
+
+// Button glow effect
+<button className="group">
+  <div className="absolute inset-0 bg-gradient-to-r from-transparent
+                  via-white/20 to-transparent translate-x-[-100%]
+                  group-hover:translate-x-[100%] transition-transform duration-700"></div>
+</button>
+```
+
+### Typography & Iconography
+
+#### Font Scale (globals.css:54-62)
+```css
+--font-xs: 0.6875rem;   /* 11px - Labels, metadata */
+--font-sm: 0.8125rem;   /* 13px - Body text, descriptions */
+--font-base: 0.9375rem; /* 15px - Default text */
+--font-lg: 1.0625rem;   /* 17px - Subheadings */
+--font-xl: 1.25rem;     /* 20px - Headings */
+--font-2xl: 1.5rem;     /* 24px - Large headings */
+--font-3xl: 2rem;       /* 32px - Hero text */
+--font-4xl: 2.5rem;     /* 40px - Display text */
+```
+
+#### Text Effects
+```tsx
+// Text shadow for readability
+<h1 className="text-shadow">Title</h1>
+<h1 className="text-shadow-lg">Large Title</h1>
+
+// Glowing text
+<span className="text-glow-gold">Legendary Item</span>
+<span className="text-glow-crimson">Critical Hit!</span>
+```
+
+#### Emoji Usage
+**Consistent icon mapping**:
+- ⚔️ Attack, Combat, Weapons
+- 🛡️ Defense, Armor
+- ❤️ Health, HP
+- 💧 Mana, MP
+- 💰 Gold, Currency
+- 💎 Gems, Premium
+- 🪓 Woodcutting
+- ⛏️ Mining
+- 🎣 Fishing
+- 🏹 Hunting
+- 🧪 Alchemy
+- ✨ Magic
+- 👑 Boss encounters
+
+### Responsive Design Strategy
+
+**Breakpoints** (Tailwind defaults):
+- `sm:` 640px
+- `md:` 768px
+- `lg:` 1024px
+- `xl:` 1280px
+
+**Mobile-First Pattern**:
+```tsx
+// Stack on mobile, side-by-side on desktop
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+// Hide on mobile, show on desktop
+<div className="hidden lg:flex">
+
+// Different column counts by screen size
+<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+```
+
+### Best Practices
+
+#### 1. **Consistency**
+- Always use design system classes (`.panel`, `.card`, `.btn-*`)
+- Match existing color schemes for similar features
+- Use established icon mappings (⚔️ = attack, 🛡️ = defense)
+
+#### 2. **Performance**
+- Use CSS variables for theme colors (easy to change globally)
+- Leverage GPU acceleration for animations (transform, opacity)
+- Implement polling intervals carefully (1-3 seconds typical)
+
+#### 3. **Accessibility**
+- Minimum contrast ratio 4.5:1 for text
+- Minimum click target size: 44x44px (touch-friendly)
+- Focus states on all interactive elements
+- Semantic HTML structure
+
+#### 4. **Visual Hierarchy**
+- Use size, color, and spacing to create importance
+- Group related items together
+- Provide breathing room with consistent spacing
+- Use contrast to draw attention
+
+#### 5. **Error Prevention**
+- Disable buttons during loading states
+- Show clear requirements before actions (level requirements)
+- Confirm destructive actions (flee combat, delete items)
+
+### Common Rarity Color System
+
+Used consistently across all item types:
+
+```tsx
+function getRarityColor(rarity: string) {
+  switch (rarity) {
+    case 'common': return 'text-gray-400'
+    case 'uncommon': return 'text-green-400'
+    case 'rare': return 'text-blue-400'
+    case 'epic': return 'text-purple-400'
+    case 'legendary': return 'text-yellow-400'
+    default: return 'text-white'
+  }
+}
+
+function getRarityBorder(rarity: string) {
+  switch (rarity) {
+    case 'common': return 'border-gray-500/50'
+    case 'uncommon': return 'border-green-500/50'
+    case 'rare': return 'border-blue-500/50'
+    case 'epic': return 'border-purple-500/50'
+    case 'legendary': return 'border-yellow-500/50'
+    default: return 'border-white/10'
+  }
+}
+```
+
+### Adding New Features
+
+When implementing new game features:
+
+1. **Follow the pattern** of existing similar components
+2. **Use design system classes** instead of custom styles
+3. **Implement all feedback states**: loading, empty, error, success
+4. **Add responsive design** from the start
+5. **Test hover/focus states** on all interactive elements
+6. **Match color schemes** to feature type (combat=red, gathering=green, etc.)
+7. **Include helpful empty states** with engaging visuals
+
+**Example New Feature Checklist**:
+- [ ] Uses `.panel` or `.card` for containers
+- [ ] Has loading spinner for async actions
+- [ ] Shows helpful empty state when no data
+- [ ] Displays errors with red banner + icon
+- [ ] Includes hover states on all buttons/cards
+- [ ] Works on mobile (tested at 640px width)
+- [ ] Uses established color scheme
+- [ ] Follows spacing system (gap-3, gap-4, gap-6)
+- [ ] Has proper text hierarchy (sizes, weights)
+- [ ] Icons/emojis match existing patterns

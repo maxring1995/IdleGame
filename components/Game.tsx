@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useGameStore } from '@/lib/store'
 import { signOut } from '@/app/actions'
-import { addExperience, addGold } from '@/lib/character'
 import Inventory from './Inventory'
 import Combat from './Combat'
 import GatheringSimple from './GatheringSimple'
+import CharacterTab from './CharacterTab'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
 
@@ -19,9 +19,8 @@ interface GameProps {
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'combat' | 'gathering' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'inventory'>('adventure')
 
-  // Initialize store with server data
   useEffect(() => {
     if (!user) {
       setUser(initialUser)
@@ -29,23 +28,6 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
       setCharacter(initialCharacter)
     }
   }, [initialUser, initialProfile, initialCharacter, user, setUser, setProfile, setCharacter])
-
-  // Auto-save and idle progress
-  useEffect(() => {
-    if (!character) return
-
-    const interval = setInterval(async () => {
-      // Add idle experience and gold every 5 seconds
-      const { data } = await addExperience(character.id, 5)
-      if (data) {
-        setCharacter(data)
-      }
-
-      await addGold(character.id, 10)
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [character])
 
   async function handleSignOut() {
     setIsLoading(true)
@@ -57,162 +39,313 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
   const experienceForNextLevel = character.level * 100
   const experienceProgress = (character.experience / experienceForNextLevel) * 100
+  const healthPercent = (character.health / character.max_health) * 100
+  const manaPercent = (character.mana / character.max_mana) * 100
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-bg-panel rounded-lg p-6 mb-6 backdrop-blur-xl border border-white/10">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-primary">{character.name}</h1>
-              <p className="text-gray-400">
-                {profile?.username} • Level {character.level}
-              </p>
+    <div className="min-h-screen bg-mesh-gradient">
+      {/* Top Navigation Bar - Always visible */}
+      <div className="sticky top-0 z-40 panel-glass border-b">
+        <div className="max-w-[1920px] mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            {/* Left: Character Identity */}
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
+                {character.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-white text-shadow">{character.name}</h1>
+                  <span className="badge badge-uncommon">Lv. {character.level}</span>
+                </div>
+                <p className="text-xs text-gray-400">{profile?.username}</p>
+              </div>
             </div>
-            <button
-              onClick={handleSignOut}
-              disabled={isLoading}
-              className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition disabled:opacity-50"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Character Stats */}
-          <div className="lg:col-span-1">
-            <div className="bg-bg-panel rounded-lg p-6 backdrop-blur-xl border border-white/10">
-              <h2 className="text-xl font-bold text-primary mb-4">Character Stats</h2>
-
-              {/* Health Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">❤️ Health</span>
-                  <span className="text-green-400">
-                    {character.health} / {character.max_health}
-                  </span>
-                </div>
-                <div className="w-full bg-bg-dark rounded-full h-3 overflow-hidden">
+            {/* Center: Quick Stats */}
+            <div className="hidden lg:flex items-center gap-6">
+              {/* HP */}
+              <div className="flex items-center gap-2 min-w-[180px]">
+                <span className="text-xs font-semibold text-red-400">HP</span>
+                <div className="flex-1 progress-bar h-4">
                   <div
-                    className="bg-green-500 h-full transition-all duration-300"
-                    style={{ width: `${(character.health / character.max_health) * 100}%` }}
+                    className="progress-fill bg-gradient-to-r from-red-500 to-red-600"
+                    style={{ width: `${healthPercent}%` }}
                   />
                 </div>
+                <span className="text-xs font-mono text-gray-300 min-w-[60px] text-right">
+                  {character.health}/{character.max_health}
+                </span>
               </div>
 
-              {/* Mana Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">💧 Mana</span>
-                  <span className="text-blue-400">
-                    {character.mana} / {character.max_mana}
-                  </span>
-                </div>
-                <div className="w-full bg-bg-dark rounded-full h-3 overflow-hidden">
+              {/* MP */}
+              <div className="flex items-center gap-2 min-w-[180px]">
+                <span className="text-xs font-semibold text-blue-400">MP</span>
+                <div className="flex-1 progress-bar h-4">
                   <div
-                    className="bg-blue-500 h-full transition-all duration-300"
-                    style={{ width: `${(character.mana / character.max_mana) * 100}%` }}
+                    className="progress-fill bg-gradient-to-r from-blue-500 to-blue-600"
+                    style={{ width: `${manaPercent}%` }}
                   />
                 </div>
+                <span className="text-xs font-mono text-gray-300 min-w-[60px] text-right">
+                  {character.mana}/{character.max_mana}
+                </span>
               </div>
 
-              {/* Experience Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">⭐ Experience</span>
-                  <span className="text-primary">
-                    {character.experience} / {experienceForNextLevel}
-                  </span>
-                </div>
-                <div className="w-full bg-bg-dark rounded-full h-3 overflow-hidden">
+              {/* XP */}
+              <div className="flex items-center gap-2 min-w-[180px]">
+                <span className="text-xs font-semibold text-amber-400">XP</span>
+                <div className="flex-1 progress-bar h-4">
                   <div
-                    className="bg-primary h-full transition-all duration-300"
+                    className="progress-fill bg-gradient-to-r from-amber-500 to-amber-600"
                     style={{ width: `${experienceProgress}%` }}
                   />
                 </div>
+                <span className="text-xs font-mono text-gray-300 min-w-[70px] text-right">
+                  {Math.floor(experienceProgress)}%
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Resources & Actions */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-lg">💰</span>
+                  <span className="text-sm font-bold text-amber-400">{character.gold.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                  <span className="text-lg">💎</span>
+                  <span className="text-sm font-bold text-purple-400">{character.gems}</span>
+                </div>
               </div>
 
-              {/* Stats Grid */}
+              <button
+                onClick={handleSignOut}
+                disabled={isLoading}
+                className="btn btn-secondary text-xs px-3 py-1.5"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Game Layout */}
+      <div className="max-w-[1920px] mx-auto px-6 py-6">
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left Sidebar - Character Stats */}
+          <div className="col-span-12 lg:col-span-3 space-y-4">
+            {/* Character Portrait */}
+            <div className="panel p-6 text-center">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 flex items-center justify-center text-6xl font-bold text-white shadow-xl">
+                {character.name.charAt(0).toUpperCase()}
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-1 text-shadow">{character.name}</h2>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <span className="badge badge-uncommon">Level {character.level}</span>
+              </div>
+
+              {/* Mobile Stats (XP, HP, MP) */}
+              <div className="lg:hidden space-y-3 mt-4">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-red-400 font-semibold">Health</span>
+                    <span className="text-gray-300">{character.health} / {character.max_health}</span>
+                  </div>
+                  <div className="progress-bar h-4">
+                    <div
+                      className="progress-fill bg-gradient-to-r from-red-500 to-red-600"
+                      style={{ width: `${healthPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-blue-400 font-semibold">Mana</span>
+                    <span className="text-gray-300">{character.mana} / {character.max_mana}</span>
+                  </div>
+                  <div className="progress-bar h-4">
+                    <div
+                      className="progress-fill bg-gradient-to-r from-blue-500 to-blue-600"
+                      style={{ width: `${manaPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-amber-400 font-semibold">Experience</span>
+                    <span className="text-gray-300">{character.experience} / {experienceForNextLevel}</span>
+                  </div>
+                  <div className="progress-bar h-4">
+                    <div
+                      className="progress-fill bg-gradient-to-r from-amber-500 to-amber-600"
+                      style={{ width: `${experienceProgress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Combat Stats */}
+            <div className="panel p-5">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Combat Stats</h3>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">⚔️ Attack</span>
-                  <span className="text-red-400 font-bold">{character.attack}</span>
+                <div className="stat-box">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">⚔️</span>
+                    <span className="text-sm text-gray-400">Attack</span>
+                  </div>
+                  <span className="text-lg font-bold text-red-400">{character.attack}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">🛡️ Defense</span>
-                  <span className="text-yellow-400 font-bold">{character.defense}</span>
+
+                <div className="stat-box">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🛡️</span>
+                    <span className="text-sm text-gray-400">Defense</span>
+                  </div>
+                  <span className="text-lg font-bold text-blue-400">{character.defense}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">💰 Gold</span>
-                  <span className="text-primary font-bold">{character.gold.toLocaleString()}</span>
+
+                <div className="stat-box">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">❤️</span>
+                    <span className="text-sm text-gray-400">Max HP</span>
+                  </div>
+                  <span className="text-lg font-bold text-green-400">{character.max_health}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">💎 Gems</span>
-                  <span className="text-purple-400 font-bold">{character.gems}</span>
+
+                <div className="stat-box">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">💧</span>
+                    <span className="text-sm text-gray-400">Max MP</span>
+                  </div>
+                  <span className="text-lg font-bold text-cyan-400">{character.max_mana}</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="panel p-4">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
+                  <span className="mr-2">🏪</span>
+                  <span>Shop</span>
+                  <span className="ml-auto badge badge-common text-xs">Soon</span>
+                </button>
+                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
+                  <span className="mr-2">📜</span>
+                  <span>Quests</span>
+                  <span className="ml-auto badge badge-common text-xs">Soon</span>
+                </button>
+                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
+                  <span className="mr-2">🏆</span>
+                  <span>Achievements</span>
+                  <span className="ml-auto badge badge-common text-xs">Soon</span>
+                </button>
               </div>
             </div>
           </div>
 
           {/* Main Content Area */}
-          <div className="lg:col-span-2">
-            <div className="bg-bg-panel rounded-lg p-6 backdrop-blur-xl border border-white/10 min-h-[600px]">
-              {/* Tabs */}
-              <div className="flex gap-4 mb-6 border-b border-white/10 overflow-x-auto">
+          <div className="col-span-12 lg:col-span-9">
+            {/* Tab Navigation */}
+            <div className="panel mb-6 p-2">
+              <div className="flex gap-2 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('adventure')}
-                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'adventure'
-                      ? 'text-primary border-b-2 border-primary'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-gray-900 shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
                   }`}
                 >
-                  🗺️ Adventure
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">🗺️</span>
+                    <span className="text-sm">Adventure</span>
+                  </div>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('character')}
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
+                    activeTab === 'character'
+                      ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">👤</span>
+                    <span className="text-sm">Character</span>
+                  </div>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('combat')}
-                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'combat'
-                      ? 'text-primary border-b-2 border-primary'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-gradient-to-b from-red-500 to-red-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
                   }`}
                 >
-                  ⚔️ Combat
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">⚔️</span>
+                    <span className="text-sm">Combat</span>
+                  </div>
                 </button>
+
                 <button
                   onClick={() => setActiveTab('gathering')}
-                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'gathering'
-                      ? 'text-primary border-b-2 border-primary'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
                   }`}
                 >
-                  🌾 Gathering
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">🌾</span>
+                    <span className="text-sm">Gathering</span>
+                  </div>
                 </button>
+
                 <button
                   onClick={() => setActiveTab('inventory')}
-                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'inventory'
-                      ? 'text-primary border-b-2 border-primary'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-gradient-to-b from-purple-500 to-purple-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
                   }`}
                 >
-                  🎒 Inventory
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">🎒</span>
+                    <span className="text-sm">Inventory</span>
+                  </div>
                 </button>
               </div>
+            </div>
 
-              {/* Tab Content */}
+            {/* Content Panel */}
+            <div className="panel p-6 min-h-[700px]">
               {activeTab === 'adventure' ? (
-                <div className="text-center py-20 text-gray-400">
-                  <p className="text-lg mb-2">🎮 Game Features Coming Soon!</p>
-                  <p className="text-sm">
-                    Your character is earning idle experience and gold.
-                    <br />
-                    Watch your stats grow automatically!
+                <div className="text-center py-32">
+                  <div className="inline-block p-8 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 mb-6">
+                    <span className="text-8xl animate-float">🗺️</span>
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-3 text-shadow">Adventure Awaits!</h2>
+                  <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                    Explore the vast world, discover hidden treasures, and embark on epic quests.
                   </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
+                    <span className="animate-pulse">⏳</span>
+                    <span>Coming Soon</span>
+                  </div>
                 </div>
+              ) : activeTab === 'character' ? (
+                <CharacterTab />
               ) : activeTab === 'combat' ? (
                 <Combat />
               ) : activeTab === 'gathering' ? (

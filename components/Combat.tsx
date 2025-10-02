@@ -21,15 +21,12 @@ export default function Combat() {
   const [autoAttack, setAutoAttack] = useState(false)
   const [autoAttackInterval, setAutoAttackInterval] = useState<NodeJS.Timeout | null>(null)
 
-  // Check for existing combat on load
   useEffect(() => {
     checkActiveCombat()
   }, [character])
 
-  // Auto-attack effect
   useEffect(() => {
     if (autoAttack && activeCombat && !combatResult && !isAttacking) {
-      // Start auto-attack with 2 second intervals
       const interval = setInterval(() => {
         handleAttack()
       }, 2000)
@@ -40,13 +37,11 @@ export default function Combat() {
         clearInterval(interval)
       }
     } else if (autoAttackInterval) {
-      // Clean up interval when auto-attack is disabled or combat ends
       clearInterval(autoAttackInterval)
       setAutoAttackInterval(null)
     }
   }, [autoAttack, activeCombat, combatResult, isAttacking])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (autoAttackInterval) {
@@ -61,7 +56,6 @@ export default function Combat() {
     const { data } = await getActiveCombat(character.id)
 
     if (data) {
-      // Resume active combat
       setActiveCombat(data)
       const { data: enemy } = await getEnemyById(data.enemy_id)
       setCurrentEnemy(enemy)
@@ -106,7 +100,6 @@ export default function Combat() {
       setActiveCombat(data.combat)
 
       if (data.isOver) {
-        // Combat ended, get results
         const { data: result, error: endErr } = await endCombat(character.id, data.victory!)
 
         if (endErr) {
@@ -114,7 +107,6 @@ export default function Combat() {
         } else if (result) {
           setCombatResult(result)
 
-          // Update character health in global state
           const { data: updatedChar } = await getCharacter(character.user_id)
 
           if (updatedChar) {
@@ -131,7 +123,7 @@ export default function Combat() {
     setCombatResult(null)
     setActiveCombat(null)
     setCurrentEnemy(null)
-    setAutoAttack(false) // Disable auto-attack when returning to selection
+    setAutoAttack(false)
     setView('selection')
   }
 
@@ -151,6 +143,7 @@ export default function Combat() {
       await abandonCombat(character.id)
       setActiveCombat(null)
       setCurrentEnemy(null)
+      setAutoAttack(false)
       setView('selection')
     }
   }
@@ -166,10 +159,11 @@ export default function Combat() {
   // Enemy Selection View
   if (view === 'selection') {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {error && (
-          <div className="bg-red-900/20 border border-red-400/30 rounded-lg p-4 text-red-400">
-            {error}
+          <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 text-red-400 flex items-center gap-3">
+            <span className="text-2xl">⚠️</span>
+            <span>{error}</span>
           </div>
         )}
         <EnemyList onSelectEnemy={handleSelectEnemy} />
@@ -179,7 +173,11 @@ export default function Combat() {
 
   // Active Combat View
   if (!activeCombat || !currentEnemy) {
-    return <div className="text-center text-gray-400">Loading combat...</div>
+    return (
+      <div className="text-center text-gray-400 py-12">
+        <div className="animate-pulse">Loading combat...</div>
+      </div>
+    )
   }
 
   const playerHealthPercent = (activeCombat.player_current_health / character.max_health) * 100
@@ -189,119 +187,201 @@ export default function Combat() {
     <div className="space-y-6">
       {/* Error Display */}
       {error && (
-        <div className="bg-red-900/20 border border-red-400/30 rounded-lg p-4 text-red-400">
-          {error}
+        <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 text-red-400 flex items-center gap-3 animate-pulse">
+          <span className="text-2xl">⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Combat Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          {currentEnemy.is_boss ? '👑' : '⚔️'} Battle: {currentEnemy.name}
-          {currentEnemy.is_boss && (
-            <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">BOSS</span>
-          )}
-        </h2>
-        <div className="flex gap-2 items-center">
-          {/* Auto-Attack Toggle */}
-          <label className="flex items-center gap-2 px-3 py-1 bg-gray-700 rounded cursor-pointer hover:bg-gray-600">
-            <input
-              type="checkbox"
-              checked={autoAttack}
-              onChange={(e) => setAutoAttack(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm text-gray-300">Auto-Attack</span>
-          </label>
-          <button
-            onClick={handleAbandon}
-            className="px-3 py-1 text-sm bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
-          >
-            Flee
-          </button>
+      {/* Battle Arena Header */}
+      <div className="relative overflow-hidden rounded-xl border border-red-500/30 bg-gradient-to-br from-red-950/40 via-gray-900 to-gray-950 p-6">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {currentEnemy.is_boss && (
+              <div className="animate-pulse">
+                <span className="text-4xl">👑</span>
+              </div>
+            )}
+            <div>
+              <h2 className={`text-3xl font-bold mb-1 text-shadow-lg ${
+                currentEnemy.is_boss ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400' : 'text-white'
+              }`}>
+                {currentEnemy.name}
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="badge badge-rare">Level {currentEnemy.level}</span>
+                {currentEnemy.is_boss && (
+                  <span className="badge badge-epic animate-pulse-slow">BOSS ENCOUNTER</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Auto-Attack Toggle */}
+            <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900/60 border border-gray-700/50 cursor-pointer hover:bg-gray-800/80 transition-all">
+              <input
+                type="checkbox"
+                checked={autoAttack}
+                onChange={(e) => setAutoAttack(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-gray-900"
+              />
+              <span className="text-sm font-medium text-gray-300">Auto Battle</span>
+              {autoAttack && <span className="animate-pulse text-amber-400">⚡</span>}
+            </label>
+
+            <button
+              onClick={handleAbandon}
+              className="btn btn-secondary text-sm"
+            >
+              <span className="mr-1">🏃</span>
+              Flee
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Combatants Display */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Player */}
-        <div className="bg-gray-800 rounded-lg p-4 border-2 border-blue-500/50">
-          <div className="text-center mb-3">
-            <div className="text-4xl mb-2">🛡️</div>
-            <h3 className="text-lg font-semibold text-white">{character.name}</h3>
-            <div className="text-sm text-gray-400">Level {character.level}</div>
-          </div>
+      {/* Battle Arena - Combatants */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Player Card */}
+        <div className="relative">
+          <div className={`card-hover p-6 border-2 ${
+            playerHealthPercent <= 25 ? 'border-red-500/70 animate-pulse' : 'border-blue-500/50'
+          }`}>
+            {/* Character Badge */}
+            <div className="absolute -top-3 left-6 px-3 py-1 bg-blue-600 rounded-lg text-xs font-bold text-white shadow-lg">
+              YOU
+            </div>
 
-          <div className="space-y-2">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Health</span>
-                <span className="text-white">
-                  {activeCombat.player_current_health} / {character.max_health}
-                </span>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-xl">
+                <span className="text-4xl">🛡️</span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className="bg-green-500 h-3 rounded-full transition-all"
-                  style={{ width: `${playerHealthPercent}%` }}
-                />
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-white mb-1 text-shadow">{character.name}</h3>
+                <span className="badge badge-uncommon">Level {character.level}</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-              <div className="bg-gray-900 rounded p-2">
-                <div className="text-gray-400 text-xs">Attack</div>
-                <div className="text-white font-semibold">{character.attack}</div>
+            {/* Health Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-red-400">Health</span>
+                <span className="text-sm font-mono text-gray-300">
+                  {activeCombat.player_current_health.toLocaleString()} / {character.max_health.toLocaleString()}
+                </span>
               </div>
-              <div className="bg-gray-900 rounded p-2">
-                <div className="text-gray-400 text-xs">Defense</div>
-                <div className="text-white font-semibold">{character.defense}</div>
+              <div className="progress-bar h-6">
+                <div
+                  className={`progress-fill ${
+                    playerHealthPercent <= 25
+                      ? 'bg-gradient-to-r from-red-600 to-red-700'
+                      : 'bg-gradient-to-r from-green-500 to-green-600'
+                  }`}
+                  style={{ width: `${playerHealthPercent}%` }}
+                />
+              </div>
+              <div className="mt-1 text-xs text-gray-500 text-right">
+                {Math.floor(playerHealthPercent)}%
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="stat-box">
+                <div>
+                  <div className="text-xs text-gray-500">Attack</div>
+                  <div className="text-xl font-bold text-red-400">{character.attack}</div>
+                </div>
+                <span className="text-2xl">⚔️</span>
+              </div>
+              <div className="stat-box">
+                <div>
+                  <div className="text-xs text-gray-500">Defense</div>
+                  <div className="text-xl font-bold text-blue-400">{character.defense}</div>
+                </div>
+                <span className="text-2xl">🛡️</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Enemy */}
-        <div className={`rounded-lg p-4 border-2 ${
-          currentEnemy.is_boss
-            ? 'bg-gradient-to-br from-purple-900/40 to-gray-800 border-purple-500/70'
-            : 'bg-gray-800 border-red-500/50'
-        }`}>
-          <div className="text-center mb-3">
-            <div className="text-4xl mb-2">{currentEnemy.is_boss ? '👑' : '👹'}</div>
-            <h3 className={`text-lg font-semibold ${currentEnemy.is_boss ? 'text-purple-300' : 'text-white'}`}>
-              {currentEnemy.name}
-            </h3>
-            <div className="text-sm text-gray-400">
-              Level {currentEnemy.level}
-              {currentEnemy.is_boss && <span className="ml-2 text-purple-400 font-semibold">BOSS</span>}
+        {/* Enemy Card */}
+        <div className="relative">
+          <div className={`card-hover p-6 border-2 ${
+            currentEnemy.is_boss
+              ? 'border-purple-500/70 bg-gradient-to-br from-purple-950/40 to-gray-900'
+              : enemyHealthPercent <= 25
+                ? 'border-red-500/70 animate-pulse'
+                : 'border-red-500/50'
+          }`}>
+            {/* Enemy Badge */}
+            <div className={`absolute -top-3 right-6 px-3 py-1 rounded-lg text-xs font-bold text-white shadow-lg ${
+              currentEnemy.is_boss ? 'bg-purple-600' : 'bg-red-600'
+            }`}>
+              ENEMY
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Health</span>
-                <span className="text-white">
-                  {activeCombat.enemy_current_health} / {currentEnemy.health}
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`w-20 h-20 rounded-xl flex items-center justify-center shadow-xl ${
+                currentEnemy.is_boss
+                  ? 'bg-gradient-to-br from-purple-600 to-purple-800'
+                  : 'bg-gradient-to-br from-red-600 to-red-800'
+              }`}>
+                <span className="text-4xl">{currentEnemy.is_boss ? '👑' : '👹'}</span>
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-2xl font-bold mb-1 text-shadow ${
+                  currentEnemy.is_boss ? 'text-purple-300' : 'text-white'
+                }`}>
+                  {currentEnemy.name}
+                </h3>
+                <span className={currentEnemy.is_boss ? 'badge badge-epic' : 'badge badge-rare'}>
+                  Level {currentEnemy.level}
                 </span>
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
+            </div>
+
+            {/* Health Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-red-400">Health</span>
+                <span className="text-sm font-mono text-gray-300">
+                  {activeCombat.enemy_current_health.toLocaleString()} / {currentEnemy.health.toLocaleString()}
+                </span>
+              </div>
+              <div className="progress-bar h-6">
                 <div
-                  className="bg-red-500 h-3 rounded-full transition-all"
+                  className={`progress-fill ${
+                    currentEnemy.is_boss
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-600'
+                      : 'bg-gradient-to-r from-red-500 to-red-600'
+                  }`}
                   style={{ width: `${enemyHealthPercent}%` }}
                 />
               </div>
+              <div className="mt-1 text-xs text-gray-500 text-right">
+                {Math.floor(enemyHealthPercent)}%
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-              <div className="bg-gray-900 rounded p-2">
-                <div className="text-gray-400 text-xs">Attack</div>
-                <div className="text-white font-semibold">{currentEnemy.attack}</div>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="stat-box">
+                <div>
+                  <div className="text-xs text-gray-500">Attack</div>
+                  <div className="text-xl font-bold text-red-400">{currentEnemy.attack}</div>
+                </div>
+                <span className="text-2xl">⚔️</span>
               </div>
-              <div className="bg-gray-900 rounded p-2">
-                <div className="text-gray-400 text-xs">Defense</div>
-                <div className="text-white font-semibold">{currentEnemy.defense}</div>
+              <div className="stat-box">
+                <div>
+                  <div className="text-xs text-gray-500">Defense</div>
+                  <div className="text-xl font-bold text-blue-400">{currentEnemy.defense}</div>
+                </div>
+                <span className="text-2xl">🛡️</span>
               </div>
             </div>
           </div>
@@ -309,16 +389,46 @@ export default function Combat() {
       </div>
 
       {/* Combat Log */}
-      <CombatLog actions={activeCombat.combat_log || []} />
+      <div className="card p-5">
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <span>⚔️</span>
+          <span>Battle Log</span>
+        </h3>
+        <CombatLog actions={activeCombat.combat_log || []} />
+      </div>
 
-      {/* Attack Button */}
+      {/* Attack Controls */}
       <div className="flex justify-center">
         <button
           onClick={handleAttack}
           disabled={isAttacking || autoAttack}
-          className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed font-semibold text-lg transition-colors"
+          className={`relative overflow-hidden group ${
+            autoAttack
+              ? 'btn btn-secondary text-lg px-12 py-4 cursor-not-allowed opacity-60'
+              : 'btn btn-danger text-lg px-12 py-4 transform hover:scale-105 active:scale-95'
+          }`}
         >
-          {autoAttack ? '⚡ Auto-Attacking...' : isAttacking ? 'Attacking...' : '⚔️ Attack'}
+          {autoAttack ? (
+            <>
+              <span className="mr-2 animate-pulse">⚡</span>
+              <span>Auto Battle Active</span>
+            </>
+          ) : isAttacking ? (
+            <>
+              <span className="mr-2 animate-spin inline-block">⚔️</span>
+              <span>Attacking...</span>
+            </>
+          ) : (
+            <>
+              <span className="mr-2">⚔️</span>
+              <span>Attack</span>
+            </>
+          )}
+
+          {/* Button glow effect on hover */}
+          {!autoAttack && !isAttacking && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+          )}
         </button>
       </div>
 

@@ -205,17 +205,23 @@ export async function equipItem(characterId: string, inventoryItemId: string) {
     }
 
     // Unequip any currently equipped item in the same slot
-    await supabase
-      .from('inventory')
-      .update({ equipped: false })
-      .eq('character_id', characterId)
-      .eq('equipped', true)
-      .in('item_id',
-        supabase
-          .from('items')
-          .select('id')
-          .eq('equipment_slot', item.equipment_slot)
-      )
+    // First, get all items with the same equipment slot
+    const { data: sameSlotItems } = await supabase
+      .from('items')
+      .select('id')
+      .eq('equipment_slot', item.equipment_slot)
+
+    const itemIds = sameSlotItems?.map(i => i.id) || []
+
+    // Then unequip any equipped items in that slot
+    if (itemIds.length > 0) {
+      await supabase
+        .from('inventory')
+        .update({ equipped: false })
+        .eq('character_id', characterId)
+        .eq('equipped', true)
+        .in('item_id', itemIds)
+    }
 
     // Equip the new item
     const { data, error } = await supabase
