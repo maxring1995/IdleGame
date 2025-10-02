@@ -149,3 +149,79 @@ export interface CombatResult {
   damageTaken: number
   turns: number
 }
+
+// Gathering System Types
+export type MaterialType = 'wood' | 'ore' | 'fish' | 'meat' | 'pelt' | 'herb' | 'essence' | 'rune' | 'gem'
+export type GatheringSkillType = 'woodcutting' | 'mining' | 'fishing' | 'hunting' | 'alchemy' | 'magic'
+export type CraftingSkillType = 'crafting' | 'alchemy' | 'magic'
+export type NodeType = 'tree' | 'ore_vein' | 'fishing_spot' | 'hunting_ground' | 'herb_patch' | 'ley_line'
+
+export interface Material {
+  id: string
+  name: string
+  description?: string
+  type: MaterialType
+  tier: number
+  required_skill_type: GatheringSkillType
+  required_skill_level: number
+  gathering_time_ms: number
+  experience_reward: number
+  sell_price: number
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
+  stackable: boolean
+  max_stack: number
+  required_zone_level: number
+  created_at: string
+}
+
+export interface GatheringNode {
+  id: string
+  node_type: NodeType
+  material_id: string
+  world_zone: string
+  required_zone_level: number
+  respawn_time_ms: number
+  created_at: string
+}
+
+export interface CraftingRecipe {
+  id: string
+  name: string
+  description?: string
+  result_item_id: string
+  result_quantity: number
+  required_crafting_level: number
+  required_skill_type: CraftingSkillType
+  ingredients: Record<string, number> // material_id -> quantity
+  crafting_time_ms: number
+  experience_reward: number
+  recipe_category: 'weapon' | 'armor' | 'consumable' | 'tool' | 'general'
+  created_at: string
+}
+
+export interface ActiveGathering {
+  character_id: string
+  skill_type: string
+  material_id: string
+  quantity_goal: number
+  quantity_gathered: number
+  started_at: string
+  last_gathered_at: string
+  updated_at: string
+}
+
+export interface GatheringSession {
+  material: Material
+  progress: number // 0-100%
+  timeRemaining: number // milliseconds
+  quantityGathered: number
+  quantityGoal: number
+}
+
+export interface MaterialWithDetails extends Material {
+  node?: GatheringNode
+  playerSkillLevel?: number
+  canGather: boolean
+  isLocked: boolean
+  lockReason?: string
+}

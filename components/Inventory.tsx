@@ -21,11 +21,23 @@ export default function Inventory() {
   const [inventory, setInventory] = useState<InventoryItemWithDetails[]>([])
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'equipment' | 'materials'>('equipment')
 
   useEffect(() => {
     if (character) {
       loadInventory()
     }
+  }, [character])
+
+  // Poll inventory every 3 seconds to catch gathering updates
+  useEffect(() => {
+    if (!character) return
+
+    const interval = setInterval(() => {
+      loadInventory()
+    }, 3000)
+
+    return () => clearInterval(interval)
   }, [character])
 
   async function loadInventory() {
@@ -91,13 +103,41 @@ export default function Inventory() {
     )
   }
 
+  const equipmentItems = inventory.filter(i => i.item.type !== 'material')
+  const materialItems = inventory.filter(i => i.item.type === 'material')
+  const displayItems = activeTab === 'equipment' ? equipmentItems : materialItems
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Inventory Grid */}
       <div className="lg:col-span-2">
-        <h3 className="text-xl font-bold text-primary mb-4">🎒 Inventory</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-primary">🎒 Inventory</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('equipment')}
+              className={`px-3 py-1 rounded text-sm ${
+                activeTab === 'equipment'
+                  ? 'bg-primary text-black'
+                  : 'bg-bg-card text-gray-400 hover:text-white'
+              }`}
+            >
+              Equipment ({equipmentItems.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('materials')}
+              className={`px-3 py-1 rounded text-sm ${
+                activeTab === 'materials'
+                  ? 'bg-primary text-black'
+                  : 'bg-bg-card text-gray-400 hover:text-white'
+              }`}
+            >
+              Materials ({materialItems.length})
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-          {inventory.map((invItem) => {
+          {displayItems.map((invItem) => {
             const item = invItem.item
             return (
               <button
@@ -116,7 +156,23 @@ export default function Inventory() {
                   {item.type === 'weapon' && '⚔️'}
                   {item.type === 'armor' && '🛡️'}
                   {item.type === 'consumable' && '🧪'}
-                  {item.type === 'material' && '💎'}
+                  {item.type === 'material' && (
+                    <>
+                      {item.id.includes('_log') && '🪵'}
+                      {item.id.includes('_ore') && '⛏️'}
+                      {item.id.includes('raw_') && '🐟'}
+                      {(item.id.includes('_pelt') || item.id.includes('_hide') || item.id.includes('feather')) && '🦌'}
+                      {(item.id.includes('_leaf') || item.id.includes('_weed')) && '🌿'}
+                      {(item.id.includes('_essence') || item.id.includes('_rune')) && '✨'}
+                      {(item.id.includes('sapphire') || item.id.includes('emerald') || item.id.includes('ruby') || item.id.includes('diamond') || item.id.includes('dragonstone')) && '💎'}
+                      {!item.id.includes('_log') && !item.id.includes('_ore') && !item.id.includes('raw_') &&
+                       !item.id.includes('_pelt') && !item.id.includes('_hide') && !item.id.includes('feather') &&
+                       !item.id.includes('_leaf') && !item.id.includes('_weed') &&
+                       !item.id.includes('_essence') && !item.id.includes('_rune') &&
+                       !item.id.includes('sapphire') && !item.id.includes('emerald') && !item.id.includes('ruby') &&
+                       !item.id.includes('diamond') && !item.id.includes('dragonstone') && '📦'}
+                    </>
+                  )}
                 </div>
 
                 {/* Quantity Badge */}

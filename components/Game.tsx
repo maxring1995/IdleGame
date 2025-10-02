@@ -6,6 +6,7 @@ import { signOut } from '@/app/actions'
 import { addExperience, addGold } from '@/lib/character'
 import Inventory from './Inventory'
 import Combat from './Combat'
+import GatheringSimple from './GatheringSimple'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
 
@@ -18,7 +19,7 @@ interface GameProps {
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'combat' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'combat' | 'gathering' | 'inventory'>('adventure')
 
   // Initialize store with server data
   useEffect(() => {
@@ -159,10 +160,10 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
           <div className="lg:col-span-2">
             <div className="bg-bg-panel rounded-lg p-6 backdrop-blur-xl border border-white/10 min-h-[600px]">
               {/* Tabs */}
-              <div className="flex gap-4 mb-6 border-b border-white/10">
+              <div className="flex gap-4 mb-6 border-b border-white/10 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('adventure')}
-                  className={`pb-3 px-4 font-medium transition ${
+                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
                     activeTab === 'adventure'
                       ? 'text-primary border-b-2 border-primary'
                       : 'text-gray-400 hover:text-white'
@@ -172,7 +173,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
                 <button
                   onClick={() => setActiveTab('combat')}
-                  className={`pb-3 px-4 font-medium transition ${
+                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
                     activeTab === 'combat'
                       ? 'text-primary border-b-2 border-primary'
                       : 'text-gray-400 hover:text-white'
@@ -181,8 +182,18 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                   ⚔️ Combat
                 </button>
                 <button
+                  onClick={() => setActiveTab('gathering')}
+                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
+                    activeTab === 'gathering'
+                      ? 'text-primary border-b-2 border-primary'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  🌾 Gathering
+                </button>
+                <button
                   onClick={() => setActiveTab('inventory')}
-                  className={`pb-3 px-4 font-medium transition ${
+                  className={`pb-3 px-4 font-medium transition whitespace-nowrap ${
                     activeTab === 'inventory'
                       ? 'text-primary border-b-2 border-primary'
                       : 'text-gray-400 hover:text-white'
@@ -204,6 +215,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </div>
               ) : activeTab === 'combat' ? (
                 <Combat />
+              ) : activeTab === 'gathering' ? (
+                <GatheringSimple />
               ) : (
                 <Inventory />
               )}

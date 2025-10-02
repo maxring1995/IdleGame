@@ -77,9 +77,13 @@ npx playwright show-report
 - `characters` - Character data (1:1 with profiles)
 - `items` - Item catalog with stats and metadata
 - `inventory` - Character items with slot/equip/durability tracking
-- `character_skills` - Skill progression system
+- `character_skills` - Skill progression system (combat + gathering)
 - `quests` - Quest progress tracking
 - `achievements` - Achievement unlocks
+- `materials` - Gatherable resources (50+ materials)
+- `gathering_nodes` - Resource spawn locations across world zones
+- `active_gathering` - Ongoing gathering sessions
+- `crafting_recipes` - Crafting system recipes
 
 **Security:**
 - All tables use Row Level Security (RLS)
@@ -114,7 +118,11 @@ app/
 components/
   ├── Auth.tsx         # Username-based authentication UI
   ├── CharacterCreation.tsx  # Character creation flow
-  ├── Game.tsx         # Main game interface with tabs
+  ├── Game.tsx         # Main game interface with tabs (Adventure, Combat, Gathering, Inventory)
+  ├── Combat.tsx       # Combat system UI
+  ├── Gathering.tsx    # Gathering system main UI (6 skills)
+  ├── GatheringSkillPanel.tsx  # Material browser and gathering sessions
+  ├── MaterialInventory.tsx    # Material storage viewer
   └── Inventory.tsx    # Inventory grid and equipment UI
 
 lib/
@@ -122,11 +130,20 @@ lib/
   ├── auth.ts          # signUp(), signIn(), signOut()
   ├── character.ts     # createCharacter(), getCharacter(), updateCharacter()
   ├── inventory.ts     # Inventory/equipment management functions
+  ├── combat.ts        # Combat logic and turn execution
+  ├── materials.ts     # Material queries and skill management
+  ├── gathering.ts     # Gathering sessions and resource collection
+  ├── crafting.ts      # Crafting recipes and item creation
   └── store.ts         # Zustand global state
 
 supabase/migrations/
   ├── 20241001000000_initial_schema.sql        # Initial tables + RLS
-  └── 20241002000000_add_skills_and_inventory_slots.sql  # Items + skills
+  ├── 20241002000000_add_skills_and_inventory_slots.sql  # Items + skills
+  ├── 20241003000000_add_combat_system.sql     # Combat system (enemies, logs)
+  ├── 20241003100000_add_boss_enemies.sql      # Boss enemies
+  ├── 20241003110000_add_email_to_profiles.sql # Email column fix
+  ├── 20241004000000_add_gathering_system.sql  # Gathering system (materials, nodes)
+  └── 20241004100000_add_material_items.sql    # Material items in inventory
 ```
 
 ### Equipment System
@@ -338,6 +355,46 @@ if (error) {
   - Special abilities (cosmetic descriptions)
   - Separate boss section in enemy list
 
+### Gathering System Flow (Phase 4)
+1. User clicks Gathering tab → `Gathering.tsx` renders
+2. 8 skill buttons displayed (6 gathering + Crafting + Quest)
+3. User selects skill (e.g., Woodcutting) → `GatheringSkillPanel.tsx` loads
+4. Panel shows:
+   - Skill level and XP progress bar
+   - Available materials filtered by skill type
+   - Lock indicators for level-gated materials
+5. User clicks "Gather x1" or "Gather x10" → `startGathering()` creates session
+6. Active gathering session displays:
+   - Progress bar (real-time updates every second)
+   - Time remaining countdown
+   - Quantity gathered / goal
+   - Auto-Gather toggle
+7. Session completes → `completeGathering()` adds materials to inventory
+8. XP awarded → `addSkillExperience()` updates skill level
+
+**Key Functions** (`lib/gathering.ts`, `lib/materials.ts`):
+- `getMaterialsWithDetails(characterId, skillType)` - Get materials with player's unlock status
+- `startGathering(characterId, materialId, quantity)` - Start gathering session
+- `processGathering(characterId)` - Update progress and check completion
+- `completeGathering(characterId)` - Collect resources and award XP
+- `calculateGatheringTime(baseTime, skillLevel)` - Apply efficiency bonus
+- `addSkillExperience(characterId, skillType, xp)` - Level up skills
+
+**Gathering Skills:**
+- **Woodcutting** 🪓 - Oak → Willow → Maple → Yew → Magic Logs
+- **Mining** ⛏️ - Copper → Iron → Mithril → Adamantite → Runite Ore + Gems
+- **Fishing** 🎣 - Shrimp → Trout → Salmon → Swordfish → Shark → Manta Ray
+- **Hunting** 🏹 - Rabbit → Wolf → Bear → Drake → Dragon → Phoenix materials
+- **Alchemy** 🧪 - Guam → Harralander → Ranarr → Kwuarm → Torstol herbs
+- **Magic** ✨ - Air/Water → Earth/Fire Essences → Nature/Chaos/Death/Soul Runes
+
+**Skill Progression:**
+- Levels 1-99 (XP formula: `level * 100`)
+- Total XP to level 99: 485,100
+- Efficiency bonus: 0.5% faster per level (max 49.5% at level 99)
+- World zone unlocks based on character level
+- 50+ materials across 5 zone tiers
+
 ### Idle Mechanics
 The game has idle XP/gold generation in `Game.tsx`:
 ```typescript
@@ -349,6 +406,12 @@ useEffect(() => {
   return () => clearInterval(interval)
 }, [character])
 ```
+
+**Gathering Auto-Mode:**
+- Toggle "Auto-Gather" in gathering panel
+- Automatically restarts sessions with same material
+- Continues until manually stopped or inventory full
+- Allows AFK/idle gathering gameplay
 
 ## Troubleshooting
 
