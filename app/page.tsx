@@ -1,104 +1,55 @@
-'use client'
-
-import { useEffect } from 'react'
-import { useGameStore } from '@/lib/store'
-import { getSession } from '@/lib/auth'
-import { getCharacter } from '@/lib/character'
-import { createClient } from '@/lib/supabase/client'
-import Auth from '@/components/Auth'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
 import Game from '@/components/Game'
+import CharacterCreation from '@/components/CharacterCreation'
 
-export default function Home() {
-  const { user, character, setUser, setProfile, setCharacter, setLoading } = useGameStore()
+export default async function Home() {
+  const supabase = await createClient()
 
-  useEffect(() => {
-    let mounted = true
-    const supabase = createClient()
+  // Get the authenticated user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    async function initialize() {
-      try {
-        // Get initial session with timeout
-        const sessionPromise = getSession()
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        )
+  // If no user, middleware will redirect to /login
+  if (!user) {
+    redirect('/login')
+  }
 
-        const { session } = await Promise.race([sessionPromise, timeoutPromise]) as any
+  // Check if user has a profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
 
-        if (!mounted) return
+  // If no profile, create one
+  if (!profile) {
+    const { error } = await supabase.from('profiles').insert([
+      {
+        id: user.id,
+        username: user.email?.split('@')[0] || 'player',
+        email: user.email,
+      },
+    ])
 
-        if (session?.user) {
-          setUser(session.user)
-          await loadUserData(session.user.id)
-        }
-      } catch (error) {
-        console.error('Session check error:', error)
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    // Run initial check
-    initialize()
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Page auth state changed:', event)
-      if (!mounted) return
-
-      if (session?.user) {
-        setUser(session.user)
-        await loadUserData(session.user.id)
-      } else {
-        setUser(null)
-        setProfile(null)
-        setCharacter(null)
-      }
-      setLoading(false)
-    })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  async function loadUserData(userId: string) {
-    const supabase = createClient()
-
-    // Load profile
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (profileData) {
-      setProfile(profileData)
-    }
-
-    // Load character
-    const { data: characterData } = await getCharacter(userId)
-    if (characterData) {
-      setCharacter(characterData)
+    if (error) {
+      console.error('Error creating profile:', error)
     }
   }
 
-  // Show game if user is authenticated and has a character
-  if (user && character) {
-    return <Game />
+  // Check if user has a character
+  const { data: character } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('user_id', user.id)
+    .single()
+
+  // If no character, show character creation
+  if (!character) {
+    return <CharacterCreation userId={user.id} />
   }
 
-  // Show auth screen
-  return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <Auth />
-      </div>
-    </main>
-  )
+  // User has character, show game
+  return <Game initialUser={user} initialProfile={profile} initialCharacter={character} />
 }

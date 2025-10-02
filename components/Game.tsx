@@ -2,15 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import { useGameStore } from '@/lib/store'
-import { signOut } from '@/lib/auth'
+import { signOut } from '@/app/actions'
 import { addExperience, addGold } from '@/lib/character'
 import Inventory from './Inventory'
 import Combat from './Combat'
+import { User } from '@supabase/supabase-js'
+import { Profile, Character } from '@/lib/supabase'
 
-export default function Game() {
-  const { user, profile, character, setCharacter, reset } = useGameStore()
+interface GameProps {
+  initialUser: User
+  initialProfile: Profile | null
+  initialCharacter: Character
+}
+
+export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
+  const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'adventure' | 'combat' | 'inventory'>('adventure')
+
+  // Initialize store with server data
+  useEffect(() => {
+    if (!user) {
+      setUser(initialUser)
+      setProfile(initialProfile)
+      setCharacter(initialCharacter)
+    }
+  }, [initialUser, initialProfile, initialCharacter, user, setUser, setProfile, setCharacter])
 
   // Auto-save and idle progress
   useEffect(() => {
@@ -31,9 +48,8 @@ export default function Game() {
 
   async function handleSignOut() {
     setIsLoading(true)
-    await signOut()
     reset()
-    setIsLoading(false)
+    await signOut()
   }
 
   if (!character) return null

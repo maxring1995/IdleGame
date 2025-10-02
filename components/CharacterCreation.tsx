@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useGameStore } from '@/lib/store'
-import { createCharacter } from '@/lib/character'
+import { createCharacterAction } from '@/app/actions'
 
 interface CharacterCreationProps {
   userId: string
@@ -12,8 +11,6 @@ export default function CharacterCreation({ userId }: CharacterCreationProps) {
   const [characterName, setCharacterName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-
-  const { setCharacter } = useGameStore()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -30,15 +27,15 @@ export default function CharacterCreation({ userId }: CharacterCreationProps) {
         throw new Error('Character name can only contain letters and spaces')
       }
 
-      const { data, error: createError } = await createCharacter(userId, characterName)
+      // Use server action - this will redirect on success
+      const result = await createCharacterAction(userId, characterName)
 
-      if (createError) throw createError
-      if (data) {
-        setCharacter(data)
+      // If we get here, there was an error (redirect would have happened on success)
+      if (result?.error) {
+        throw new Error(result.error)
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create character')
-    } finally {
       setIsLoading(false)
     }
   }

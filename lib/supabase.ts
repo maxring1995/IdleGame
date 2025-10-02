@@ -101,6 +101,8 @@ export interface Enemy {
   required_player_level: number
   image_url?: string
   created_at: string
+  is_boss?: boolean
+  boss_abilities?: string[]
 }
 
 export interface CombatLog {

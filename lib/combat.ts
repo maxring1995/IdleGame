@@ -1,4 +1,4 @@
-import { createClient } from './supabase/client'
+import { createClient } from '@/utils/supabase/client'
 import { Enemy, Character, CombatAction, CombatResult, ActiveCombat, CombatLog } from './supabase'
 import { addExperience, addGold } from './character'
 import { addItem } from './inventory'

@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Eternal Realms** is an idle RPG built with Next.js 14 (App Router), Supabase, TypeScript, and Zustand for state management. Players create characters that earn experience and gold automatically, with a growing inventory and equipment system.
 
+### Technology Stack
+- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, TailwindCSS
+- **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **State Management**: Zustand
+- **Database Management**: Supabase MCP (Model Context Protocol) via Claude Code
+- **Testing**:
+  - **E2E**: Playwright for browser automation
+  - **Unit Tests**: Jest for backend/frontend logic
+- **Development**: Hot reload, ESLint, TypeScript strict mode
+
 ## Essential Commands
 
 ### Development
@@ -141,13 +151,24 @@ New characters automatically receive:
 
 ## Database Setup
 
+### Supabase MCP Integration
+This project uses **Supabase MCP (Model Context Protocol)** for direct database management via Claude Code:
+- Run migrations directly through MCP without manual SQL Editor steps
+- Query database schema and data
+- Inspect table contents and RLS policies
+- Managed connection to production Supabase instance
+
 ### Initial Setup
 1. Create Supabase project at [supabase.com](https://supabase.com)
 2. Copy `.env.local.example` to `.env.local`
 3. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Run migrations in SQL Editor:
+4. Configure Supabase MCP connection (if using Claude Code)
+5. Run migrations via MCP or SQL Editor (in order):
    - `supabase/migrations/20241001000000_initial_schema.sql`
    - `supabase/migrations/20241002000000_add_skills_and_inventory_slots.sql`
+   - `supabase/migrations/20241003000000_add_combat_system.sql`
+   - `supabase/migrations/20241003100000_add_boss_enemies.sql`
+   - `supabase/migrations/20241003110000_add_email_to_profiles.sql` ⚠️ **REQUIRED for auth**
 
 ### Migration Commands (if using Supabase CLI)
 ```bash
@@ -199,22 +220,58 @@ const channel = supabase
 
 ## Testing Strategy
 
-**Playwright Tests** (`tests/`):
-- `auth.spec.ts` - Authentication flows
-- `signin.spec.ts` - Sign-in specific tests
-- `inventory.spec.ts` - Inventory operations
-- `combat.spec.ts` - Combat system flows
-- `full-flow.spec.ts` - End-to-end user journey
+### Test Frameworks
+This project uses a **multi-layered testing approach**:
 
-**Unit Tests** (`lib/__tests__/`):
-- `auth.test.ts` - Authentication utilities
-- `combat.test.ts` - Combat damage/loot calculations
+**End-to-End Testing (Playwright)**:
+- **Framework**: Playwright for browser automation
+- **Location**: `tests/` directory
+- **Coverage**:
+  - `auth.spec.ts` - Authentication flows (signup, signin, logout)
+  - `signin.spec.ts` - Sign-in specific edge cases
+  - `inventory.spec.ts` - Inventory operations (equip, unequip, items)
+  - `combat.spec.ts` - Combat system flows (battle, victory, defeat)
+  - `full-flow.spec.ts` - Complete end-to-end user journey
+
+**Unit Testing (Jest)**:
+- **Framework**: Jest for unit tests
+- **Location**: `lib/__tests__/` directory
+- **Coverage**:
+  - `auth.test.ts` - Authentication utilities (password generation, email format)
+  - `combat.test.ts` - Combat calculations (damage formula, loot drops, gold rolls)
 
 **Test Configuration:**
-- Single worker (avoid race conditions with Supabase)
-- Auto-starts dev server
-- Screenshots on failure
-- Base URL: `http://localhost:3000`
+- **Playwright**:
+  - Single worker (avoid race conditions with Supabase)
+  - Auto-starts dev server on port 3000
+  - Screenshots on failure saved to `test-results/`
+  - HTML test report generated
+  - Base URL: `http://localhost:3000`
+- **Jest**:
+  - Isolated unit tests for backend logic
+  - No database/network dependencies
+  - Fast execution for TDD workflow
+
+### Running Tests
+```bash
+# Run all E2E tests
+npx playwright test
+
+# Run specific test file
+npx playwright test tests/combat.spec.ts
+
+# Run tests with UI (interactive)
+npx playwright test --ui
+
+# Run tests in headed mode (see browser)
+npx playwright test --headed
+
+# View test report
+npx playwright show-report
+
+# Run unit tests
+npm test
+```
 
 ## Known Patterns
 
@@ -237,19 +294,23 @@ if (error) {
 5. Zustand store updated
 6. UI re-renders with new stats
 
-### Combat System Flow (Phase 3)
+### Combat System Flow (Phase 3 & 4)
 1. User clicks Combat tab → `Combat.tsx` renders
 2. `getAvailableEnemies()` fetches enemies for player level
-3. User selects enemy → `startCombat()` creates `active_combat` record
-4. Combat loop:
+3. Enemies displayed in two sections:
+   - **Regular Enemies**: Standard encounters
+   - **Boss Encounters**: High-difficulty bosses with special abilities
+4. User selects enemy → `startCombat()` creates `active_combat` record
+5. Combat loop:
    - User clicks Attack → `executeTurn()`
+   - OR toggle Auto-Attack for automatic combat (2-second intervals)
    - Damage calculated: `attackerAttack - (defenderDefense / 2)` with ±15% variance
    - Health updated, combat log grows
    - Repeat until victory/defeat
-5. Combat ends → `endCombat()` distributes rewards
+6. Combat ends → `endCombat()` distributes rewards
    - Victory: Award XP, gold, roll loot from probability table
    - Defeat: Reduce health to 50% max
-6. Results shown in `VictoryModal`, then return to enemy selection
+7. Results shown in `VictoryModal`, then return to enemy selection
 
 **Key Functions** (`lib/combat.ts`):
 - `startCombat(characterId, enemyId)` - Initialize battle
@@ -257,6 +318,15 @@ if (error) {
 - `endCombat(characterId, victory)` - Distribute rewards/penalties
 - `calculateDamage(attack, defense)` - Damage formula with variance
 - `rollLoot(lootTable)` - Probability-based item drops
+
+**Phase 4 Features**:
+- **Auto-Attack Toggle**: Enable/disable automatic combat every 2 seconds
+- **Boss Enemies**: Special high-difficulty encounters with:
+  - Purple-themed UI with distinctive styling
+  - Higher stats (health, attack, defense)
+  - Better loot drops and more XP/gold
+  - Special abilities (cosmetic descriptions)
+  - Separate boss section in enemy list
 
 ### Idle Mechanics
 The game has idle XP/gold generation in `Game.tsx`:

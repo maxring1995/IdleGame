@@ -18,11 +18,42 @@ export default function Combat() {
   const [isAttacking, setIsAttacking] = useState(false)
   const [combatResult, setCombatResult] = useState<CombatResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [autoAttack, setAutoAttack] = useState(false)
+  const [autoAttackInterval, setAutoAttackInterval] = useState<NodeJS.Timeout | null>(null)
 
   // Check for existing combat on load
   useEffect(() => {
     checkActiveCombat()
   }, [character])
+
+  // Auto-attack effect
+  useEffect(() => {
+    if (autoAttack && activeCombat && !combatResult && !isAttacking) {
+      // Start auto-attack with 2 second intervals
+      const interval = setInterval(() => {
+        handleAttack()
+      }, 2000)
+
+      setAutoAttackInterval(interval)
+
+      return () => {
+        clearInterval(interval)
+      }
+    } else if (autoAttackInterval) {
+      // Clean up interval when auto-attack is disabled or combat ends
+      clearInterval(autoAttackInterval)
+      setAutoAttackInterval(null)
+    }
+  }, [autoAttack, activeCombat, combatResult, isAttacking])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAttackInterval) {
+        clearInterval(autoAttackInterval)
+      }
+    }
+  }, [])
 
   async function checkActiveCombat() {
     if (!character) return
@@ -100,6 +131,7 @@ export default function Combat() {
     setCombatResult(null)
     setActiveCombat(null)
     setCurrentEnemy(null)
+    setAutoAttack(false) // Disable auto-attack when returning to selection
     setView('selection')
   }
 
@@ -164,15 +196,30 @@ export default function Combat() {
 
       {/* Combat Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">
-          ⚔️ Battle: {currentEnemy.name}
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          {currentEnemy.is_boss ? '👑' : '⚔️'} Battle: {currentEnemy.name}
+          {currentEnemy.is_boss && (
+            <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">BOSS</span>
+          )}
         </h2>
-        <button
-          onClick={handleAbandon}
-          className="px-3 py-1 text-sm bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
-        >
-          Flee
-        </button>
+        <div className="flex gap-2 items-center">
+          {/* Auto-Attack Toggle */}
+          <label className="flex items-center gap-2 px-3 py-1 bg-gray-700 rounded cursor-pointer hover:bg-gray-600">
+            <input
+              type="checkbox"
+              checked={autoAttack}
+              onChange={(e) => setAutoAttack(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm text-gray-300">Auto-Attack</span>
+          </label>
+          <button
+            onClick={handleAbandon}
+            className="px-3 py-1 text-sm bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
+          >
+            Flee
+          </button>
+        </div>
       </div>
 
       {/* Combatants Display */}
@@ -215,11 +262,20 @@ export default function Combat() {
         </div>
 
         {/* Enemy */}
-        <div className="bg-gray-800 rounded-lg p-4 border-2 border-red-500/50">
+        <div className={`rounded-lg p-4 border-2 ${
+          currentEnemy.is_boss
+            ? 'bg-gradient-to-br from-purple-900/40 to-gray-800 border-purple-500/70'
+            : 'bg-gray-800 border-red-500/50'
+        }`}>
           <div className="text-center mb-3">
-            <div className="text-4xl mb-2">👹</div>
-            <h3 className="text-lg font-semibold text-white">{currentEnemy.name}</h3>
-            <div className="text-sm text-gray-400">Level {currentEnemy.level}</div>
+            <div className="text-4xl mb-2">{currentEnemy.is_boss ? '👑' : '👹'}</div>
+            <h3 className={`text-lg font-semibold ${currentEnemy.is_boss ? 'text-purple-300' : 'text-white'}`}>
+              {currentEnemy.name}
+            </h3>
+            <div className="text-sm text-gray-400">
+              Level {currentEnemy.level}
+              {currentEnemy.is_boss && <span className="ml-2 text-purple-400 font-semibold">BOSS</span>}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -259,10 +315,10 @@ export default function Combat() {
       <div className="flex justify-center">
         <button
           onClick={handleAttack}
-          disabled={isAttacking}
+          disabled={isAttacking || autoAttack}
           className="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed font-semibold text-lg transition-colors"
         >
-          {isAttacking ? 'Attacking...' : '⚔️ Attack'}
+          {autoAttack ? '⚡ Auto-Attacking...' : isAttacking ? 'Attacking...' : '⚔️ Attack'}
         </button>
       </div>
 
