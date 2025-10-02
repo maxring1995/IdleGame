@@ -95,7 +95,7 @@ export default function Inventory() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Inventory Grid */}
       <div className="lg:col-span-2">
-        <h3 className="text-xl font-bold text-primary mb-4">Inventory</h3>
+        <h3 className="text-xl font-bold text-primary mb-4">🎒 Inventory</h3>
         <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
           {inventory.map((invItem) => {
             const item = invItem.item
@@ -162,25 +162,25 @@ export default function Inventory() {
                 <p className="text-xs text-gray-500 uppercase">Stats</p>
                 {selectedItem.item.attack_bonus > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Attack</span>
+                    <span className="text-gray-400">⚔️ Attack</span>
                     <span className="text-red-400">+{selectedItem.item.attack_bonus}</span>
                   </div>
                 )}
                 {selectedItem.item.defense_bonus > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Defense</span>
+                    <span className="text-gray-400">🛡️ Defense</span>
                     <span className="text-yellow-400">+{selectedItem.item.defense_bonus}</span>
                   </div>
                 )}
                 {selectedItem.item.health_bonus > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Health</span>
+                    <span className="text-gray-400">❤️ Health</span>
                     <span className="text-green-400">+{selectedItem.item.health_bonus}</span>
                   </div>
                 )}
                 {selectedItem.item.mana_bonus > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Mana</span>
+                    <span className="text-gray-400">💧 Mana</span>
                     <span className="text-blue-400">+{selectedItem.item.mana_bonus}</span>
                   </div>
                 )}
@@ -204,8 +204,8 @@ export default function Inventory() {
                 <span>{selectedItem.item.required_level}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Sell Price</span>
-                <span className="text-primary">{selectedItem.item.sell_price} gold</span>
+                <span className="text-gray-400">💰 Sell Price</span>
+                <span className="text-primary">{selectedItem.item.sell_price}</span>
               </div>
             </div>
 

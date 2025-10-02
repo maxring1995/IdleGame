@@ -60,27 +60,27 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
         {/* Rewards (Victory Only) */}
         {victory && (
           <div className="bg-gray-900 rounded-lg p-4 mb-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Rewards</h3>
+            <h3 className="text-sm font-semibold text-gray-400 mb-3">🎁 Rewards</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">Experience</span>
+                <span className="text-gray-300">⭐ Experience</span>
                 <span className="text-blue-400 font-semibold">+{experience} XP</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">Gold</span>
-                <span className="text-yellow-400 font-semibold">+{gold} 💰</span>
+                <span className="text-gray-300">💰 Gold</span>
+                <span className="text-yellow-400 font-semibold">+{gold}</span>
               </div>
 
               {loot.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-800">
-                  <div className="text-gray-400 text-xs mb-2">Items Looted:</div>
+                  <div className="text-gray-400 text-xs mb-2">📦 Items Looted:</div>
                   <div className="flex flex-wrap gap-2">
                     {loot.map((itemId, index) => (
                       <div
                         key={index}
                         className="bg-gray-800 px-3 py-1 rounded text-xs text-green-400 border border-green-400/30"
                       >
-                        {itemId.replace(/_/g, ' ')}
+                        ✨ {itemId.replace(/_/g, ' ')}
                       </div>
                     ))}
                   </div>

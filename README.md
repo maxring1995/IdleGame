@@ -2,6 +2,8 @@
 
 An immersive idle RPG built with Next.js, Supabase, and TypeScript.
 
+> 📚 **Documentation**: All detailed documentation, implementation guides, and technical references are in [`/docs`](docs/README.md)
+
 ## Features
 
 ✅ **Implemented**
@@ -182,16 +184,22 @@ npm run lint     # Run ESLint
 
 ## Troubleshooting
 
-### "Missing Supabase environment variables"
+For detailed troubleshooting guides, see:
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/BUG_FIX_REPORT.md](docs/BUG_FIX_REPORT.md)** - Recent bug fixes
+
+### Quick Fixes
+
+**"Missing Supabase environment variables"**
 - Make sure `.env.local` exists and has valid credentials
 - Restart the dev server after adding environment variables
 
-### Database errors
+**Database errors**
 - Verify the migration was run successfully
 - Check RLS policies are enabled in Supabase dashboard
 - Ensure your Supabase project is active
 
-### Characters not saving
+**Characters not saving**
 - Check browser console for errors
 - Verify Supabase credentials are correct
 - Check network tab for failed API requests

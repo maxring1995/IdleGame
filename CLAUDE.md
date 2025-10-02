@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📚 Documentation
+
+**All project documentation is located in the [`/docs`](docs/) folder.**
+
+For detailed information about implementation phases, bug fixes, and technical guides, see:
+- **[docs/README.md](docs/README.md)** - Complete documentation index
+- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Quick start guide
+- **[docs/ICONS.md](docs/ICONS.md)** - Icon usage guide
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
 ## Project Overview
 
 **Eternal Realms** is an idle RPG built with Next.js 14 (App Router), Supabase, TypeScript, and Zustand for state management. Players create characters that earn experience and gold automatically, with a growing inventory and equipment system.

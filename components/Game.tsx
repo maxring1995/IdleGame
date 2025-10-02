@@ -88,7 +88,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               {/* Health Bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">Health</span>
+                  <span className="text-gray-400">❤️ Health</span>
                   <span className="text-green-400">
                     {character.health} / {character.max_health}
                   </span>
@@ -104,7 +104,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               {/* Mana Bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">Mana</span>
+                  <span className="text-gray-400">💧 Mana</span>
                   <span className="text-blue-400">
                     {character.mana} / {character.max_mana}
                   </span>
@@ -120,7 +120,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               {/* Experience Bar */}
               <div className="mb-6">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">Experience</span>
+                  <span className="text-gray-400">⭐ Experience</span>
                   <span className="text-primary">
                     {character.experience} / {experienceForNextLevel}
                   </span>
@@ -136,19 +136,19 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               {/* Stats Grid */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">Attack</span>
+                  <span className="text-gray-400">⚔️ Attack</span>
                   <span className="text-red-400 font-bold">{character.attack}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">Defense</span>
+                  <span className="text-gray-400">🛡️ Defense</span>
                   <span className="text-yellow-400 font-bold">{character.defense}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">Gold</span>
+                  <span className="text-gray-400">💰 Gold</span>
                   <span className="text-primary font-bold">{character.gold.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-bg-card rounded-lg">
-                  <span className="text-gray-400">Gems</span>
+                  <span className="text-gray-400">💎 Gems</span>
                   <span className="text-purple-400 font-bold">{character.gems}</span>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Adventure
+                  🗺️ Adventure
                 </button>
                 <button
                   onClick={() => setActiveTab('combat')}
@@ -188,7 +188,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Inventory
+                  🎒 Inventory
                 </button>
               </div>
 

@@ -89,6 +89,20 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
     return 'Hard'
   }
 
+  const getEnemyIcon = (enemyId: string) => {
+    // Map enemy IDs to emoji icons
+    const iconMap: Record<string, string> = {
+      slime: '🟢',
+      goblin_scout: '👹',
+      wild_wolf: '🐺',
+      skeleton_warrior: '💀',
+      forest_bear: '🐻',
+      goblin_king: '👑',
+      ancient_dragon: '🐉',
+    }
+    return iconMap[enemyId] || '👾' // Default monster icon
+  }
+
   // Separate bosses from regular enemies
   const regularEnemies = enemies.filter(e => !e.is_boss)
   const bossEnemies = enemies.filter(e => e.is_boss)
@@ -113,13 +127,18 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
                 className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{enemy.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-gray-400">Level {enemy.level}</span>
-                      <span className={`text-sm font-medium ${getDifficultyColor(enemy.level)}`}>
-                        {getDifficultyLabel(enemy.level)}
-                      </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl">{getEnemyIcon(enemy.id)}</span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{enemy.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-400">Level {enemy.level}</span>
+                          <span className={`text-sm font-medium ${getDifficultyColor(enemy.level)}`}>
+                            {getDifficultyLabel(enemy.level)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -130,19 +149,19 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
 
                 <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
                   <div className="bg-gray-900 rounded p-2">
-                    <div className="text-gray-400">Health</div>
+                    <div className="text-gray-400">❤️ Health</div>
                     <div className="text-white font-semibold">{enemy.health}</div>
                   </div>
                   <div className="bg-gray-900 rounded p-2">
-                    <div className="text-gray-400">Attack</div>
+                    <div className="text-gray-400">⚔️ Attack</div>
                     <div className="text-white font-semibold">{enemy.attack}</div>
                   </div>
                   <div className="bg-gray-900 rounded p-2">
-                    <div className="text-gray-400">Defense</div>
+                    <div className="text-gray-400">🛡️ Defense</div>
                     <div className="text-white font-semibold">{enemy.defense}</div>
                   </div>
                   <div className="bg-gray-900 rounded p-2">
-                    <div className="text-gray-400">XP</div>
+                    <div className="text-gray-400">⭐ XP</div>
                     <div className="text-white font-semibold">{enemy.experience_reward}</div>
                   </div>
                 </div>
@@ -209,19 +228,19 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
 
                 <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
                   <div className="bg-gray-900/50 rounded p-2 border border-purple-500/20">
-                    <div className="text-gray-400">Health</div>
+                    <div className="text-gray-400">❤️ Health</div>
                     <div className="text-purple-300 font-bold">{enemy.health}</div>
                   </div>
                   <div className="bg-gray-900/50 rounded p-2 border border-purple-500/20">
-                    <div className="text-gray-400">Attack</div>
+                    <div className="text-gray-400">⚔️ Attack</div>
                     <div className="text-purple-300 font-bold">{enemy.attack}</div>
                   </div>
                   <div className="bg-gray-900/50 rounded p-2 border border-purple-500/20">
-                    <div className="text-gray-400">Defense</div>
+                    <div className="text-gray-400">🛡️ Defense</div>
                     <div className="text-purple-300 font-bold">{enemy.defense}</div>
                   </div>
                   <div className="bg-gray-900/50 rounded p-2 border border-purple-500/20">
-                    <div className="text-gray-400">XP</div>
+                    <div className="text-gray-400">⭐ XP</div>
                     <div className="text-purple-300 font-bold">{enemy.experience_reward}</div>
                   </div>
                 </div>
