@@ -15,7 +15,12 @@
       "Bash(awk:*)",
       "Bash(node -e \"const fs = require(''fs''); const code = fs.readFileSync(''/Users/maxring/Documents/GitHub/IdleGame/components/Inventory.tsx'', ''utf8''); try { require(''@babel/parser'').parse(code, { sourceType: ''module'', plugins: [''jsx'', ''typescript''] }); console.log(''Valid syntax''); } catch(e) { console.log(''Syntax error:'', e.message); }\")",
       "Bash(cat:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm test:*)",
+      "Bash(pkill:*)",
+      "Bash(node:*)",
+      "Bash(source:*)",
+      "Bash(pgrep:*)"
     ],
     "deny": [],
     "ask": []

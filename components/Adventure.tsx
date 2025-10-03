@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
 import WorldMap from './WorldMap'
 import ZoneDetails from './ZoneDetails'
+import TravelPanel from './TravelPanel'
+import ExplorationPanel from './ExplorationPanel'
 import { initializeCharacterInStartingZone, discoverZone } from '@/lib/worldZones'
+import { getActiveTravel } from '@/lib/travel'
+import { getActiveExploration } from '@/lib/exploration'
 
 const HAVENBROOK_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -12,10 +16,20 @@ export default function Adventure() {
   const { character } = useGameStore()
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
+  const [hasActiveTravel, setHasActiveTravel] = useState(false)
+  const [hasActiveExploration, setHasActiveExploration] = useState(false)
 
   useEffect(() => {
     if (character && !initialized) {
       initializeCharacter()
+    }
+  }, [character])
+
+  useEffect(() => {
+    if (character) {
+      checkActiveStates()
+      const interval = setInterval(checkActiveStates, 3000)
+      return () => clearInterval(interval)
     }
   }, [character])
 
@@ -34,14 +48,24 @@ export default function Adventure() {
     setInitialized(true)
   }
 
+  async function checkActiveStates() {
+    if (!character) return
+
+    const [travelData, explorationData] = await Promise.all([
+      getActiveTravel(character.id),
+      getActiveExploration(character.id)
+    ])
+
+    setHasActiveTravel(!!travelData.data)
+    setHasActiveExploration(!!explorationData.data)
+  }
+
   function handleZoneSelect(zoneId: string) {
     setSelectedZoneId(zoneId)
   }
 
-  function handleTravelTo(toZoneId: string) {
-    // For Phase 5A, we'll just select the zone
-    // In Phase 5B, this will initiate actual travel with time/encounters
-    setSelectedZoneId(toZoneId)
+  function handleActivityComplete() {
+    checkActiveStates()
   }
 
   if (!character) {
@@ -81,30 +105,44 @@ export default function Adventure() {
         </div>
       </div>
 
-      {/* Main Content - 2 Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: World Map / Zone Browser */}
-        <div className="lg:col-span-1">
-          <div className="panel p-6">
-            <WorldMap
-              onZoneSelect={handleZoneSelect}
-              selectedZoneId={selectedZoneId || undefined}
-            />
-          </div>
-        </div>
-
-        {/* Right: Zone Details or Empty State */}
-        <div className="lg:col-span-2">
-          {selectedZoneId ? (
-            <ZoneDetails
-              zoneId={selectedZoneId}
-              onTravelTo={handleTravelTo}
-            />
-          ) : (
-            <EmptyState />
+      {/* Active Travel/Exploration */}
+      {(hasActiveTravel || hasActiveExploration) && (
+        <div>
+          {hasActiveTravel && (
+            <TravelPanel onTravelComplete={handleActivityComplete} />
+          )}
+          {hasActiveExploration && (
+            <ExplorationPanel onExplorationComplete={handleActivityComplete} />
           )}
         </div>
-      </div>
+      )}
+
+      {/* Main Content - 2 Column Layout */}
+      {!hasActiveTravel && !hasActiveExploration && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: World Map / Zone Browser */}
+          <div className="lg:col-span-1">
+            <div className="panel p-6">
+              <WorldMap
+                onZoneSelect={handleZoneSelect}
+                selectedZoneId={selectedZoneId || undefined}
+              />
+            </div>
+          </div>
+
+          {/* Right: Zone Details or Empty State */}
+          <div className="lg:col-span-2">
+            {selectedZoneId ? (
+              <ZoneDetails
+                zoneId={selectedZoneId}
+                onTravelTo={handleZoneSelect}
+              />
+            ) : (
+              <EmptyState />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

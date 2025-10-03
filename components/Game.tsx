@@ -32,8 +32,14 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
   async function handleSignOut() {
     setIsLoading(true)
-    reset()
-    await signOut()
+    const result = await signOut()
+    if (result?.success) {
+      reset()
+      window.location.href = '/login'
+    } else {
+      setIsLoading(false)
+      console.error('Failed to sign out:', result?.error)
+    }
   }
 
   if (!character) return null

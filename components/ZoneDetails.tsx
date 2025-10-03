@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import type { ZoneDetails as ZoneDetailsType, WorldZone } from '@/lib/supabase'
 import { getZoneDetails, getCurrentWeather, attemptLandmarkDiscovery } from '@/lib/worldZones'
+import { startExploration } from '@/lib/exploration'
+import { startTravel } from '@/lib/travel'
 import { useGameStore } from '@/lib/store'
 
 interface ZoneDetailsProps {
@@ -66,27 +68,20 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
     setExploring(true)
     setDiscoveryMessage(null)
 
-    // Attempt to discover a hidden landmark
-    const { data, error: err } = await attemptLandmarkDiscovery(character.id, zoneId)
+    // Start full exploration session
+    const { data, error: err } = await startExploration(character.id, zoneId, false)
 
     if (err) {
-      setDiscoveryMessage('❌ Exploration failed.')
+      setDiscoveryMessage('❌ Exploration failed: ' + err.message)
       setExploring(false)
       return
     }
 
-    if (data) {
-      setDiscoveryMessage(`🎉 You discovered: ${data.name}!`)
-      // Reload zone details to show new landmark
-      await loadZoneDetails()
-    } else {
-      setDiscoveryMessage('🔍 You searched the area but found nothing new.')
-    }
-
+    setDiscoveryMessage('✅ Exploration session started! Check the main view.')
     setExploring(false)
 
-    // Clear message after 5 seconds
-    setTimeout(() => setDiscoveryMessage(null), 5000)
+    // Clear message after 3 seconds
+    setTimeout(() => setDiscoveryMessage(null), 3000)
   }
 
   if (loading) {
@@ -266,7 +261,10 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
               <ConnectionButton
                 key={connection.id}
                 connection={connection}
-                onTravel={() => onTravelTo(connection.to_zone_id)}
+                characterId={character.id}
+                fromZoneId={zoneId}
+                characterLevel={character.level}
+                onTravelStarted={() => onTravelTo(connection.to_zone_id)}
               />
             ))}
           </div>
@@ -295,11 +293,16 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
 
 interface ConnectionButtonProps {
   connection: any
-  onTravel: () => void
+  characterId: string
+  fromZoneId: string
+  characterLevel: number
+  onTravelStarted: () => void
 }
 
-function ConnectionButton({ connection, onTravel }: ConnectionButtonProps) {
+function ConnectionButton({ connection, characterId, fromZoneId, characterLevel, onTravelStarted }: ConnectionButtonProps) {
   const [toZone, setToZone] = useState<WorldZone | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadToZone()
@@ -317,6 +320,30 @@ function ConnectionButton({ connection, onTravel }: ConnectionButtonProps) {
     if (data) setToZone(data)
   }
 
+  async function handleTravel() {
+    if (loading) return
+
+    setLoading(true)
+    setError(null)
+
+    const { data, error: err } = await startTravel(
+      characterId,
+      fromZoneId,
+      connection.to_zone_id,
+      characterLevel
+    )
+
+    if (err) {
+      setError(err.message)
+      setLoading(false)
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    // Success - notify parent to refresh and show travel panel
+    onTravelStarted()
+  }
+
   if (!toZone) return null
 
   const typeIcons: Record<string, string> = {
@@ -330,37 +357,48 @@ function ConnectionButton({ connection, onTravel }: ConnectionButtonProps) {
   const travelTime = Math.ceil(connection.base_travel_time / 60)
 
   return (
-    <button
-      onClick={onTravel}
-      className="w-full p-4 bg-gradient-to-r from-gray-800/50 to-gray-700/30
-               border border-gray-700/50 rounded-lg hover:border-amber-500/50
-               transition-all duration-200 hover:scale-[1.01] text-left"
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <span className="text-2xl">{typeIcons[connection.connection_type] || '🚶'}</span>
-          <div>
-            <p className="font-semibold text-white">{toZone.name}</p>
-            <p className="text-xs text-gray-400 capitalize">
-              {connection.connection_type.replace('_', ' ')} • {travelTime}min travel
-            </p>
+    <div>
+      <button
+        onClick={handleTravel}
+        disabled={loading}
+        className="w-full p-4 bg-gradient-to-r from-gray-800/50 to-gray-700/30
+                 border border-gray-700/50 rounded-lg hover:border-amber-500/50
+                 transition-all duration-200 hover:scale-[1.01] text-left
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <span className="text-2xl">{loading ? '⏳' : (typeIcons[connection.connection_type] || '🚶')}</span>
+            <div>
+              <p className="font-semibold text-white">{toZone.name}</p>
+              <p className="text-xs text-gray-400 capitalize">
+                {connection.connection_type.replace('_', ' ')} • {travelTime}min travel
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500">Danger</div>
+            <div className={`font-bold ${
+              toZone.danger_level <= 10 ? 'text-green-400' :
+              toZone.danger_level <= 25 ? 'text-yellow-400' :
+              toZone.danger_level <= 45 ? 'text-orange-400' :
+              toZone.danger_level <= 60 ? 'text-red-400' : 'text-purple-400'
+            }`}>
+              {toZone.danger_level}
+            </div>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-xs text-gray-500">Danger</div>
-          <div className={`font-bold ${
-            toZone.danger_level <= 10 ? 'text-green-400' :
-            toZone.danger_level <= 25 ? 'text-yellow-400' :
-            toZone.danger_level <= 45 ? 'text-orange-400' :
-            toZone.danger_level <= 60 ? 'text-red-400' : 'text-purple-400'
-          }`}>
-            {toZone.danger_level}
-          </div>
+        {connection.description && (
+          <p className="text-sm text-gray-500 mt-2 pl-11">{connection.description}</p>
+        )}
+      </button>
+
+      {error && (
+        <div className="mt-2 p-3 bg-red-900/20 border border-red-500/50 rounded-lg text-red-400 text-sm flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
-      </div>
-      {connection.description && (
-        <p className="text-sm text-gray-500 mt-2 pl-11">{connection.description}</p>
       )}
-    </button>
+    </div>
   )
 }

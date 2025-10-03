@@ -50,7 +50,7 @@ export async function signOut() {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/login')
+  return { success: true }
 }
 
 export async function createCharacterAction(userId: string, name: string) {

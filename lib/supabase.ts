@@ -297,6 +297,25 @@ export interface WorldState {
   updated_at: string
 }
 
+export interface ActiveExploration {
+  id: string
+  character_id: string
+  zone_id: string
+  started_at: string
+  exploration_progress: number
+  discoveries_found: number
+  is_auto: boolean
+  auto_stop_at?: number
+  updated_at: string
+}
+
+export interface ExplorationUpdate {
+  progress: number
+  discoveries: ZoneLandmark[]
+  timeSpent: number
+  completed: boolean
+}
+
 // Extended types with discovery info
 export interface WorldZoneWithDiscovery extends WorldZone {
   isDiscovered: boolean
@@ -314,4 +333,63 @@ export interface ZoneDetails {
   landmarks: ZoneLandmarkWithDiscovery[]
   connections: ZoneConnection[]
   discoveryInfo?: CharacterZoneDiscovery
+}
+
+// Travel & Exploration System Types
+export interface ActiveTravel {
+  id: string
+  character_id: string
+  from_zone_id: string
+  to_zone_id: string
+  connection_id: string
+  started_at: string
+  estimated_arrival: string
+  actual_travel_time: number
+  status: 'traveling' | 'encounter' | 'completed'
+  can_cancel: boolean
+  encounter_rolled: boolean
+  encounter_type?: 'combat' | 'loot' | 'merchant' | 'lore'
+  encounter_data?: any
+  updated_at: string
+}
+
+export interface ActiveExploration {
+  id: string
+  character_id: string
+  zone_id: string
+  started_at: string
+  exploration_progress: number // 0-100
+  discoveries_found: number
+  is_auto: boolean
+  auto_stop_at?: number
+  updated_at: string
+}
+
+export interface TravelLogEntry {
+  id: string
+  character_id: string
+  zone_id?: string
+  entry_type: 'zone_discovered' | 'landmark_found' | 'encounter' | 'travel_completed' | 'exploration_completed'
+  entry_text: string
+  entry_data?: any
+  created_at: string
+}
+
+export interface TravelEncounter {
+  type: 'combat' | 'loot' | 'merchant' | 'lore' | 'none'
+  data?: any
+}
+
+export interface TravelUpdate {
+  status: 'in_progress' | 'encounter' | 'completed'
+  progress: number // 0-100
+  timeRemaining: number // milliseconds
+  encounter?: TravelEncounter
+}
+
+export interface ExplorationUpdate {
+  progress: number // 0-100
+  discoveries: ZoneLandmark[]
+  timeSpent: number // seconds
+  completed: boolean
 }
