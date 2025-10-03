@@ -2,10 +2,14 @@ import { createClient } from '@/utils/supabase/client'
 import type {
   ActiveExploration,
   ExplorationUpdate,
-  ZoneLandmark
+  ZoneLandmark,
+  ExplorationReward,
+  ExplorationRewardConfig
 } from './supabase'
 import { attemptLandmarkDiscovery, updateZoneTimeSpent } from './worldZones'
 import { addTravelLogEntry } from './travel'
+import { addItem } from './inventory'
+import { addExperience, addGold } from './character'
 
 // ============================================================================
 // Exploration Management
@@ -80,6 +84,109 @@ export async function getActiveExploration(
 }
 
 /**
+ * Roll for item from loot table using weighted random selection
+ */
+function rollLootTable(lootTable: Record<string, number>): string | null {
+  const items = Object.entries(lootTable)
+  if (items.length === 0) return null
+
+  const totalWeight = items.reduce((sum, [_, weight]) => sum + weight, 0)
+  let random = Math.random() * totalWeight
+
+  for (const [itemId, weight] of items) {
+    random -= weight
+    if (random <= 0) return itemId
+  }
+
+  return items[items.length - 1][0] // fallback to last item
+}
+
+/**
+ * Check and award exploration rewards for progress milestones
+ */
+async function checkExplorationRewards(
+  characterId: string,
+  zoneId: string,
+  currentProgress: number,
+  lastRewardPercent: number
+): Promise<ExplorationReward[]> {
+  const supabase = createClient()
+  const rewards: ExplorationReward[] = []
+
+  try {
+    // Get reward configs for each percent between last check and current progress
+    for (let percent = lastRewardPercent + 1; percent <= currentProgress; percent++) {
+      const { data: config } = await supabase
+        .from('exploration_rewards_config')
+        .select('*')
+        .eq('zone_id', zoneId)
+        .eq('progress_percent', percent)
+        .maybeSingle()
+
+      if (!config) continue
+
+      // Roll for reward based on chance
+      if (Math.random() <= config.reward_chance) {
+        const items: string[] = []
+        const gold = Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min
+        const xp = Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min
+
+        // Roll 1-3 items from loot table
+        const itemCount = Math.floor(Math.random() * 3) + 1
+        for (let i = 0; i < itemCount; i++) {
+          const itemId = rollLootTable(config.loot_table)
+          if (itemId) items.push(itemId)
+        }
+
+        // Award rewards
+        if (gold > 0) await addGold(characterId, gold)
+        if (xp > 0) await addExperience(characterId, xp)
+        for (const itemId of items) {
+          await addItem(characterId, itemId, 1)
+        }
+
+        // Log reward
+        await supabase.from('exploration_rewards_log').insert({
+          character_id: characterId,
+          zone_id: zoneId,
+          progress_percent: percent,
+          items_received: items,
+          gold_received: gold,
+          xp_received: xp
+        })
+
+        rewards.push({
+          items,
+          gold,
+          xp,
+          progress_percent: percent
+        })
+
+        // Log to travel log
+        const rewardSummary = []
+        if (items.length > 0) rewardSummary.push(`${items.length} items`)
+        if (gold > 0) rewardSummary.push(`${gold} gold`)
+        if (xp > 0) rewardSummary.push(`${xp} XP`)
+
+        if (rewardSummary.length > 0) {
+          await addTravelLogEntry(
+            characterId,
+            zoneId,
+            'landmark_found' as any, // Using landmark_found as closest type for rewards
+            `Found treasure at ${percent}%! Received: ${rewardSummary.join(', ')}`
+          )
+        }
+      }
+    }
+
+    return rewards
+  } catch (err) {
+    console.error('Error checking exploration rewards:', err)
+    return rewards
+  }
+}
+
+/**
  * Process exploration progress
  */
 export async function processExploration(
@@ -117,12 +224,21 @@ export async function processExploration(
       }
     }
 
+    // Check for rewards at each new percent
+    const rewards = await checkExplorationRewards(
+      characterId,
+      exploration.zone_id,
+      progress,
+      exploration.last_reward_percent || 0
+    )
+
     // Update exploration progress
     await supabase
       .from('active_explorations')
       .update({
         exploration_progress: progress,
         discoveries_found: exploration.discoveries_found + discoveries.length,
+        last_reward_percent: progress,
         updated_at: now.toISOString()
       })
       .eq('id', exploration.id)
@@ -148,6 +264,7 @@ export async function processExploration(
       data: {
         progress,
         discoveries,
+        rewards,
         timeSpent,
         completed
       },

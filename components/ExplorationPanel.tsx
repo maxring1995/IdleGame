@@ -2,11 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
-import type { ActiveExploration, WorldZone, ZoneLandmark } from '@/lib/supabase'
+import type { ActiveExploration, WorldZone, ZoneLandmark, ExplorationReward, Item } from '@/lib/supabase'
 import { getActiveExploration, processExploration, stopExploration } from '@/lib/exploration'
+import { getInventory } from '@/lib/inventory'
+import AdventureCompletionModal from './AdventureCompletionModal'
 
 interface ExplorationPanelProps {
   onExplorationComplete?: () => void
+}
+
+interface RewardDisplay extends ExplorationReward {
+  itemDetails?: Item[]
+}
+
+interface SessionItem {
+  inventoryId: string
+  item: Item
+  quantity: number
 }
 
 export default function ExplorationPanel({ onExplorationComplete }: ExplorationPanelProps) {
@@ -15,9 +27,14 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
   const [zone, setZone] = useState<WorldZone | null>(null)
   const [progress, setProgress] = useState(0)
   const [discoveries, setDiscoveries] = useState<ZoneLandmark[]>([])
+  const [rewards, setRewards] = useState<RewardDisplay[]>([])
+  const [sessionItems, setSessionItems] = useState<SessionItem[]>([])
+  const [totalGold, setTotalGold] = useState(0)
+  const [totalXP, setTotalXP] = useState(0)
   const [timeSpent, setTimeSpent] = useState(0)
   const [loading, setLoading] = useState(true)
   const [stopping, setStopping] = useState(false)
+  const [showCompletionModal, setShowCompletionModal] = useState(false)
 
   useEffect(() => {
     if (character) {
@@ -77,6 +94,59 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
           setDiscoveries(prev => [...prev, ...data.discoveries])
         }
 
+        // Track gold and XP
+        if (data.rewards.length > 0) {
+          const goldEarned = data.rewards.reduce((sum, r) => sum + r.gold, 0)
+          const xpEarned = data.rewards.reduce((sum, r) => sum + r.xp, 0)
+          setTotalGold(prev => prev + goldEarned)
+          setTotalXP(prev => prev + xpEarned)
+
+          // Get item details and track for session
+          const { createClient } = await import('@/utils/supabase/client')
+          const supabase = createClient()
+
+          const rewardsWithDetails = await Promise.all(
+            data.rewards.map(async (reward) => {
+              if (reward.items.length > 0) {
+                const { data: items } = await supabase
+                  .from('items')
+                  .select('*')
+                  .in('id', reward.items)
+
+                return { ...reward, itemDetails: items || [] }
+              }
+              return reward
+            })
+          )
+
+          setRewards(prev => [...prev, ...rewardsWithDetails])
+
+          // Track items found in this session
+          for (const reward of rewardsWithDetails) {
+            if ('itemDetails' in reward && reward.itemDetails && reward.itemDetails.length > 0) {
+              const { data: inventory } = await getInventory(character.id)
+              if (inventory) {
+                // Find the newly added items in inventory
+                const newItems = reward.itemDetails.map((item: Item) => {
+                  const invItem = inventory.find(inv => inv.item_id === item.id && !sessionItems.some(si => si.inventoryId === inv.id))
+                  if (invItem) {
+                    return {
+                      inventoryId: invItem.id,
+                      item: Array.isArray(invItem.item) ? invItem.item[0] : invItem.item,
+                      quantity: invItem.quantity
+                    }
+                  }
+                  return null
+                }).filter(Boolean) as SessionItem[]
+
+                if (newItems.length > 0) {
+                  setSessionItems(prev => [...prev, ...newItems])
+                }
+              }
+            }
+          }
+        }
+
         // Update exploration state with new discovery count
         setExploration(prev => prev ? {
           ...prev,
@@ -99,8 +169,19 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
 
     setStopping(true)
     await stopExploration(character.id)
+
+    // Show completion modal
+    setShowCompletionModal(true)
+  }
+
+  function handleModalClose() {
+    setShowCompletionModal(false)
     setExploration(null)
     onExplorationComplete?.()
+  }
+
+  function handleItemRemoved(inventoryId: string) {
+    setSessionItems(prev => prev.filter(item => item.inventoryId !== inventoryId))
   }
 
   if (loading) {
@@ -212,6 +293,64 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         </div>
       </div>
 
+      {/* Recent Rewards */}
+      {rewards.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <span>💎</span>
+            Recent Rewards
+          </h3>
+          <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+            {rewards.slice(-10).reverse().map((reward, idx) => (
+              <div
+                key={`reward-${idx}`}
+                className="p-3 bg-gradient-to-r from-amber-500/10 to-yellow-500/10
+                         border border-amber-500/30 rounded-lg animate-pulse"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎁</span>
+                  <div className="flex-1">
+                    <div className="font-semibold text-amber-400 mb-1">
+                      Treasure at {reward.progress_percent}%
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      {reward.gold > 0 && (
+                        <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30
+                                       rounded text-yellow-400">
+                          💰 {reward.gold} gold
+                        </span>
+                      )}
+                      {reward.xp > 0 && (
+                        <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30
+                                       rounded text-blue-400">
+                          ⭐ {reward.xp} XP
+                        </span>
+                      )}
+                      {reward.itemDetails && reward.itemDetails.length > 0 && (
+                        reward.itemDetails.map((item, itemIdx) => (
+                          <span
+                            key={`item-${itemIdx}`}
+                            className={`px-2 py-1 border rounded
+                              ${item.rarity === 'legendary' ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400' :
+                                item.rarity === 'epic' ? 'bg-purple-500/20 border-purple-500/30 text-purple-400' :
+                                item.rarity === 'rare' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
+                                item.rarity === 'uncommon' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+                                'bg-gray-500/20 border-gray-500/30 text-gray-400'
+                              }`}
+                          >
+                            {item.name}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent Discoveries */}
       {discoveries.length > 0 && (
         <div className="space-y-3">
@@ -247,6 +386,9 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         <div className="text-sm text-gray-400">
           <strong className="text-white">Discovery Chance:</strong> Rolled every 10% progress
         </div>
+        <div className="text-sm text-gray-400">
+          <strong className="text-white">Reward Chance:</strong> Rolled every 1% progress (increases with progress!)
+        </div>
         {exploration.is_auto && (
           <div className="text-sm text-blue-400 flex items-center gap-2">
             <span>🤖</span>
@@ -267,6 +409,19 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
             : 'You\'ve covered most of the area, but there may be more to find...'}
         </p>
       </div>
+
+      {/* Adventure Completion Modal */}
+      <AdventureCompletionModal
+        isOpen={showCompletionModal}
+        onClose={handleModalClose}
+        zoneName={zone?.name || 'Unknown Zone'}
+        progress={progress}
+        discoveries={discoveries.length}
+        totalGold={totalGold}
+        totalXP={totalXP}
+        itemsFound={sessionItems}
+        onItemRemoved={handleItemRemoved}
+      />
     </div>
   )
 }

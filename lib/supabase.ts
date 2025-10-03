@@ -306,12 +306,34 @@ export interface ActiveExploration {
   discoveries_found: number
   is_auto: boolean
   auto_stop_at?: number
+  last_reward_percent: number
   updated_at: string
+}
+
+export interface ExplorationRewardConfig {
+  id: string
+  zone_id: string
+  progress_percent: number
+  reward_chance: number
+  loot_table: Record<string, number> // item_id -> drop_weight
+  gold_min: number
+  gold_max: number
+  xp_min: number
+  xp_max: number
+  created_at: string
+}
+
+export interface ExplorationReward {
+  items: string[] // item_ids
+  gold: number
+  xp: number
+  progress_percent: number
 }
 
 export interface ExplorationUpdate {
   progress: number
   discoveries: ZoneLandmark[]
+  rewards: ExplorationReward[]
   timeSpent: number
   completed: boolean
 }

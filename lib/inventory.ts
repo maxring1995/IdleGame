@@ -244,6 +244,46 @@ export async function equipItem(characterId: string, inventoryItemId: string) {
 }
 
 /**
+ * Delete an item from inventory
+ */
+export async function deleteInventoryItem(inventoryItemId: string) {
+  try {
+    const supabase = createClient()
+
+    // Check if item is equipped
+    const { data: inventoryItem } = await supabase
+      .from('inventory')
+      .select('*, item:items(*)')
+      .eq('id', inventoryItemId)
+      .single()
+
+    if (!inventoryItem) {
+      throw new Error('Item not found')
+    }
+
+    const characterId = inventoryItem.character_id
+
+    // If equipped, unequip first to update stats
+    if (inventoryItem.equipped) {
+      await unequipItem(inventoryItemId, characterId)
+    }
+
+    // Delete the item
+    const { error } = await supabase
+      .from('inventory')
+      .delete()
+      .eq('id', inventoryItemId)
+
+    if (error) throw error
+
+    return { error: null }
+  } catch (error) {
+    console.error('Delete item error:', error)
+    return { error: error as Error }
+  }
+}
+
+/**
  * Unequip an item
  */
 export async function unequipItem(inventoryItemId: string, characterId: string) {
