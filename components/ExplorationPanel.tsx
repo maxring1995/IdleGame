@@ -170,13 +170,25 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
     setStopping(true)
     await stopExploration(character.id)
 
-    // Show completion modal
+    // Show completion modal - DON'T notify parent yet
     setShowCompletionModal(true)
+    setStopping(false)
   }
 
   function handleModalClose() {
     setShowCompletionModal(false)
+    // Reset all state
     setExploration(null)
+    setProgress(0)
+    setDiscoveries([])
+    setRewards([])
+    setSessionItems([])
+    setTotalGold(0)
+    setTotalXP(0)
+    setTimeSpent(0)
+
+    // IMPORTANT: Only notify parent AFTER modal closes
+    // This prevents the parent from unmounting this component while modal is open
     onExplorationComplete?.()
   }
 
@@ -194,8 +206,27 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
     )
   }
 
-  if (!exploration) {
+  if (!exploration && !showCompletionModal) {
     return null
+  }
+
+  // If modal is showing but exploration is null, just show the modal
+  if (!exploration && showCompletionModal) {
+    return (
+      <>
+        <AdventureCompletionModal
+          isOpen={showCompletionModal}
+          onClose={handleModalClose}
+          zoneName={zone?.name || 'Unknown Zone'}
+          progress={progress}
+          discoveries={discoveries.length}
+          totalGold={totalGold}
+          totalXP={totalXP}
+          itemsFound={sessionItems}
+          onItemRemoved={handleItemRemoved}
+        />
+      </>
+    )
   }
 
   const minutes = Math.floor(timeSpent / 60)
@@ -275,11 +306,11 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
               <span>Discoveries</span>
             </div>
             <div className="text-2xl font-bold text-amber-400">
-              {exploration.discoveries_found}
+              {exploration?.discoveries_found ?? 0}
             </div>
           </div>
 
-          {exploration.is_auto && exploration.auto_stop_at && (
+          {exploration?.is_auto && exploration?.auto_stop_at && (
             <div className="stat-box">
               <div className="flex items-center gap-2 text-gray-400">
                 <span className="text-xl">🤖</span>
@@ -389,7 +420,7 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         <div className="text-sm text-gray-400">
           <strong className="text-white">Reward Chance:</strong> Rolled every 1% progress (increases with progress!)
         </div>
-        {exploration.is_auto && (
+        {exploration?.is_auto && (
           <div className="text-sm text-blue-400 flex items-center gap-2">
             <span>🤖</span>
             <span>Auto-exploration enabled</span>

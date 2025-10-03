@@ -113,7 +113,8 @@ interface SessionItem {
 
 ### Files Modified
 - [components/AdventureCompletionModal.tsx](components/AdventureCompletionModal.tsx:1-288) - New modal component
-- [components/ExplorationPanel.tsx](components/ExplorationPanel.tsx:1-426) - Added session tracking + modal
+- [components/ExplorationPanel.tsx](components/ExplorationPanel.tsx:1-460) - Added session tracking + modal
+- [components/Adventure.tsx](components/Adventure.tsx:21-87) - Fixed modal persistence with `showingExplorationPanel` state
 - [lib/inventory.ts](lib/inventory.ts:246-284) - Added `deleteInventoryItem()` function
 
 ## 🎮 User Flow
@@ -257,6 +258,7 @@ export async function deleteInventoryItem(inventoryItemId: string) {
 3. **Modal Close During Delete**: Button disabled during operation
 4. **Equipped Item Deletion**: Auto-unequips + updates stats first
 5. **Multiple Same Items**: Each tracked separately by inventory ID
+6. **Modal Persistence**: Modal stays open indefinitely until user closes it (fixed parent unmount issue)
 
 ## 🚀 Future Enhancements
 
@@ -270,6 +272,26 @@ export async function deleteInventoryItem(inventoryItemId: string) {
 
 ---
 
-**Status**: ✅ Implemented and Ready
-**Version**: 1.0
+## 🔧 Bug Fix: Modal Auto-Closing
+
+**Problem**: Modal was closing automatically after a few seconds instead of staying open.
+
+**Root Cause**: Parent component `Adventure.tsx` runs `checkActiveStates()` every 3 seconds, which queries for active exploration. When user stops exploring, the exploration is deleted from DB. Within 3 seconds, the interval detects no exploration and unmounts `ExplorationPanel`, closing the modal.
+
+**Solution**:
+1. Added `showingExplorationPanel` state to track when panel should stay mounted
+2. Modified `checkActiveStates()` to keep panel mounted even when exploration is deleted
+3. Only unmount panel when modal closes via `handleExplorationComplete()` callback
+4. Changed conditional rendering to use `showingExplorationPanel` instead of `hasActiveExploration`
+
+**Files Changed**:
+- [components/Adventure.tsx](components/Adventure.tsx:21-87) - State management and callbacks
+- [components/ExplorationPanel.tsx](components/ExplorationPanel.tsx:167-193) - Modal close handler
+
+**Result**: Modal now stays open indefinitely until user explicitly closes it ✅
+
+---
+
+**Status**: ✅ Implemented and Ready (Modal Persistence Fixed)
+**Version**: 1.1
 **Last Updated**: October 2024

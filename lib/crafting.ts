@@ -338,3 +338,273 @@ export async function getRecipeWithDetails(characterId: string, recipeId: string
     error: null
   }
 }
+
+/**
+ * Calculate maximum craftable quantity based on available ingredients
+ */
+export async function getMaxCraftableAmount(characterId: string, recipeId: string): Promise<number> {
+  const supabase = createClient()
+
+  const { data: recipe, error: recipeError } = await getRecipeById(recipeId)
+  if (recipeError || !recipe) return 0
+
+  const ingredients = recipe.ingredients as Record<string, number>
+
+  // Get character's inventory
+  const { data: inventory, error: invError } = await supabase
+    .from('inventory')
+    .select('item_id, quantity')
+    .eq('character_id', characterId)
+
+  if (invError || !inventory) return 0
+
+  let maxCraftable = Infinity
+
+  for (const [materialId, requiredPerCraft] of Object.entries(ingredients)) {
+    const inventoryItem = inventory.find(item => item.item_id === materialId)
+    const currentQuantity = inventoryItem?.quantity || 0
+    const possibleCrafts = Math.floor(currentQuantity / requiredPerCraft)
+    maxCraftable = Math.min(maxCraftable, possibleCrafts)
+  }
+
+  return maxCraftable === Infinity ? 0 : maxCraftable
+}
+
+/**
+ * Start a crafting session
+ */
+export async function startCraftingSession(
+  characterId: string,
+  recipeId: string,
+  quantity: number = 1,
+  isAuto: boolean = false
+) {
+  const supabase = createClient()
+
+  // Get recipe
+  const { data: recipe, error: recipeError } = await getRecipeById(recipeId)
+  if (recipeError || !recipe) {
+    return { data: null, error: recipeError || new Error('Recipe not found') }
+  }
+
+  // Check skill level
+  const { data: skill, error: skillError } = await supabase
+    .from('character_skills')
+    .select('level')
+    .eq('character_id', characterId)
+    .eq('skill_type', recipe.required_skill_type)
+    .single()
+
+  const playerSkillLevel = skill?.level || 1
+
+  if (playerSkillLevel < recipe.required_crafting_level) {
+    return {
+      data: null,
+      error: new Error(`Requires ${recipe.required_skill_type} level ${recipe.required_crafting_level}`)
+    }
+  }
+
+  // Check if can craft requested quantity
+  const maxCraftable = await getMaxCraftableAmount(characterId, recipeId)
+  if (maxCraftable < quantity) {
+    return {
+      data: null,
+      error: new Error(`Not enough ingredients. Can only craft ${maxCraftable}x`)
+    }
+  }
+
+  // Calculate completion time
+  const totalCraftingTime = recipe.crafting_time_ms * quantity
+  const estimatedCompletion = new Date(Date.now() + totalCraftingTime)
+
+  // Check if already crafting
+  const { data: existingSession, error: checkError } = await supabase
+    .from('active_crafting')
+    .select('*')
+    .eq('character_id', characterId)
+    .single()
+
+  if (existingSession) {
+    return { data: null, error: new Error('Already crafting something') }
+  }
+
+  // Create crafting session
+  const { data: session, error: sessionError } = await supabase
+    .from('active_crafting')
+    .insert({
+      character_id: characterId,
+      recipe_id: recipeId,
+      estimated_completion: estimatedCompletion.toISOString(),
+      quantity_goal: quantity,
+      quantity_crafted: 0,
+      is_auto: isAuto
+    })
+    .select()
+    .single()
+
+  if (sessionError) {
+    return { data: null, error: sessionError }
+  }
+
+  return { data: session, error: null }
+}
+
+/**
+ * Process active crafting session and complete crafts
+ */
+export async function processCrafting(characterId: string) {
+  const supabase = createClient()
+
+  // Get active session
+  const { data: session, error: sessionError } = await supabase
+    .from('active_crafting')
+    .select('*')
+    .eq('character_id', characterId)
+    .single()
+
+  if (sessionError || !session) {
+    return { data: null, error: sessionError }
+  }
+
+  // Get recipe
+  const { data: recipe, error: recipeError } = await getRecipeById(session.recipe_id)
+  if (recipeError || !recipe) {
+    return { data: null, error: recipeError }
+  }
+
+  const now = Date.now()
+  const startedAt = new Date(session.started_at).getTime()
+  const timeElapsed = now - startedAt
+  const craftTime = recipe.crafting_time_ms
+
+  // Calculate how many items should be crafted by now
+  const shouldHaveCrafted = Math.floor(timeElapsed / craftTime)
+  const actuallyNeedToCraft = Math.min(shouldHaveCrafted, session.quantity_goal) - session.quantity_crafted
+
+  if (actuallyNeedToCraft <= 0) {
+    // No new crafts to complete
+    return { data: session, error: null }
+  }
+
+  // Craft each item
+  for (let i = 0; i < actuallyNeedToCraft; i++) {
+    // Check ingredients for this craft
+    const { hasIngredients } = await checkIngredients(characterId, session.recipe_id)
+
+    if (!hasIngredients) {
+      // Out of ingredients - stop session
+      await supabase
+        .from('active_crafting')
+        .delete()
+        .eq('character_id', characterId)
+
+      return {
+        data: null,
+        error: new Error('Ran out of ingredients')
+      }
+    }
+
+    // Consume ingredients
+    const { error: consumeError } = await consumeIngredients(
+      characterId,
+      recipe.ingredients as Record<string, number>
+    )
+
+    if (consumeError) {
+      return { data: null, error: consumeError }
+    }
+
+    // Add crafted item
+    await addItem(characterId, recipe.result_item_id, recipe.result_quantity)
+
+    // Add experience
+    await addSkillExperience(characterId, recipe.required_skill_type, recipe.experience_reward)
+
+    // Update session
+    const newQuantityCrafted = session.quantity_crafted + 1
+
+    if (newQuantityCrafted >= session.quantity_goal) {
+      // Session complete
+      if (session.is_auto) {
+        // Auto-craft: check if we can restart
+        const maxCraftable = await getMaxCraftableAmount(characterId, session.recipe_id)
+        if (maxCraftable > 0) {
+          // Restart with same quantity
+          const restartQuantity = Math.min(maxCraftable, session.quantity_goal)
+          const totalTime = recipe.crafting_time_ms * restartQuantity
+          const newCompletion = new Date(Date.now() + totalTime)
+
+          await supabase
+            .from('active_crafting')
+            .update({
+              quantity_crafted: 0,
+              quantity_goal: restartQuantity,
+              estimated_completion: newCompletion.toISOString(),
+              started_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('character_id', characterId)
+        } else {
+          // No more ingredients - stop
+          await supabase
+            .from('active_crafting')
+            .delete()
+            .eq('character_id', characterId)
+        }
+      } else {
+        // Manual crafting - delete session
+        await supabase
+          .from('active_crafting')
+          .delete()
+          .eq('character_id', characterId)
+      }
+    } else {
+      // Update progress
+      await supabase
+        .from('active_crafting')
+        .update({
+          quantity_crafted: newQuantityCrafted,
+          updated_at: new Date().toISOString()
+        })
+        .eq('character_id', characterId)
+    }
+  }
+
+  // Get updated session
+  const { data: updatedSession } = await supabase
+    .from('active_crafting')
+    .select('*')
+    .eq('character_id', characterId)
+    .single()
+
+  return { data: updatedSession, error: null }
+}
+
+/**
+ * Cancel active crafting session
+ */
+export async function cancelCrafting(characterId: string) {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('active_crafting')
+    .delete()
+    .eq('character_id', characterId)
+
+  return { error }
+}
+
+/**
+ * Get active crafting session for character
+ */
+export async function getActiveCraftingSession(characterId: string) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('active_crafting')
+    .select('*')
+    .eq('character_id', characterId)
+    .single()
+
+  return { data, error }
+}

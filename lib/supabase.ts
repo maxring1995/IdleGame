@@ -199,6 +199,17 @@ export interface CraftingRecipe {
   created_at: string
 }
 
+export interface ActiveCrafting {
+  character_id: string
+  recipe_id: string
+  started_at: string
+  estimated_completion: string
+  quantity_goal: number
+  quantity_crafted: number
+  is_auto: boolean
+  updated_at: string
+}
+
 export interface ActiveGathering {
   character_id: string
   skill_type: string

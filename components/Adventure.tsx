@@ -18,6 +18,7 @@ export default function Adventure() {
   const [initialized, setInitialized] = useState(false)
   const [hasActiveTravel, setHasActiveTravel] = useState(false)
   const [hasActiveExploration, setHasActiveExploration] = useState(false)
+  const [showingExplorationPanel, setShowingExplorationPanel] = useState(false)
 
   useEffect(() => {
     if (character && !initialized) {
@@ -57,11 +58,32 @@ export default function Adventure() {
     ])
 
     setHasActiveTravel(!!travelData.data)
-    setHasActiveExploration(!!explorationData.data)
+
+    // Manage exploration panel visibility
+    if (explorationData.data) {
+      // Active exploration - show panel
+      setHasActiveExploration(true)
+      setShowingExplorationPanel(true)
+    } else if (hasActiveExploration && !explorationData.data) {
+      // Exploration just stopped - keep panel mounted for modal
+      setHasActiveExploration(false)
+      setShowingExplorationPanel(true)
+    } else {
+      // No exploration at all
+      setHasActiveExploration(false)
+      // Don't set showingExplorationPanel here - let handleExplorationComplete control it
+    }
   }
 
   function handleZoneSelect(zoneId: string) {
     setSelectedZoneId(zoneId)
+  }
+
+  function handleExplorationComplete() {
+    // When modal closes, allow panel to unmount
+    setShowingExplorationPanel(false)
+    setHasActiveExploration(false)
+    checkActiveStates()
   }
 
   function handleActivityComplete() {
@@ -106,19 +128,19 @@ export default function Adventure() {
       </div>
 
       {/* Active Travel/Exploration */}
-      {(hasActiveTravel || hasActiveExploration) && (
+      {(hasActiveTravel || showingExplorationPanel) && (
         <div>
           {hasActiveTravel && (
             <TravelPanel onTravelComplete={handleActivityComplete} />
           )}
-          {hasActiveExploration && (
-            <ExplorationPanel onExplorationComplete={handleActivityComplete} />
+          {showingExplorationPanel && (
+            <ExplorationPanel onExplorationComplete={handleExplorationComplete} />
           )}
         </div>
       )}
 
       {/* Main Content - 2 Column Layout */}
-      {!hasActiveTravel && !hasActiveExploration && (
+      {!hasActiveTravel && !showingExplorationPanel && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: World Map / Zone Browser */}
           <div className="lg:col-span-1">

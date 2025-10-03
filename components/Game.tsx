@@ -8,6 +8,7 @@ import Combat from './Combat'
 import GatheringSimple from './GatheringSimple'
 import CharacterTab from './CharacterTab'
 import Adventure from './Adventure'
+import CraftingPanel from './CraftingPanel'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
 
@@ -20,7 +21,7 @@ interface GameProps {
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'crafting' | 'inventory'>('adventure')
 
   useEffect(() => {
     if (!user) {
@@ -320,6 +321,20 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('crafting')}
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
+                    activeTab === 'crafting'
+                      ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">🔨</span>
+                    <span className="text-sm">Crafting</span>
+                  </div>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('inventory')}
                   className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'inventory'
@@ -345,6 +360,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 <Combat />
               ) : activeTab === 'gathering' ? (
                 <GatheringSimple />
+              ) : activeTab === 'crafting' ? (
+                <CraftingPanel />
               ) : (
                 <Inventory />
               )}

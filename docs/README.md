@@ -9,7 +9,8 @@ This folder contains all project documentation, implementation guides, and techn
 - **[README.md](../README.md)** - Main project README (in root)
 
 ### Implementation Phases
-- **[PHASE4_GATHERING.md](PHASE4_GATHERING.md)** - Phase 4: Gathering & Crafting System ✅ (Latest)
+- **[PHASE6_CRAFTING.md](PHASE6_CRAFTING.md)** - Phase 6: Crafting System (60+ Recipes, Async Crafting) ✅ (Latest)
+- **[PHASE4_GATHERING.md](PHASE4_GATHERING.md)** - Phase 4: Gathering & Crafting System ✅
 - **[PHASE3_COMBAT.md](PHASE3_COMBAT.md)** - Phase 3: Combat System Implementation
 - **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 Summary & Results
 - **[FEATURE2_SUMMARY.md](FEATURE2_SUMMARY.md)** - Feature 2 Implementation Summary
@@ -64,6 +65,7 @@ All bug fixes are documented with:
 
 ## 📅 Latest Updates
 
+- **2025-10-03** - PHASE6_CRAFTING.md - Complete crafting system with 60+ recipes and async crafting
 - **2025-10-02** - PHASE4_GATHERING.md - Complete gathering system with 6 skills and 50+ materials
 - **2025-10-02** - Added ICONS.md with complete icon system documentation
 - **2025-10-02** - BUG_FIX_REPORT.md - Fixed character creation loading loop

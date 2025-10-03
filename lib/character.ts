@@ -53,6 +53,22 @@ export async function createCharacter(userId: string, name: string): Promise<{ d
           equipped: false,
         },
       ])
+
+      // Initialize crafting skills
+      await supabase.from('character_skills').insert([
+        {
+          character_id: data.id,
+          skill_type: 'crafting',
+          level: 1,
+          experience: 0,
+        },
+        {
+          character_id: data.id,
+          skill_type: 'alchemy',
+          level: 1,
+          experience: 0,
+        },
+      ])
     }
 
     return { data, error: null }
