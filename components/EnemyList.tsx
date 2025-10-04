@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Enemy } from '@/lib/supabase'
-import { getAvailableEnemies } from '@/lib/enemies'
+import { Enemy, WorldZoneWithDiscovery } from '@/lib/supabase'
+import { getAvailableEnemies, getEnemiesByZone, getZonesWithEnemies } from '@/lib/enemies'
+import { createClient } from '@/utils/supabase/client'
 import { useGameStore } from '@/lib/store'
 
 interface EnemyListProps {
@@ -15,9 +16,55 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Zone expansion
+  const [zones, setZones] = useState<WorldZoneWithDiscovery[]>([])
+  const [selectedZone, setSelectedZone] = useState<WorldZoneWithDiscovery | null>(null)
+  const [filterMode, setFilterMode] = useState<'all' | 'zone'>('all')
+
   useEffect(() => {
+    loadZones()
     loadEnemies()
   }, [character])
+
+  useEffect(() => {
+    if (filterMode === 'zone' && selectedZone) {
+      loadZoneEnemies()
+    } else if (filterMode === 'all') {
+      loadEnemies()
+    }
+  }, [filterMode, selectedZone])
+
+  async function loadZones() {
+    if (!character) return
+
+    try {
+      // Get all zones the character can access based on level
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('world_zones')
+        .select('*')
+        .lte('required_level', character.level)
+        .order('required_level', { ascending: true })
+
+      if (error) {
+        console.error('Error loading zones:', error)
+        return
+      }
+
+      if (data) {
+        // Convert to WorldZoneWithDiscovery format
+        const zonesWithDiscovery = data.map(zone => ({
+          ...zone,
+          isDiscovered: true, // All zones at or below character level are accessible
+          discoveredAt: undefined,
+          timeSpent: 0
+        }))
+        setZones(zonesWithDiscovery as WorldZoneWithDiscovery[])
+      }
+    } catch (err) {
+      console.error('Error in loadZones:', err)
+    }
+  }
 
   async function loadEnemies() {
     if (!character) return
@@ -35,6 +82,33 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
     }
 
     setLoading(false)
+  }
+
+  async function loadZoneEnemies() {
+    if (!character || !selectedZone) return
+
+    setLoading(true)
+    setError(null)
+
+    const { data, error: err } = await getEnemiesByZone(selectedZone.id, character.level)
+
+    if (err) {
+      setError('Failed to load zone enemies')
+      console.error(err)
+    } else {
+      setEnemies(data || [])
+    }
+
+    setLoading(false)
+  }
+
+  function handleZoneChange(zone: WorldZoneWithDiscovery | null) {
+    setSelectedZone(zone)
+    if (zone) {
+      setFilterMode('zone')
+    } else {
+      setFilterMode('all')
+    }
   }
 
   if (loading) {
@@ -115,6 +189,38 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
           Your Level: {character?.level || 1}
         </div>
       </div>
+
+      {/* Zone Filter */}
+      {zones.length > 0 && (
+        <div className="panel p-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="text-sm text-gray-400 block mb-2">Filter by Zone:</label>
+              <select
+                value={selectedZone?.id || ''}
+                onChange={(e) => {
+                  const zone = zones.find(z => z.id === e.target.value)
+                  handleZoneChange(zone || null)
+                }}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
+              >
+                <option value="">All Zones</option>
+                {zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.icon} {zone.name} (Lv. {zone.required_level})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedZone && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm">
+                <div className="text-gray-400">Showing enemies from:</div>
+                <div className="text-red-400 font-semibold">{selectedZone.icon} {selectedZone.name}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Regular Enemies */}
       {regularEnemies.length > 0 && (

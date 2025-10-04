@@ -99,8 +99,18 @@ export async function startGatheringSimple(
     return { success: false, error: error.message }
   }
 
+  const totalTime = material.gathering_time_ms * quantity
+
   revalidatePath('/game')
-  return { success: true, error: null }
+  return {
+    success: true,
+    error: null,
+    session: {
+      totalTime,
+      material: material.name,
+      quantity
+    }
+  }
 }
 
 export async function checkGatheringProgress(characterId: string) {
@@ -257,7 +267,15 @@ export async function collectGathering(characterId: string) {
     .eq('character_id', characterId)
 
   revalidatePath('/game')
-  return { success: true, error: null, quantity: session.quantity_gathered }
+  return {
+    success: true,
+    error: null,
+    data: {
+      materialName: material.name,
+      quantity: session.quantity_gathered,
+      xpGained: totalXP
+    }
+  }
 }
 
 export async function cancelGatheringSimple(characterId: string) {

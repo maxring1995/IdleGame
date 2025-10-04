@@ -1,5 +1,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { Character } from './supabase'
+import { trackQuestProgress } from './quests'
+import { initializeAllSkills } from './skillInitialization'
 
 /**
  * Create a new character for a user
@@ -54,21 +56,8 @@ export async function createCharacter(userId: string, name: string): Promise<{ d
         },
       ])
 
-      // Initialize crafting skills
-      await supabase.from('character_skills').insert([
-        {
-          character_id: data.id,
-          skill_type: 'crafting',
-          level: 1,
-          experience: 0,
-        },
-        {
-          character_id: data.id,
-          skill_type: 'alchemy',
-          level: 1,
-          experience: 0,
-        },
-      ])
+      // Initialize all 20 skills
+      await initializeAllSkills(data.id)
     }
 
     return { data, error: null }
@@ -180,6 +169,12 @@ export async function addExperience(
         .single()
 
       if (error) throw error
+
+      // Track quest progress for level quests
+      await trackQuestProgress(characterId, 'level', {
+        amount: newLevel
+      })
+
       return { data, error: null, leveledUp }
     } else {
       const { data, error } = await supabase
@@ -213,10 +208,12 @@ export async function addGold(characterId: string, amount: number) {
       .eq('id', characterId)
       .single()
 
+    const newGold = (character?.gold || 0) + amount
+
     const { data, error } = await supabase
       .from('characters')
       .update({
-        gold: (character?.gold || 0) + amount,
+        gold: newGold,
         last_active: new Date().toISOString(),
       })
       .eq('id', characterId)
@@ -224,6 +221,12 @@ export async function addGold(characterId: string, amount: number) {
       .single()
 
     if (error) throw error
+
+    // Track quest progress for gold quests
+    await trackQuestProgress(characterId, 'gold', {
+      amount: newGold
+    })
+
     return { data, error: null }
   } catch (error) {
     console.error('Add gold error:', error)

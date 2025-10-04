@@ -24,6 +24,8 @@ export interface Character {
   defense: number
   gold: number
   gems: number
+  class_id?: string
+  mastery_points: number
   created_at: string
   updated_at: string
   last_active: string
@@ -64,6 +66,9 @@ export interface CharacterSkill {
   skill_type: string
   level: number
   experience: number
+  prestige_level: number
+  total_experience: number
+  specialization_id?: string
   created_at: string
   updated_at: string
 }
@@ -425,4 +430,273 @@ export interface ExplorationUpdate {
   discoveries: ZoneLandmark[]
   timeSpent: number // seconds
   completed: boolean
+}
+
+// Merchant System Types
+export interface MerchantInventoryItem {
+  id: string
+  item_id: string
+  stock_quantity: number // -1 = unlimited
+  buy_price: number // Price player pays to buy
+  price_multiplier: number
+  available_from: string
+  available_until?: string
+  merchant_tier: number
+  required_character_level: number
+  zone_id?: string // Zone-specific merchant (NULL = global)
+  merchant_name?: string // Name of the merchant
+  merchant_description?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface MerchantInventoryWithItem extends MerchantInventoryItem {
+  item: Item // Joined item details
+}
+
+export interface ZoneMerchant {
+  id: string
+  zone_id: string
+  merchant_name: string
+  merchant_type: 'general' | 'weapons' | 'armor' | 'potions' | 'materials' | 'specialty'
+  description?: string
+  greeting_message?: string
+  personality?: 'friendly' | 'gruff' | 'mysterious' | 'cheerful' | 'suspicious'
+  icon: string
+  discount_multiplier: number
+  unlocked_at_reputation: number
+  created_at: string
+}
+
+export interface ZoneMerchantWithZone extends ZoneMerchant {
+  zone: WorldZone
+}
+
+export interface ZoneMerchantWithInventory extends ZoneMerchant {
+  zone: WorldZone
+  inventory: MerchantInventoryWithItem[]
+}
+
+export interface MerchantTransaction {
+  id: string
+  character_id: string
+  transaction_type: 'buy' | 'sell'
+  item_id: string
+  quantity: number
+  price_per_unit: number
+  total_price: number
+  created_at: string
+}
+
+export interface MerchantTransactionWithItem extends MerchantTransaction {
+  item: Item // Joined item details
+}
+
+export interface CharacterMerchantData {
+  character_id: string
+  unlocked_tier: number
+  last_inventory_refresh: string
+  total_purchases: number
+  total_sales: number
+  lifetime_gold_spent: number
+  lifetime_gold_earned: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BuyItemResult {
+  success: boolean
+  error?: string
+  transaction?: MerchantTransaction
+  newGold?: number
+}
+
+export interface SellItemResult {
+  success: boolean
+  error?: string
+  transaction?: MerchantTransaction
+  newGold?: number
+}
+
+// =====================================================
+// COMPREHENSIVE SKILL & CLASS SYSTEM TYPES
+// =====================================================
+
+// Skill System Types
+export type SkillCategory = 'combat' | 'gathering' | 'artisan' | 'support'
+
+export interface SkillDefinition {
+  skill_type: string
+  display_name: string
+  category: SkillCategory
+  description?: string
+  icon: string
+  base_stat_affected?: string
+  created_at: string
+}
+
+export interface CharacterSkillWithDefinition extends CharacterSkill {
+  definition: SkillDefinition
+}
+
+// Class System Types
+export interface ClassDefinition {
+  class_id: string
+  display_name: string
+  description?: string
+  icon: string
+  primary_stats: Record<string, number> // {stat_name: bonus_value}
+  skill_bonuses: Record<string, number> // {skill_type: xp_multiplier}
+  special_ability_id?: string
+  created_at: string
+}
+
+export interface SpecialAbility {
+  ability_id: string
+  display_name: string
+  description?: string
+  cooldown_seconds: number
+  duration_seconds: number
+  effect_type?: string
+  effect_data: Record<string, any>
+  icon: string
+  created_at: string
+}
+
+export interface ActiveClassAbility {
+  character_id: string
+  ability_id: string
+  last_used_at?: string
+  active_until?: string
+  is_active: boolean
+  uses_count: number
+}
+
+export interface ActiveClassAbilityWithDetails extends ActiveClassAbility {
+  ability: SpecialAbility
+}
+
+// Milestone System Types
+export type MilestoneRewardType = 'gold' | 'item' | 'ability' | 'stat_boost' | 'mastery_point'
+
+export interface SkillMilestone {
+  id: string
+  skill_type: string
+  milestone_level: number
+  reward_type: MilestoneRewardType
+  reward_data: Record<string, any>
+  description?: string
+  created_at: string
+}
+
+// Specialization System Types
+export interface SkillSpecialization {
+  specialization_id: string
+  skill_type: string
+  display_name: string
+  description?: string
+  unlock_level: number
+  bonuses: Record<string, any>
+  special_effect?: string
+  icon: string
+  created_at: string
+}
+
+// Synergy System Types
+export interface SkillSynergy {
+  synergy_id: string
+  display_name: string
+  description?: string
+  required_skills: Record<string, number> // {skill_type: min_level}
+  bonus_type: string
+  bonus_data: Record<string, any>
+  icon: string
+  created_at: string
+}
+
+export interface CharacterSkillSynergy {
+  character_id: string
+  synergy_id: string
+  unlocked_at: string
+}
+
+export interface CharacterSkillSynergyWithDetails extends CharacterSkillSynergy {
+  synergy: SkillSynergy
+}
+
+// Mastery Tree Types
+export type MasteryCategory = 'combat' | 'gathering' | 'artisan' | 'support' | 'universal'
+
+export interface MasteryTreeNode {
+  node_id: string
+  display_name: string
+  description?: string
+  category: MasteryCategory
+  cost: number
+  requirements: Record<string, any> // Prerequisites (other node_ids or conditions)
+  bonuses: Record<string, any>
+  icon: string
+  created_at: string
+}
+
+export interface CharacterMasteryNode {
+  character_id: string
+  node_id: string
+  purchased_at: string
+}
+
+export interface CharacterMasteryNodeWithDetails extends CharacterMasteryNode {
+  node: MasteryTreeNode
+}
+
+// Character with full class info
+export interface CharacterWithClass extends Character {
+  class_definition?: ClassDefinition
+  active_ability?: ActiveClassAbilityWithDetails
+}
+
+// XP Calculation Types
+export interface XPRequirement {
+  level: number
+  xp_required: number
+  cumulative_xp: number
+}
+
+export interface SkillProgress {
+  current_level: number
+  current_xp: number
+  xp_for_next_level: number
+  xp_for_current_level: number
+  progress_percent: number
+  prestige_level: number
+  total_xp: number
+}
+
+// Prestige Types
+export interface PrestigeReward {
+  efficiency_bonus: number // 5% per prestige level
+  cosmetic_title?: string
+  special_icon?: string
+}
+
+// Skill Challenge Types
+export interface SkillChallenge {
+  id: string
+  skill_type: string
+  challenge_type: 'daily' | 'weekly'
+  description: string
+  requirements: Record<string, any>
+  xp_reward: number
+  bonus_rewards?: Record<string, any>
+  expires_at: string
+  created_at: string
+}
+
+export interface CharacterSkillChallenge {
+  character_id: string
+  challenge_id: string
+  progress: Record<string, any>
+  completed: boolean
+  completed_at?: string
+  claimed: boolean
 }

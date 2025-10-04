@@ -19,9 +19,8 @@ const customJestConfig = {
     '!**/node_modules/**',
   ],
   testMatch: [
-    '**/__tests__/**/*.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)',
-    '!**/tests/**', // Exclude Playwright tests
+    '<rootDir>/test/unit/**/*.[jt]s?(x)',
+    '<rootDir>/test/frontend/**/*.[jt]s?(x)',
   ],
 }
 

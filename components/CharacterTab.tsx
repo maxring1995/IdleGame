@@ -1,10 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useGameStore } from '@/lib/store'
 import EquipmentOverlay from './EquipmentOverlay'
+import SkillsPanel from './SkillsPanel'
 
 export default function CharacterTab() {
+  const { character } = useGameStore()
   const [showEquipmentManager, setShowEquipmentManager] = useState(false)
+  const [showSkillsPanel, setShowSkillsPanel] = useState(false)
+
+  if (!character) return null
 
   return (
     <>
@@ -13,7 +19,24 @@ export default function CharacterTab() {
         onClose={() => setShowEquipmentManager(false)}
       />
 
-      <div className="space-y-6">
+      {/* Skills Panel View */}
+      {showSkillsPanel ? (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowSkillsPanel(false)}
+            className="btn btn-secondary mb-4"
+          >
+            ← Back to Character Menu
+          </button>
+          <SkillsPanel
+            character={character}
+            onUpdate={() => {
+              // Refresh character data if needed
+            }}
+          />
+        </div>
+      ) : (
+        <div className="space-y-6">
         {/* Character Management Header */}
         <div className="panel p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <div className="flex items-center gap-4 mb-4">
@@ -49,19 +72,25 @@ export default function CharacterTab() {
             </div>
           </button>
 
-          {/* Skills Card (Coming Soon) */}
-          <div className="panel p-6 text-left opacity-60">
+          {/* Skills & Abilities Card */}
+          <button
+            onClick={() => setShowSkillsPanel(true)}
+            className="panel p-6 text-left hover:bg-white/5 transition-all group"
+          >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-2xl shadow-lg">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
                 📊
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-white mb-1">Skills & Abilities</h3>
-                <p className="text-sm text-gray-400 mb-3">View and upgrade your character skills</p>
-                <div className="badge badge-common text-xs">Coming Soon</div>
+                <p className="text-sm text-gray-400 mb-3">View skills, choose specializations, and prestige</p>
+                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <span>Click to open</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Achievements Card (Coming Soon) */}
           <div className="panel p-6 text-left opacity-60">
@@ -148,6 +177,7 @@ export default function CharacterTab() {
           </div>
         </div>
       </div>
+      )}
     </>
   )
 }

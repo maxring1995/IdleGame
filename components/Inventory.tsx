@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
 import { getInventory, equipItem, unequipItem, getAllItems } from '@/lib/inventory'
+import { useConsumable, parseConsumableEffects, getEffectDescription } from '@/lib/consumables'
 
 interface InventoryItemWithDetails {
   id: string
@@ -17,10 +18,12 @@ interface InventoryItemWithDetails {
 }
 
 export default function Inventory() {
-  const { character } = useGameStore()
+  const { character, updateCharacterStats } = useGameStore()
   const [inventory, setInventory] = useState<InventoryItemWithDetails[]>([])
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isUsing, setIsUsing] = useState(false)
+  const [useMessage, setUseMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'equipment' | 'consumables' | 'materials'>('equipment')
 
   useEffect(() => {
@@ -51,6 +54,56 @@ export default function Inventory() {
 
     // Reload inventory
     await loadInventory()
+  }
+
+  async function handleUse(invItem: InventoryItemWithDetails) {
+    if (!character) return
+    if (invItem.item.type !== 'consumable') return
+
+    setIsUsing(true)
+    setUseMessage(null)
+
+    const { success, error, effects } = await useConsumable(character.id, invItem.id)
+
+    if (success && effects) {
+      // Build success message
+      const effectMessages = effects.map(effect => getEffectDescription(effect)).join(', ')
+      setUseMessage({
+        type: 'success',
+        text: `Used ${invItem.item.name}! ${effectMessages}`
+      })
+
+      // Reload inventory and character
+      await loadInventory()
+
+      // Update character stats in store (health/mana may have changed)
+      const { createClient } = await import('@/utils/supabase/client')
+      const supabase = createClient()
+      const { data: updatedChar } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('id', character.id)
+        .single()
+
+      if (updatedChar) {
+        updateCharacterStats(updatedChar)
+      }
+
+      // Clear selected item if it was deleted
+      if (invItem.quantity === 1) {
+        setSelectedItem(null)
+      }
+    } else {
+      setUseMessage({
+        type: 'error',
+        text: error || 'Failed to use item'
+      })
+    }
+
+    setIsUsing(false)
+
+    // Clear message after 5 seconds
+    setTimeout(() => setUseMessage(null), 5000)
   }
 
   function getRarityColor(rarity: string) {
@@ -269,22 +322,61 @@ export default function Inventory() {
               </div>
             </div>
 
-            {/* Actions */}
-            {selectedItem.item.equipment_slot && (
-              <button
-                onClick={() => handleEquip(selectedItem)}
-                className={`
-                  w-full py-2 px-4 rounded-lg font-medium transition
-                  ${
-                    selectedItem.equipped
-                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                      : 'bg-primary/20 text-primary hover:bg-primary/30'
-                  }
-                `}
-              >
-                {selectedItem.equipped ? 'Unequip' : 'Equip'}
-              </button>
+            {/* Consumable Effects Preview */}
+            {selectedItem.item.type === 'consumable' && (
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p className="text-xs text-blue-400 uppercase mb-2">Effects</p>
+                <div className="space-y-1 text-sm">
+                  {parseConsumableEffects(selectedItem.item).map((effect, idx) => (
+                    <div key={idx} className="text-blue-300">
+                      • {getEffectDescription(effect)}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
+
+            {/* Use Message */}
+            {useMessage && (
+              <div className={`mb-4 p-3 rounded-lg border ${
+                useMessage.type === 'success'
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : 'bg-red-500/10 border-red-500/30 text-red-400'
+              }`}>
+                <p className="text-sm">{useMessage.text}</p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="space-y-2">
+              {selectedItem.item.equipment_slot && (
+                <button
+                  onClick={() => handleEquip(selectedItem)}
+                  className={`
+                    w-full py-2 px-4 rounded-lg font-medium transition
+                    ${
+                      selectedItem.equipped
+                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                        : 'bg-primary/20 text-primary hover:bg-primary/30'
+                    }
+                  `}
+                >
+                  {selectedItem.equipped ? 'Unequip' : 'Equip'}
+                </button>
+              )}
+
+              {selectedItem.item.type === 'consumable' && (
+                <button
+                  onClick={() => handleUse(selectedItem)}
+                  disabled={isUsing}
+                  className="w-full py-2 px-4 rounded-lg font-medium transition
+                    bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30
+                    disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUsing ? 'Using...' : 'Use Item'}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bg-bg-panel rounded-lg p-4 border border-white/10 text-center text-gray-400">

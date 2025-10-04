@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 For detailed information about implementation phases, bug fixes, and technical guides, see:
 - **[docs/README.md](docs/README.md)** - Complete documentation index
-- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Quick start guide
-- **[docs/ICONS.md](docs/ICONS.md)** - Icon usage guide
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/guides/QUICKSTART.md](docs/guides/QUICKSTART.md)** - Quick start guide
+- **[docs/guides/ICONS.md](docs/guides/ICONS.md)** - Icon usage guide
+- **[docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Project Overview
 
@@ -45,17 +45,25 @@ npm run lint
 
 ### Testing
 ```bash
-# Run all Playwright tests (requires dev server)
-npx playwright test
+# Run all tests (unit + E2E)
+npm run test:all
 
-# Run specific test file
-npx playwright test tests/auth.spec.ts
+# Run unit tests only
+npm test
+# or
+npm run test:unit
 
-# Run tests in headed mode (see browser)
-npx playwright test --headed
+# Run E2E tests only
+npm run test:e2e
 
-# Run tests in UI mode (interactive)
-npx playwright test --ui
+# Run specific E2E test file
+npx playwright test test/e2e/auth.spec.ts
+
+# Run E2E tests in headed mode (see browser)
+npm run test:e2e:headed
+
+# Run E2E tests in UI mode (interactive)
+npm run test:e2e:ui
 
 # View test report
 npx playwright show-report
@@ -223,11 +231,71 @@ supabase db reset
 4. UI components re-render automatically
 
 ### Implementing New Features
+
+**⚠️ IMPORTANT: All new features must include comprehensive testing**
+
 1. **Database First**: Add tables/columns in new migration file
 2. **Types**: Update interfaces in `lib/supabase.ts`
 3. **Business Logic**: Add functions to `lib/` folder
 4. **UI**: Create/update components
 5. **State**: Integrate with Zustand store if needed
+6. **Testing** (REQUIRED):
+   - **Unit Tests**: Test business logic functions in `test/unit/`
+   - **Frontend Tests**: Test component rendering in `test/frontend/`
+   - **E2E Tests**: Test complete user flows with Playwright in `test/e2e/`
+
+### Feature Development Workflow (MANDATORY)
+
+When implementing any new feature, follow this structured approach:
+
+1. **Create Detailed To-Do List**
+   - Break feature into small, testable tasks
+   - Include specific test tasks for each component
+   - Mark tasks as: pending → in_progress → completed
+
+2. **Development Tasks** (for each feature component):
+   - Implement core functionality
+   - Write unit tests for business logic
+   - Write frontend tests for UI components
+   - Write E2E Playwright tests for user flows
+   - Document behavior and edge cases
+
+3. **Testing Requirements**:
+   ```
+   ✅ Unit Tests (test/unit/*.test.ts)
+      - Test all business logic functions
+      - Test edge cases and error handling
+      - Aim for >80% code coverage
+
+   ✅ Frontend Tests (test/frontend/*.test.tsx)
+      - Test component rendering
+      - Test user interactions
+      - Test state changes
+
+   ✅ E2E Tests (test/e2e/*.spec.ts)
+      - Test complete user workflows
+      - Test integration between systems
+      - Test database interactions
+      - Include happy path and error scenarios
+   ```
+
+4. **Task Completion Criteria**:
+   - ✅ Feature implemented and working
+   - ✅ All tests written and passing
+   - ✅ No TypeScript errors
+   - ✅ No console errors in browser
+   - ✅ Code reviewed (self-review)
+   - ✅ Documentation updated (if needed)
+
+**Example To-Do Structure:**
+```
+1. [pending] Implement [feature] - Core functionality
+2. [pending] Write unit tests for [feature]
+3. [pending] Implement [feature] UI component
+4. [pending] Write frontend tests for [feature] UI
+5. [pending] Write E2E tests for [feature] workflow
+6. [pending] Test [feature] end-to-end
+```
 
 ### Real-time Updates
 To add real-time subscriptions:
@@ -252,20 +320,32 @@ This project uses a **multi-layered testing approach**:
 
 **End-to-End Testing (Playwright)**:
 - **Framework**: Playwright for browser automation
-- **Location**: `tests/` directory
+- **Location**: `test/e2e/` directory
 - **Coverage**:
   - `auth.spec.ts` - Authentication flows (signup, signin, logout)
   - `signin.spec.ts` - Sign-in specific edge cases
   - `inventory.spec.ts` - Inventory operations (equip, unequip, items)
   - `combat.spec.ts` - Combat system flows (battle, victory, defeat)
+  - `quests.spec.ts` - Quest system workflows
+  - `gathering.spec.ts` - Gathering system flows
+  - `adventure.spec.ts` - Adventure and exploration
   - `full-flow.spec.ts` - Complete end-to-end user journey
 
 **Unit Testing (Jest)**:
 - **Framework**: Jest for unit tests
-- **Location**: `lib/__tests__/` directory
+- **Location**: `test/unit/` directory
 - **Coverage**:
-  - `auth.test.ts` - Authentication utilities (password generation, email format)
-  - `combat.test.ts` - Combat calculations (damage formula, loot drops, gold rolls)
+  - `auth.test.ts` - Authentication utilities
+  - `combat.test.ts` - Combat calculations
+  - `gathering.test.ts` - Gathering mechanics
+  - `quest-tracking.test.ts` - Quest progress tracking
+  - `quests.test.ts` - Quest system logic
+  - `travel.test.ts` - Travel calculations
+
+**Frontend Testing (Jest + React Testing Library)**:
+- **Framework**: Jest + React Testing Library
+- **Location**: `test/frontend/` directory
+- **Coverage**: Component rendering and interaction tests (to be added)
 
 **Test Configuration:**
 - **Playwright**:
@@ -285,7 +365,7 @@ This project uses a **multi-layered testing approach**:
 npx playwright test
 
 # Run specific test file
-npx playwright test tests/combat.spec.ts
+npx playwright test test/e2e/combat.spec.ts
 
 # Run tests with UI (interactive)
 npx playwright test --ui

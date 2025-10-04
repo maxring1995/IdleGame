@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Enemy, Character, CombatAction, CombatResult, ActiveCombat, CombatLog } from './supabase'
 import { addExperience, addGold } from './character'
 import { addItem } from './inventory'
+import { trackQuestProgress } from './quests'
 
 /**
  * Calculate damage dealt by attacker to defender
@@ -291,6 +292,12 @@ export async function endCombat(
       for (const itemId of loot) {
         await addItem(characterId, itemId, 1)
       }
+
+      // Track quest progress for kill quests
+      await trackQuestProgress(characterId, 'kill', {
+        targetId: enemy.id,
+        amount: 1
+      })
 
       // Update character health (keep current health)
       await supabase

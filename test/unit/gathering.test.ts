@@ -2,7 +2,7 @@
  * Gathering System Unit Tests
  */
 
-import { calculateGatheringTime } from '../gathering'
+import { calculateGatheringTime } from '../../lib/gathering'
 
 describe('Gathering System', () => {
   describe('calculateGatheringTime', () => {

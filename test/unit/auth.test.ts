@@ -1,5 +1,5 @@
-import { signUp, signIn, signOut, getSession, checkUsernameAvailability } from '../auth'
-import { supabase } from '../supabase'
+import { signUp, signIn, signOut, getSession, checkUsernameAvailability } from '../../lib/auth'
+import { supabase } from '../../lib/supabase'
 
 // Type the mocked localStorage
 const mockLocalStorage = localStorage as jest.Mocked<Storage>

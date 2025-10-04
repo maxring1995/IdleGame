@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
-import { GatheringSkillType, MaterialWithDetails, GatheringSession } from '@/lib/supabase'
-import { getMaterialsWithDetails } from '@/lib/materials'
+import { GatheringSkillType, MaterialWithDetails, GatheringSession, WorldZoneWithDiscovery } from '@/lib/supabase'
+import { getMaterialsWithDetails, getMaterialsByZone } from '@/lib/materials'
 import { startGathering, getGatheringSession, processGathering, completeGathering, cancelGathering } from '@/lib/gathering'
+import { createClient } from '@/utils/supabase/client'
 
 interface GatheringSkillPanelProps {
   skillType: GatheringSkillType
@@ -38,13 +39,27 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
   const [isGathering, setIsGathering] = useState(false)
   const [autoGather, setAutoGather] = useState(false)
 
+  // Zone expansion
+  const [zones, setZones] = useState<WorldZoneWithDiscovery[]>([])
+  const [selectedZone, setSelectedZone] = useState<WorldZoneWithDiscovery | null>(null)
+  const [filterMode, setFilterMode] = useState<'all' | 'zone'>('all')
+
   useEffect(() => {
     if (character) {
+      loadZones()
       loadMaterials()
       loadSkillInfo()
       checkActiveSession()
     }
   }, [character, skillType])
+
+  useEffect(() => {
+    if (filterMode === 'zone' && selectedZone) {
+      loadZoneMaterials()
+    } else if (filterMode === 'all') {
+      loadMaterials()
+    }
+  }, [filterMode, selectedZone])
 
   useEffect(() => {
     if (!isGathering || !character) return
@@ -65,6 +80,39 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
     }
   }, [autoGather, isGathering, materials])
 
+  async function loadZones() {
+    if (!character) return
+
+    try {
+      // Get all zones the character can access based on level
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('world_zones')
+        .select('*')
+        .lte('required_level', character.level)
+        .order('required_level', { ascending: true })
+
+      if (error) {
+        console.error('Error loading zones:', error)
+        return
+      }
+
+      if (data) {
+        console.log('Loaded zones:', data.length) // Debug log
+        // Convert to WorldZoneWithDiscovery format
+        const zonesWithDiscovery = data.map(zone => ({
+          ...zone,
+          isDiscovered: true, // All zones at or below character level are accessible
+          discoveredAt: undefined,
+          timeSpent: 0
+        }))
+        setZones(zonesWithDiscovery as WorldZoneWithDiscovery[])
+      }
+    } catch (err) {
+      console.error('Error in loadZones:', err)
+    }
+  }
+
   async function loadMaterials() {
     if (!character) return
 
@@ -77,6 +125,29 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
       setError(err.message)
     } else if (data) {
       setMaterials(data)
+    }
+
+    setIsLoading(false)
+  }
+
+  async function loadZoneMaterials() {
+    if (!character || !selectedZone) return
+
+    setIsLoading(true)
+    setError(null)
+
+    const { data, error: err } = await getMaterialsByZone(selectedZone.id, skillType)
+
+    if (err) {
+      setError(err.message)
+    } else if (data) {
+      // Convert to MaterialWithDetails format
+      const materialsWithDetails = data.map(m => ({
+        ...m,
+        canGather: true,
+        isLocked: m.required_skill_level > skillLevel
+      }))
+      setMaterials(materialsWithDetails as MaterialWithDetails[])
     }
 
     setIsLoading(false)
@@ -99,6 +170,15 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
       }
     } catch (err) {
       console.error('Failed to load skill info:', err)
+    }
+  }
+
+  function handleZoneChange(zone: WorldZoneWithDiscovery | null) {
+    setSelectedZone(zone)
+    if (zone) {
+      setFilterMode('zone')
+    } else {
+      setFilterMode('all')
     }
   }
 
@@ -239,6 +319,38 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
           />
         </div>
       </div>
+
+      {/* Zone Filter */}
+      {zones.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="text-sm text-gray-400 block mb-2">Filter by Zone:</label>
+              <select
+                value={selectedZone?.id || ''}
+                onChange={(e) => {
+                  const zone = zones.find(z => z.id === e.target.value)
+                  handleZoneChange(zone || null)
+                }}
+                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+              >
+                <option value="">All Zones</option>
+                {zones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.icon} {zone.name} (Lv. {zone.required_level})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selectedZone && (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-4 py-2 text-sm">
+                <div className="text-gray-400">Gathering in:</div>
+                <div className="text-emerald-400 font-semibold">{selectedZone.icon} {selectedZone.name}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (

@@ -9,8 +9,14 @@ import GatheringSimple from './GatheringSimple'
 import CharacterTab from './CharacterTab'
 import Adventure from './Adventure'
 import CraftingPanel from './CraftingPanel'
+import Quests from './Quests'
+import Merchant from './Merchant'
+import NotificationCenter from './NotificationCenter'
+import ActiveTasksPanel from './ActiveTasksPanel'
+import ToastNotification from './ToastNotification'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
+import { getActiveBuffs, getBuffTimeRemaining, formatTimeRemaining, type ActiveBuff } from '@/lib/consumables'
 
 interface GameProps {
   initialUser: User
@@ -21,7 +27,8 @@ interface GameProps {
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'crafting' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'crafting' | 'quests' | 'merchant' | 'inventory'>('adventure')
+  const [activeBuffs, setActiveBuffs] = useState<ActiveBuff[]>([])
 
   useEffect(() => {
     if (!user) {
@@ -30,6 +37,22 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
       setCharacter(initialCharacter)
     }
   }, [initialUser, initialProfile, initialCharacter, user, setUser, setProfile, setCharacter])
+
+  // Poll for active buffs every 2 seconds
+  useEffect(() => {
+    if (!character?.id) return
+
+    async function loadBuffs() {
+      if (!character?.id) return
+      const buffs = await getActiveBuffs(character.id)
+      setActiveBuffs(buffs)
+    }
+
+    loadBuffs()
+    const interval = setInterval(loadBuffs, 2000)
+
+    return () => clearInterval(interval)
+  }, [character?.id])
 
   async function handleSignOut() {
     setIsLoading(true)
@@ -117,6 +140,50 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
             {/* Right: Resources & Actions */}
             <div className="flex items-center gap-4">
+              {/* Active Buffs */}
+              {activeBuffs.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {activeBuffs.slice(0, 3).map((buff) => {
+                    const timeRemaining = getBuffTimeRemaining(buff)
+                    const buffIconMap: Record<string, string> = {
+                      'buff_attack': '⚔️',
+                      'buff_defense': '🛡️',
+                      'buff_experience': '⭐',
+                      'buff_gold_find': '💰',
+                      'buff_luck': '🎲',
+                      'buff_speed': '💨'
+                    }
+                    const buffIcon = buffIconMap[buff.effect_type] || '✨'
+
+                    return (
+                      <div
+                        key={buff.id}
+                        className="relative group cursor-help px-2 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30"
+                        title={`${buff.item_name}: +${buff.effect_value}% ${buff.effect_type.replace('buff_', '')}`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">{buffIcon}</span>
+                          <span className="text-xs font-mono text-blue-400">
+                            {formatTimeRemaining(timeRemaining)}
+                          </span>
+                        </div>
+
+                        {/* Tooltip on hover */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 rounded-lg border border-blue-500/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                          <p className="text-xs font-semibold text-blue-300">{buff.item_name}</p>
+                          <p className="text-xs text-gray-300">+{buff.effect_value}% {buff.effect_type.replace('buff_', '').replace('_', ' ')}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {activeBuffs.length > 3 && (
+                    <div className="px-2 py-1.5 text-xs text-gray-400">
+                      +{activeBuffs.length - 3} more
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
                   <span className="text-lg">💰</span>
@@ -127,6 +194,9 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                   <span className="text-sm font-bold text-purple-400">{character.gems}</span>
                 </div>
               </div>
+
+              {/* Notification Bell */}
+              <NotificationCenter />
 
               <button
                 onClick={handleSignOut}
@@ -240,15 +310,19 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
             <div className="panel p-4">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h3>
               <div className="space-y-2">
-                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
+                <button
+                  onClick={() => setActiveTab('merchant')}
+                  className="w-full btn btn-secondary text-sm py-2.5 justify-start"
+                >
                   <span className="mr-2">🏪</span>
-                  <span>Shop</span>
-                  <span className="ml-auto badge badge-common text-xs">Soon</span>
+                  <span>Merchant</span>
                 </button>
-                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
+                <button
+                  onClick={() => setActiveTab('quests')}
+                  className="w-full btn btn-secondary text-sm py-2.5 justify-start"
+                >
                   <span className="mr-2">📜</span>
                   <span>Quests</span>
-                  <span className="ml-auto badge badge-common text-xs">Soon</span>
                 </button>
                 <button className="w-full btn btn-secondary text-sm py-2.5 justify-start">
                   <span className="mr-2">🏆</span>
@@ -257,6 +331,9 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
               </div>
             </div>
+
+            {/* Active Tasks Panel */}
+            <ActiveTasksPanel />
           </div>
 
           {/* Main Content Area */}
@@ -335,6 +412,34 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('quests')}
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
+                    activeTab === 'quests'
+                      ? 'bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">📜</span>
+                    <span className="text-sm">Quests</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('merchant')}
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
+                    activeTab === 'merchant'
+                      ? 'bg-gradient-to-b from-yellow-500 to-yellow-600 text-gray-900 shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">🏪</span>
+                    <span className="text-sm">Merchant</span>
+                  </div>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('inventory')}
                   className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'inventory'
@@ -362,6 +467,10 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 <GatheringSimple />
               ) : activeTab === 'crafting' ? (
                 <CraftingPanel />
+              ) : activeTab === 'quests' ? (
+                <Quests />
+              ) : activeTab === 'merchant' ? (
+                <Merchant />
               ) : (
                 <Inventory />
               )}
@@ -369,6 +478,9 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
           </div>
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastNotification />
     </div>
   )
 }

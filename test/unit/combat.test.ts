@@ -1,4 +1,4 @@
-import { calculateDamage, rollLoot, rollGold } from '../combat'
+import { calculateDamage, rollLoot, rollGold } from '../../lib/combat'
 
 describe('Combat Functions', () => {
   describe('calculateDamage', () => {

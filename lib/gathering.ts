@@ -7,6 +7,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { ActiveGathering, Material, GatheringSession } from './supabase'
 import { getMaterialById, addMaterialToInventory, addSkillExperience } from './materials'
+import { trackQuestProgress } from './quests'
 
 /**
  * Start a new gathering session
@@ -241,30 +242,44 @@ export async function processGathering(characterId: string) {
 export async function completeGathering(characterId: string) {
   const supabase = createClient()
 
+  console.log('[CompleteGathering] Starting for character:', characterId)
+
   const { data: activeGathering, error: activeError } = await getActiveGathering(characterId)
 
+  console.log('[CompleteGathering] Active gathering:', activeGathering, 'Error:', activeError)
+
   if (activeError || !activeGathering) {
+    console.log('[CompleteGathering] No active gathering found, returning early')
     return { data: null, error: activeError || new Error('No active gathering session') }
   }
 
   // Process any remaining progress first
+  console.log('[CompleteGathering] Processing remaining progress...')
   await processGathering(characterId)
 
   // Get updated gathering state
   const { data: updatedGathering } = await getActiveGathering(characterId)
 
+  console.log('[CompleteGathering] Updated gathering:', updatedGathering)
+
   if (!updatedGathering) {
+    console.log('[CompleteGathering] No updated gathering found after processing')
     return { data: null, error: new Error('No active gathering session') }
   }
 
   // Check if gathering is complete
+  console.log('[CompleteGathering] Checking completion:', updatedGathering.quantity_gathered, '/', updatedGathering.quantity_goal)
+
   if (updatedGathering.quantity_gathered < updatedGathering.quantity_goal) {
+    console.log('[CompleteGathering] Not complete yet, returning')
     return {
       data: null,
       error: new Error('Gathering not yet complete'),
       quantityGathered: updatedGathering.quantity_gathered
     }
   }
+
+  console.log('[CompleteGathering] Gathering is complete! Proceeding with rewards...')
 
   // Add materials to inventory
   const { error: invError } = await addMaterialToInventory(
@@ -275,6 +290,31 @@ export async function completeGathering(characterId: string) {
 
   if (invError) {
     return { data: null, error: invError }
+  }
+
+  console.log('[Gathering] Completed gathering:', {
+    materialId: updatedGathering.material_id,
+    quantity: updatedGathering.quantity_goal,
+    characterId
+  })
+
+  // Track quest progress for gather quests
+  console.log('[Gathering] Calling trackQuestProgress with:', {
+    characterId,
+    eventType: 'gather',
+    targetId: updatedGathering.material_id,
+    amount: updatedGathering.quantity_goal
+  })
+
+  try {
+    await trackQuestProgress(characterId, 'gather', {
+      targetId: updatedGathering.material_id,
+      amount: updatedGathering.quantity_goal
+    })
+    console.log('[Gathering] trackQuestProgress completed successfully')
+  } catch (error) {
+    console.error('[Gathering] Error tracking quest progress:', error)
+    // Don't fail the gathering completion if quest tracking fails
   }
 
   // Delete active gathering session

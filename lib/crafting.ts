@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client'
 import { CraftingRecipe, CraftingSkillType } from './supabase'
 import { addSkillExperience } from './materials'
 import { addItem } from './inventory'
+import { trackQuestProgress } from './quests'
 
 /**
  * Get all crafting recipes
@@ -422,7 +423,7 @@ export async function startCraftingSession(
     .from('active_crafting')
     .select('*')
     .eq('character_id', characterId)
-    .single()
+    .maybeSingle()
 
   if (existingSession) {
     return { data: null, error: new Error('Already crafting something') }
@@ -460,7 +461,7 @@ export async function processCrafting(characterId: string) {
     .from('active_crafting')
     .select('*')
     .eq('character_id', characterId)
-    .single()
+    .maybeSingle()
 
   if (sessionError || !session) {
     return { data: null, error: sessionError }
@@ -520,6 +521,12 @@ export async function processCrafting(characterId: string) {
     // Add experience
     await addSkillExperience(characterId, recipe.required_skill_type, recipe.experience_reward)
 
+    // Track quest progress for craft quests
+    await trackQuestProgress(characterId, 'craft', {
+      targetId: recipe.result_item_id,
+      amount: 1
+    })
+
     // Update session
     const newQuantityCrafted = session.quantity_crafted + 1
 
@@ -575,7 +582,7 @@ export async function processCrafting(characterId: string) {
     .from('active_crafting')
     .select('*')
     .eq('character_id', characterId)
-    .single()
+    .maybeSingle()
 
   return { data: updatedSession, error: null }
 }
@@ -604,7 +611,7 @@ export async function getActiveCraftingSession(characterId: string) {
     .from('active_crafting')
     .select('*')
     .eq('character_id', characterId)
-    .single()
+    .maybeSingle()
 
   return { data, error }
 }

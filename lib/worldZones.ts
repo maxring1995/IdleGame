@@ -10,6 +10,7 @@ import type {
   ZoneDetails,
   WorldState
 } from './supabase'
+import { trackQuestProgress } from './quests'
 
 const supabase = createClient()
 
@@ -114,6 +115,12 @@ export async function discoverZone(
       .single()
 
     if (error) throw error
+
+    // Track quest progress for exploration quests
+    await trackQuestProgress(characterId, 'explore', {
+      amount: 1
+    })
+
     return { data, error: null }
   } catch (err) {
     console.error('Error discovering zone:', err)

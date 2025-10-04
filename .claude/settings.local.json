@@ -21,7 +21,14 @@
       "Bash(node:*)",
       "Bash(source:*)",
       "Bash(pgrep:*)",
-      "Bash(open http://localhost:3003)"
+      "Bash(open http://localhost:3003)",
+      "Bash(mv:*)",
+      "Bash(sort:*)",
+      "Bash(rm:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(done)",
+      "Read(//Users/maxring/Documents/GitHub/**)"
     ],
     "deny": [],
     "ask": []

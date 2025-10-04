@@ -311,3 +311,59 @@ export async function addSkillExperience(
     newLevel: leveledUp ? newLevel : undefined
   }
 }
+
+/**
+ * Get materials for a specific zone
+ */
+export async function getMaterialsByZone(
+  zoneId: string,
+  skillType: GatheringSkillType
+) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('materials')
+    .select('*')
+    .eq('zone_id', zoneId)
+    .eq('required_skill_type', skillType)
+    .order('required_skill_level', { ascending: true })
+
+  return { data: data as Material[] | null, error }
+}
+
+/**
+ * Get all zones with material counts for a skill type
+ */
+export async function getZonesWithMaterials(
+  skillType: GatheringSkillType,
+  playerLevel: number
+) {
+  const supabase = createClient()
+
+  // Get all zones player can access
+  const { data: zones, error: zonesError } = await supabase
+    .from('world_zones')
+    .select('*')
+    .lte('required_level', playerLevel)
+    .order('required_level', { ascending: true })
+
+  if (zonesError) return { data: null, error: zonesError }
+
+  // Get material counts per zone
+  const zonesWithCounts = await Promise.all(
+    (zones || []).map(async (zone) => {
+      const { data: materials } = await supabase
+        .from('materials')
+        .select('id')
+        .eq('zone_id', zone.id)
+        .eq('required_skill_type', skillType)
+
+      return {
+        ...zone,
+        materialCount: materials?.length || 0
+      }
+    })
+  )
+
+  return { data: zonesWithCounts, error: null }
+}

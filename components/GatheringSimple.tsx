@@ -10,6 +10,7 @@ import {
   collectGathering,
   cancelGatheringSimple
 } from '@/app/actions/gathering-simple'
+import { useNotificationStore, notificationHelpers } from '@/lib/notificationStore'
 
 const SKILL_ICONS: Record<string, string> = {
   woodcutting: '🪓',
@@ -31,12 +32,14 @@ const SKILL_NAMES: Record<string, string> = {
 
 export default function GatheringSimple() {
   const { character } = useGameStore()
+  const { addNotification, addActiveTask, removeActiveTask, updateActiveTask } = useNotificationStore()
   const [activeSkill, setActiveSkill] = useState<GatheringSkillType>('woodcutting')
   const [materials, setMaterials] = useState<any[]>([])
   const [skillData, setSkillData] = useState<any>(null)
   const [activeSession, setActiveSession] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     if (character) {
@@ -50,6 +53,21 @@ export default function GatheringSimple() {
     const interval = setInterval(async () => {
       const { data } = await checkGatheringProgress(character.id)
       if (data) {
+        // Check if gathering just completed
+        const wasNotComplete = activeSession && !activeSession.isComplete
+        const isNowComplete = data.isComplete
+
+        if (wasNotComplete && isNowComplete) {
+          // Show notification when gathering becomes ready
+          addNotification({
+            type: 'success',
+            category: 'gathering',
+            title: '⛏️ Gathering Ready!',
+            message: `${data.material.name} collection is complete! Click "Collect" to receive your materials.`,
+            icon: '⛏️'
+          })
+        }
+
         setActiveSession(data)
       } else {
         setActiveSession(null)
@@ -57,7 +75,7 @@ export default function GatheringSimple() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [character])
+  }, [character, activeSession, addNotification])
 
   async function loadMaterials() {
     if (!character) return
@@ -83,6 +101,27 @@ export default function GatheringSimple() {
 
     if (!result.success) {
       setError(result.error || 'Failed to start gathering')
+      setIsLoading(false)
+      return
+    }
+
+    // Find material name for notification
+    const material = materials.find(m => m.id === materialId)
+
+    if (result.session && material) {
+      // Add active task to tracker
+      const taskId = addActiveTask({
+        type: 'gathering',
+        title: `Gathering ${material.name}`,
+        description: `${quantity}x ${material.name}`,
+        startTime: Date.now(),
+        estimatedEndTime: Date.now() + result.session.totalTime,
+        metadata: {
+          location: SKILL_NAMES[activeSkill],
+          quantity: quantity
+        }
+      })
+      setActiveTaskId(taskId)
     }
 
     setIsLoading(false)
@@ -96,7 +135,22 @@ export default function GatheringSimple() {
 
     const result = await collectGathering(character.id)
 
-    if (result.success) {
+    if (result.success && result.data) {
+      // Remove active task
+      if (activeTaskId) {
+        removeActiveTask(activeTaskId)
+        setActiveTaskId(null)
+      }
+
+      // Add completion notification
+      addNotification(
+        notificationHelpers.gatheringComplete(
+          result.data.materialName || 'Material',
+          result.data.quantity || 0,
+          result.data.xpGained || 0
+        )
+      )
+
       await loadMaterials()
       setActiveSession(null)
     } else {

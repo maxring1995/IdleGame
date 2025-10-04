@@ -4,24 +4,49 @@ This document outlines testing best practices and requirements for the Eternal R
 
 ## Testing Stack
 
-- **Unit & Integration Tests**: Jest + React Testing Library
-- **End-to-End Tests**: Playwright
+- **Unit Tests**: Jest for business logic
+- **Frontend Tests**: Jest + React Testing Library for components
+- **End-to-End Tests**: Playwright for full workflows
 - **Test Coverage**: Aim for >80% coverage on critical paths
+
+## Test Structure
+
+All tests are organized in the `test/` directory:
+
+```
+test/
+├── e2e/          # End-to-end tests (Playwright)
+│   ├── auth.spec.ts
+│   ├── combat.spec.ts
+│   ├── gathering.spec.ts
+│   ├── quests.spec.ts
+│   └── ...
+├── unit/         # Unit tests (Jest)
+│   ├── auth.test.ts
+│   ├── combat.test.ts
+│   ├── gathering.test.ts
+│   └── ...
+└── frontend/     # Frontend component tests (Jest + RTL)
+    └── (to be added)
+```
 
 ## Test Commands
 
 ```bash
+# All tests
+npm run test:all        # Run both unit and E2E tests
+
 # Unit tests
-npm test                 # Run all unit tests
+npm test                # Run all unit tests (test/unit + test/frontend)
+npm run test:unit       # Run only unit tests (test/unit)
+npm run test:frontend   # Run only frontend tests (test/frontend)
 npm run test:watch      # Run tests in watch mode
 npm run test:coverage   # Generate coverage report
 
 # E2E tests
 npm run test:e2e        # Run Playwright tests headless
 npm run test:e2e:ui     # Run Playwright tests with UI
-
-# All tests
-npm run test:all        # Run both unit and E2E tests
+npm run test:e2e:headed # Run Playwright tests with visible browser
 ```
 
 ## Testing Best Practices
@@ -175,7 +200,7 @@ npm run test:all
 
 ```bash
 # Run specific test file
-npm test -- auth.test.ts
+npm test -- test/unit/auth.test.ts
 
 # Run tests matching pattern
 npm test -- --testNamePattern="should create user"
@@ -191,7 +216,7 @@ npm test -- --testNamePattern="should create user"
 npx playwright test --headed
 
 # Run specific test
-npx playwright test auth.spec.ts
+npx playwright test test/e2e/auth.spec.ts
 
 # Debug mode
 npx playwright test --debug

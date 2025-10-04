@@ -185,8 +185,8 @@ npm run lint     # Run ESLint
 ## Troubleshooting
 
 For detailed troubleshooting guides, see:
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[docs/BUG_FIX_REPORT.md](docs/BUG_FIX_REPORT.md)** - Recent bug fixes
+- **[docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/bugfixes/BUG_FIX_REPORT.md](docs/bugfixes/BUG_FIX_REPORT.md)** - Recent bug fixes
 
 ### Quick Fixes
 

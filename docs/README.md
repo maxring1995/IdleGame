@@ -1,106 +1,143 @@
 # Documentation - Eternal Realms
 
-This folder contains all project documentation, implementation guides, and technical references.
+Comprehensive documentation for the Eternal Realms idle RPG project.
 
-## 📚 Documentation Index
+## 📂 Documentation Structure
 
-### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new developers
-- **[README.md](../README.md)** - Main project README (in root)
+```
+docs/
+├── features/          # Feature-specific documentation
+│   ├── quests/        # Quest system
+│   ├── combat/        # Combat system
+│   ├── gathering/     # Gathering skills
+│   ├── crafting/      # Crafting system
+│   ├── adventure/     # Travel & exploration
+│   ├── notifications/ # Notification system
+│   └── authentication/# Auth system
+├── bugfixes/          # Bug fix reports
+├── guides/            # User guides
+└── README.md          # This file
+```
 
-### Implementation Phases
-- **[PHASE6_CRAFTING.md](PHASE6_CRAFTING.md)** - Phase 6: Crafting System (60+ Recipes, Async Crafting) ✅ (Latest)
-- **[PHASE4_GATHERING.md](PHASE4_GATHERING.md)** - Phase 4: Gathering & Crafting System ✅
-- **[PHASE3_COMBAT.md](PHASE3_COMBAT.md)** - Phase 3: Combat System Implementation
-- **[PHASE3_SUMMARY.md](PHASE3_SUMMARY.md)** - Phase 3 Summary & Results
-- **[FEATURE2_SUMMARY.md](FEATURE2_SUMMARY.md)** - Feature 2 Implementation Summary
+## 🎮 Features Documentation
 
-### Bug Fixes & Troubleshooting
-- **[BUG_FIX_REPORT.md](BUG_FIX_REPORT.md)** - Latest: Character creation loading loop fix (2025-10-02)
-- **[BUGFIX_REPORT.md](BUGFIX_REPORT.md)** - Earlier bug fix report
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
-- **[TIMEOUT_FIX.md](TIMEOUT_FIX.md)** - Supabase timeout issue resolution
-- **[FIX_EMAIL_COLUMN.md](FIX_EMAIL_COLUMN.md)** - Email column migration fix
+### Core Game Systems
+- **[Quest System](features/quests/README.md)** - Quest tracking, progress, rewards
+- **[Combat System](features/combat/README.md)** - Turn-based combat, auto-attack, bosses
+- **[Gathering System](features/gathering/README.md)** - 6 gathering skills, 50+ materials
+- **[Crafting System](features/crafting/README.md)** - 60+ recipes, async crafting
+- **[Adventure System](features/adventure/README.md)** - World map, travel, exploration
+- **[Notification System](features/notifications/README.md)** - Toast notifications, notification center
+- **[Authentication](features/authentication/README.md)** - Username-based auth
 
-### Technical Guides
-- **[AUTHENTICATION.md](AUTHENTICATION.md)** - Authentication system architecture
-- **[TESTING.md](TESTING.md)** - Testing strategy and Playwright setup
-- **[ICONS.md](ICONS.md)** - Icon usage guide and visual reference
+## 📖 Guides
 
-## 🗂️ Documentation Organization
+- **[QUICKSTART.md](guides/QUICKSTART.md)** - Quick start guide for new developers
+- **[TESTING.md](guides/TESTING.md)** - Testing strategy and Playwright setup
+- **[TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[ICONS.md](guides/ICONS.md)** - Icon usage guide and visual reference
+- **[FEATURE2_SUMMARY.md](guides/FEATURE2_SUMMARY.md)** - Feature 2 implementation summary
 
-### Phase Documents
-Phase documents track major feature implementations:
-- **PHASE4_GATHERING.md** - Gathering system with 6 skills, 50+ materials, XP progression
-- **PHASE3_COMBAT.md** - Combat system with boss fights, auto-attack
-- **PHASE3_SUMMARY.md** - Results and verification of Phase 3
+## 🐛 Bug Fixes
 
-### Bug Fix Reports
-All bug fixes are documented with:
+All bug fix reports are located in **[bugfixes/](bugfixes/)**:
+- Latest bug fixes and solutions
 - Root cause analysis
-- Implementation details
 - Verification steps
 - Files changed
-
-### Technical References
-- **AUTHENTICATION.md** - Deep dive into auth flow
-- **TESTING.md** - Test coverage and strategies
-- **ICONS.md** - Visual design system
-
-## 📝 Document Naming Convention
-
-- `PHASE[N]_*.md` - Implementation phase documents
-- `*_FIX.md` - Specific bug/issue fixes
-- `*_REPORT.md` - Post-mortem reports
-- `TROUBLESHOOTING.md` - Ongoing troubleshooting guide
 
 ## 🔍 Quick Navigation
 
 **Need to...**
-- **Start developing?** → [QUICKSTART.md](QUICKSTART.md)
-- **Understand auth?** → [AUTHENTICATION.md](AUTHENTICATION.md)
-- **Fix a bug?** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-- **Add icons?** → [ICONS.md](ICONS.md)
-- **Write tests?** → [TESTING.md](TESTING.md)
+- **Start developing?** → [guides/QUICKSTART.md](guides/QUICKSTART.md)
+- **Understand auth?** → [features/authentication/](features/authentication/)
+- **Fix a bug?** → [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)
+- **Add icons?** → [guides/ICONS.md](guides/ICONS.md)
+- **Write tests?** → [guides/TESTING.md](guides/TESTING.md)
+- **Implement quests?** → [features/quests/](features/quests/)
+- **Add combat?** → [features/combat/](features/combat/)
+- **Create gathering?** → [features/gathering/](features/gathering/)
+- **Build crafting?** → [features/crafting/](features/crafting/)
+- **Design adventure?** → [features/adventure/](features/adventure/)
+- **Send notifications?** → [features/notifications/](features/notifications/)
 
 ## 📅 Latest Updates
 
-- **2025-10-03** - PHASE6_CRAFTING.md - Complete crafting system with 60+ recipes and async crafting
-- **2025-10-02** - PHASE4_GATHERING.md - Complete gathering system with 6 skills and 50+ materials
-- **2025-10-02** - Added ICONS.md with complete icon system documentation
-- **2025-10-02** - BUG_FIX_REPORT.md - Fixed character creation loading loop
-- **2025-10-02** - TROUBLESHOOTING.md - Session management guide
-- **2025-10-02** - Organized all docs into `/docs` folder
+- **2025-10-04** - Reorganized documentation into feature-based structure
+- **2025-10-04** - Added quest notification system
+- **2025-10-04** - Created comprehensive E2E tests for quest system
+- **2025-10-03** - PHASE6_CRAFTING.md - Complete crafting system
+- **2025-10-02** - PHASE4_GATHERING.md - Complete gathering system
+- **2025-10-02** - Added comprehensive testing requirements to CLAUDE.md
 
 ## 🤝 Contributing to Documentation
 
-When adding new documentation:
+### Adding New Documentation
 
 1. **Choose the right location:**
-   - Implementation guides → `/docs/PHASE[N]_*.md`
-   - Bug fixes → `/docs/*_FIX.md` or `*_REPORT.md`
-   - References → `/docs/[TOPIC].md`
+   - Feature docs → `/docs/features/[feature-name]/`
+   - Bug fixes → `/docs/bugfixes/`
+   - Guides → `/docs/guides/`
 
-2. **Use clear naming:**
-   - ALL_CAPS for document names
-   - Descriptive names (e.g., `AUTHENTICATION.md` not `AUTH.md`)
+2. **Follow naming conventions:**
+   - `README.md` for feature overview
+   - `UPPERCASE_WITH_UNDERSCORES.md` for specific documents
+   - Include date in bug fix files: `BUGFIX_2025-10-04.md`
 
 3. **Update this README:**
    - Add to appropriate section
    - Update "Latest Updates" with date
+   - Add navigation links if needed
 
 4. **Cross-reference:**
-   - Link related documents
+   - Link related feature documentation
    - Update [CLAUDE.md](../CLAUDE.md) if architecture changes
+
+### Feature Documentation Template
+
+Each feature folder should contain:
+- `README.md` - Overview, features, key files, testing
+- Implementation docs - Phase documents, guides
+- Debug docs - Troubleshooting, bug fixes specific to feature
 
 ## 📖 Main Project Files (Not in /docs)
 
 These files remain in the project root:
 - **[CLAUDE.md](../CLAUDE.md)** - Instructions for Claude Code AI
-- **[AGENTS.md](../AGENTS.md)** - Agent system documentation
+- **[AGENTS.md](../AGENTS.md)** - Agent system documentation (if present)
 - **[README.md](../README.md)** - Main project README
+
+## 🏗️ Project Architecture
+
+For architecture documentation, see:
+- **[CLAUDE.md](../CLAUDE.md)** - Complete architecture guide
+  - Technology stack
+  - Database schema
+  - State management
+  - File structure
+  - Development patterns
+  - Testing strategy
+
+## 🧪 Testing Documentation
+
+All testing documentation is located in **[guides/TESTING.md](guides/TESTING.md)**:
+- Unit testing strategy
+- E2E testing with Playwright
+- Test file locations
+- Running tests
+- Writing new tests
+
+## 🎨 Design System
+
+UI/UX design patterns and component guidelines:
+- See **[CLAUDE.md](../CLAUDE.md)** → "UI/UX Design Patterns" section
+- Design system foundation
+- Component classes
+- Color palette
+- Layout patterns
+- Animation guidelines
 
 ---
 
-**Last Updated:** 2025-10-02
+**Last Updated:** 2025-10-04
 **Maintained by:** Development Team
