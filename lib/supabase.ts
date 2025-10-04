@@ -261,6 +261,7 @@ export interface WorldZone {
   description?: string
   lore_text?: string
   flavor_messages?: string[]
+  icon?: string
   created_at: string
 }
 

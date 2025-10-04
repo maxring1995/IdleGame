@@ -66,7 +66,7 @@ export async function getQuestDefinitions(characterLevel: number, characterId?: 
     // Get completed quests
     const { data: completions } = await supabase
       .from('quest_completions')
-      .select('quest_id')
+      .select('quest_id, completed_at')
       .eq('character_id', characterId)
 
     const completedQuestIds = new Set(completions?.map(c => c.quest_id) || [])

@@ -13,6 +13,7 @@ docs/
 │   ├── crafting/      # Crafting system
 │   ├── adventure/     # Travel & exploration
 │   ├── notifications/ # Notification system
+│   ├── skills/        # 20-Skill system (NEW!)
 │   └── authentication/# Auth system
 ├── bugfixes/          # Bug fix reports
 ├── guides/            # User guides
@@ -24,6 +25,7 @@ docs/
 ### Core Game Systems
 - **[Quest System](features/quests/README.md)** - Quest tracking, progress, rewards
 - **[Combat System](features/combat/README.md)** - Turn-based combat, auto-attack, bosses
+- **[20-Skill System](features/skills/COMPLETE_SKILL_SYSTEM.md)** ⭐ **NEW!** - All 20 skills, 60+ recipes, 70+ materials
 - **[Gathering System](features/gathering/README.md)** - 6 gathering skills, 50+ materials
 - **[Crafting System](features/crafting/README.md)** - 60+ recipes, async crafting
 - **[Adventure System](features/adventure/README.md)** - World map, travel, exploration
@@ -50,6 +52,7 @@ All bug fix reports are located in **[bugfixes/](bugfixes/)**:
 
 **Need to...**
 - **Start developing?** → [guides/QUICKSTART.md](guides/QUICKSTART.md)
+- **View all 20 skills?** → [features/skills/COMPLETE_SKILL_SYSTEM.md](features/skills/COMPLETE_SKILL_SYSTEM.md) ⭐
 - **Understand auth?** → [features/authentication/](features/authentication/)
 - **Fix a bug?** → [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)
 - **Add icons?** → [guides/ICONS.md](guides/ICONS.md)
@@ -63,6 +66,10 @@ All bug fix reports are located in **[bugfixes/](bugfixes/)**:
 
 ## 📅 Latest Updates
 
+- **2025-10-04** - ⭐ **COMPLETE 20-SKILL SYSTEM IMPLEMENTED** - All skills functional with 60+ recipes
+- **2025-10-04** - Added Magic & Ranged combat styles with UI selector
+- **2025-10-04** - Implemented Farming, Cooking, Fletching, Runecrafting skills
+- **2025-10-04** - Implemented Agility, Thieving, Slayer support skills
 - **2025-10-04** - Reorganized documentation into feature-based structure
 - **2025-10-04** - Added quest notification system
 - **2025-10-04** - Created comprehensive E2E tests for quest system

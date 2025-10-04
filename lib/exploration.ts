@@ -258,7 +258,7 @@ export async function processExploration(
 
     // Check if completed or should auto-stop
     const completed = progress >= 100 ||
-                     (exploration.is_auto && exploration.auto_stop_at && progress >= exploration.auto_stop_at)
+                     (exploration.is_auto && exploration.auto_stop_at != null && progress >= exploration.auto_stop_at)
 
     return {
       data: {

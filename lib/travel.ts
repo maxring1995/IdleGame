@@ -8,6 +8,7 @@ import type {
   WorldZone
 } from './supabase'
 import { discoverZone, updateZoneTimeSpent } from './worldZones'
+import { addSkillExperience } from './skills'
 
 // ============================================================================
 // Travel Time Calculation
@@ -352,6 +353,9 @@ export async function completeTravel(
       `Arrived at ${toZone?.name || 'destination'}`
     )
 
+    // Award Agility XP for completing travel (10 XP per travel)
+    await addSkillExperience(characterId, 'agility', 10)
+
     // Delete travel session
     await supabase
       .from('active_travels')
@@ -427,9 +431,16 @@ export async function handleTravelEncounter(
     if (travel.encounter_type === 'loot' && action === 'engage') {
       const gold = travel.encounter_data?.gold || 0
 
+      // Get current gold
+      const { data: charData } = await supabase
+        .from('characters')
+        .select('gold')
+        .eq('id', characterId)
+        .single()
+
       await supabase
         .from('characters')
-        .update({ gold: supabase.raw(`gold + ${gold}`) })
+        .update({ gold: (charData?.gold || 0) + gold })
         .eq('id', characterId)
 
       await addTravelLogEntry(

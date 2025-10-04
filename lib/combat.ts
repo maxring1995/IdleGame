@@ -3,6 +3,7 @@ import { Enemy, Character, CombatAction, CombatResult, ActiveCombat, CombatLog }
 import { addExperience, addGold } from './character'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
+import { addSkillExperience } from './skills'
 
 /**
  * Calculate damage dealt by attacker to defender
@@ -111,8 +112,9 @@ export async function startCombat(
 
 /**
  * Execute a single turn of combat
+ * @param combatStyle - 'melee', 'magic', or 'ranged'
  */
-export async function executeTurn(characterId: string): Promise<{
+export async function executeTurn(characterId: string, combatStyle: 'melee' | 'magic' | 'ranged' = 'melee'): Promise<{
   data: { combat: ActiveCombat; isOver: boolean; victory?: boolean } | null
   error: any
 }> {
@@ -154,13 +156,37 @@ export async function executeTurn(characterId: string): Promise<{
     const playerDamage = calculateDamage(character.attack, enemy.defense)
     enemyHealth -= playerDamage
 
+    // Determine action message based on combat style
+    const actionMessages = {
+      melee: `You hit ${enemy.name} for ${playerDamage} damage!`,
+      magic: `Your spell hits ${enemy.name} for ${playerDamage} damage!`,
+      ranged: `Your arrow strikes ${enemy.name} for ${playerDamage} damage!`
+    }
+
     combatLog.push({
       turn: combat.turn_number,
       actor: 'player',
       action: 'attack',
       damage: playerDamage,
-      message: `You hit ${enemy.name} for ${playerDamage} damage!`
+      message: actionMessages[combatStyle]
     })
+
+    // Award XP based on combat style
+    if (combatStyle === 'melee') {
+      // Award Attack XP for attacking (2 XP per attack)
+      await addSkillExperience(characterId, 'attack', 2)
+      // Award Strength XP based on damage dealt (1 XP per 2 damage)
+      const strengthXP = Math.max(1, Math.floor(playerDamage / 2))
+      await addSkillExperience(characterId, 'strength', strengthXP)
+    } else if (combatStyle === 'magic') {
+      // Award Magic XP for casting spells (3 XP per cast + damage bonus)
+      const magicXP = 3 + Math.max(1, Math.floor(playerDamage / 2))
+      await addSkillExperience(characterId, 'magic', magicXP)
+    } else if (combatStyle === 'ranged') {
+      // Award Ranged XP for shooting (2 XP per shot + accuracy bonus)
+      const rangedXP = 2 + Math.max(1, Math.floor(playerDamage / 3))
+      await addSkillExperience(characterId, 'ranged', rangedXP)
+    }
 
     // Check if enemy is defeated
     if (enemyHealth <= 0) {
@@ -187,6 +213,10 @@ export async function executeTurn(characterId: string): Promise<{
         message: `${enemy.name} hits you for ${enemyDamage} damage!`
       })
 
+      // Award Defense XP for taking damage (1 XP per 2 damage taken)
+      const defenseXP = Math.max(1, Math.floor(enemyDamage / 2))
+      await addSkillExperience(characterId, 'defense', defenseXP)
+
       // Check if player is defeated
       if (playerHealth <= 0) {
         playerHealth = 0
@@ -201,6 +231,9 @@ export async function executeTurn(characterId: string): Promise<{
         })
       }
     }
+
+    // Award Constitution XP for participating in combat (1 XP per turn)
+    await addSkillExperience(characterId, 'constitution', 1)
 
     // Update active combat
     const { data: updatedCombat, error: updateError } = await supabase
@@ -291,6 +324,16 @@ export async function endCombat(
       // Award loot
       for (const itemId of loot) {
         await addItem(characterId, itemId, 1)
+      }
+
+      // Award Slayer XP for defeating enemy (10 XP base + level bonus)
+      const slayerXP = 10 + (enemy.level * 2)
+      await addSkillExperience(characterId, 'slayer', slayerXP)
+
+      // Award Thieving XP for looting items (5 XP per item)
+      if (loot.length > 0) {
+        const thievingXP = loot.length * 5
+        await addSkillExperience(characterId, 'thieving', thievingXP)
       }
 
       // Track quest progress for kill quests

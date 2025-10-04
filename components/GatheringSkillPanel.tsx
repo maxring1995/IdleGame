@@ -81,7 +81,12 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
   }, [autoGather, isGathering, materials])
 
   async function loadZones() {
-    if (!character) return
+    if (!character) {
+      console.log('[GatheringSkillPanel] No character, skipping zone load')
+      return
+    }
+
+    console.log('[GatheringSkillPanel] Loading zones for character level:', character.level)
 
     try {
       // Get all zones the character can access based on level
@@ -93,12 +98,13 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
         .order('required_level', { ascending: true })
 
       if (error) {
-        console.error('Error loading zones:', error)
+        console.error('[GatheringSkillPanel] Error loading zones:', error)
         return
       }
 
       if (data) {
-        console.log('Loaded zones:', data.length) // Debug log
+        console.log('[GatheringSkillPanel] Loaded zones:', data.length, 'zones')
+        console.log('[GatheringSkillPanel] Zone data:', data)
         // Convert to WorldZoneWithDiscovery format
         const zonesWithDiscovery = data.map(zone => ({
           ...zone,
@@ -107,9 +113,12 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
           timeSpent: 0
         }))
         setZones(zonesWithDiscovery as WorldZoneWithDiscovery[])
+        console.log('[GatheringSkillPanel] Zones state updated, count:', zonesWithDiscovery.length)
+      } else {
+        console.log('[GatheringSkillPanel] No zone data returned from database')
       }
     } catch (err) {
-      console.error('Error in loadZones:', err)
+      console.error('[GatheringSkillPanel] Error in loadZones:', err)
     }
   }
 
@@ -292,6 +301,9 @@ export default function GatheringSkillPanel({ skillType }: GatheringSkillPanelPr
       </div>
     )
   }
+
+  // Debug logging for render
+  console.log('[GatheringSkillPanel] Rendering with zones.length:', zones.length)
 
   return (
     <div className="space-y-6">

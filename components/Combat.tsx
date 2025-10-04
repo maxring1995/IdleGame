@@ -20,6 +20,7 @@ export default function Combat() {
   const [error, setError] = useState<string | null>(null)
   const [autoAttack, setAutoAttack] = useState(false)
   const [autoAttackInterval, setAutoAttackInterval] = useState<NodeJS.Timeout | null>(null)
+  const [combatStyle, setCombatStyle] = useState<'melee' | 'magic' | 'ranged'>('melee')
 
   useEffect(() => {
     checkActiveCombat()
@@ -88,7 +89,7 @@ export default function Combat() {
     setIsAttacking(true)
     setError(null)
 
-    const { data, error: err } = await executeTurn(character.id)
+    const { data, error: err } = await executeTurn(character.id, combatStyle)
 
     if (err) {
       setError(err.message || 'Combat error occurred')
@@ -395,6 +396,55 @@ export default function Combat() {
           <span>Battle Log</span>
         </h3>
         <CombatLog actions={activeCombat.combat_log || []} />
+      </div>
+
+      {/* Combat Style Selection */}
+      <div className="card p-6">
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <span>⚡</span>
+          <span>Combat Style</span>
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => setCombatStyle('melee')}
+            disabled={autoAttack}
+            className={`relative p-4 rounded-lg border-2 transition-all ${
+              combatStyle === 'melee'
+                ? 'border-red-500 bg-red-500/20 shadow-lg shadow-red-500/50'
+                : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+            }`}
+          >
+            <div className="text-3xl mb-2">⚔️</div>
+            <div className="font-bold text-white">Melee</div>
+            <div className="text-xs text-gray-400 mt-1">Attack + Strength</div>
+          </button>
+          <button
+            onClick={() => setCombatStyle('magic')}
+            disabled={autoAttack}
+            className={`relative p-4 rounded-lg border-2 transition-all ${
+              combatStyle === 'magic'
+                ? 'border-purple-500 bg-purple-500/20 shadow-lg shadow-purple-500/50'
+                : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+            }`}
+          >
+            <div className="text-3xl mb-2">✨</div>
+            <div className="font-bold text-white">Magic</div>
+            <div className="text-xs text-gray-400 mt-1">Magic XP</div>
+          </button>
+          <button
+            onClick={() => setCombatStyle('ranged')}
+            disabled={autoAttack}
+            className={`relative p-4 rounded-lg border-2 transition-all ${
+              combatStyle === 'ranged'
+                ? 'border-green-500 bg-green-500/20 shadow-lg shadow-green-500/50'
+                : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+            }`}
+          >
+            <div className="text-3xl mb-2">🏹</div>
+            <div className="font-bold text-white">Ranged</div>
+            <div className="text-xs text-gray-400 mt-1">Ranged XP</div>
+          </button>
+        </div>
       </div>
 
       {/* Attack Controls */}

@@ -62,12 +62,12 @@ export default function CraftingPanel() {
   useEffect(() => {
     if (!character) return
 
-    async function loadSkillLevel() {
+    async function loadSkillLevel(charId: string) {
       const supabase = (await import('@/utils/supabase/client')).createClient()
       const { data } = await supabase
         .from('character_skills')
         .select('level, experience')
-        .eq('character_id', character.id)
+        .eq('character_id', charId)
         .eq('skill_type', selectedSkill)
         .single()
 
@@ -77,25 +77,25 @@ export default function CraftingPanel() {
       }
     }
 
-    loadSkillLevel()
+    loadSkillLevel(character.id)
   }, [character, selectedSkill])
 
   // Poll active session
   useEffect(() => {
     if (!character) return
 
-    async function checkSession() {
-      const { data } = await getActiveCraftingSession(character.id)
+    async function checkSession(charId: string) {
+      const { data } = await getActiveCraftingSession(charId)
       setActiveSession(data)
 
       if (data) {
         // Process crafting
-        await processCrafting(character.id)
+        await processCrafting(charId)
       }
     }
 
-    checkSession()
-    const interval = setInterval(checkSession, 1000)
+    checkSession(character.id)
+    const interval = setInterval(() => checkSession(character.id), 1000)
     return () => clearInterval(interval)
   }, [character])
 

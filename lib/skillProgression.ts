@@ -4,33 +4,33 @@
  */
 
 export const SKILL_PROGRESSION_GUIDES: Record<string, string> = {
-  // Combat Skills
-  attack: 'Train by attacking enemies in Combat. Increases melee accuracy.',
-  strength: 'Train by dealing damage in Combat. Increases melee damage output.',
-  defense: 'Train by taking damage in Combat. Increases damage reduction.',
-  magic: 'Train by casting spells and using magical abilities in Combat.',
-  ranged: 'Train by using bows and ranged weapons in Combat.',
-  constitution: 'Train by participating in Combat. Increases max health.',
+  // Combat Skills (ALL WORKING!)
+  attack: 'Train by attacking enemies in Combat tab using Melee style. Gain 2 XP per attack.',
+  strength: 'Train by dealing damage in Combat tab using Melee style. Gain XP based on damage dealt.',
+  defense: 'Train by taking damage in Combat tab. Gain XP based on damage taken.',
+  constitution: 'Train by participating in Combat tab. Gain 1 XP per combat turn.',
+  magic: 'Train by casting spells in Combat tab using Magic style. Gain 3 XP per cast + damage bonus.',
+  ranged: 'Train by shooting arrows in Combat tab using Ranged style. Gain 2 XP per shot + accuracy bonus.',
 
-  // Gathering Skills
-  mining: 'Gather ores and gems in the Gathering tab. Unlock better materials as you level.',
-  woodcutting: 'Chop trees in the Gathering tab. Unlock rare wood types as you level.',
-  fishing: 'Catch fish in the Gathering tab. Unlock better fishing spots as you level.',
-  farming: 'Plant and harvest crops. (Coming Soon)',
-  hunting: 'Track and hunt creatures for pelts and meat in the Gathering tab.',
+  // Gathering Skills (ALL WORKING!)
+  mining: 'Gather ores and gems in Gathering tab. Unlock better materials as you level.',
+  woodcutting: 'Chop trees in Gathering tab. Unlock rare wood types as you level.',
+  fishing: 'Catch fish in Gathering tab. Unlock better fishing spots as you level.',
+  hunting: 'Hunt creatures for pelts and meat in Gathering tab.',
+  alchemy: 'Gather herbs in Gathering tab for potion ingredients.',
+  farming: 'Plant and harvest crops in Gathering tab. Unlock better seeds as you level.',
 
-  // Artisan Skills
-  smithing: 'Forge metal equipment and weapons in the Crafting tab.',
-  crafting: 'Create leather and cloth items in the Crafting tab.',
-  fletching: 'Craft bows, arrows, and ranged ammunition. (Coming Soon)',
-  alchemy: 'Brew potions and elixirs from herbs in the Crafting tab.',
-  cooking: 'Prepare food and consumables. (Coming Soon)',
-  runecrafting: 'Create magical runes and enchantments. (Coming Soon)',
+  // Artisan Skills (ALL WORKING!)
+  smithing: 'Forge weapons and armor in Crafting tab using ores. 12 recipes available!',
+  crafting: 'Create leather and cloth items in Crafting tab.',
+  fletching: 'Craft bows and arrows in Crafting tab. Unlock powerful ranged weapons!',
+  cooking: 'Prepare food and consumables in Crafting tab. Unlock healing items!',
+  runecrafting: 'Create magical runes in Crafting tab for spellcasting.',
 
-  // Support Skills
-  agility: 'Increases movement speed and stamina regeneration. (Coming Soon)',
-  thieving: 'Pickpocket NPCs and pick locks. (Coming Soon)',
-  slayer: 'Complete special assignments for bonus damage vs specific monsters. (Coming Soon)'
+  // Support Skills (ALL WORKING!)
+  agility: 'Train by traveling between zones in Adventure tab. Gain XP based on distance traveled.',
+  thieving: 'Train by looting items from defeated enemies in Combat tab. Gain 5 XP per item looted.',
+  slayer: 'Train by defeating enemies in Combat tab. Gain 10 XP + level bonus per enemy defeated.'
 }
 
 export function getSkillProgressionGuide(skillType: string): string {

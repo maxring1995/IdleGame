@@ -28,7 +28,8 @@
       "Bash(for:*)",
       "Bash(do)",
       "Bash(done)",
-      "Read(//Users/maxring/Documents/GitHub/**)"
+      "Read(//Users/maxring/Documents/GitHub/**)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
