@@ -177,10 +177,11 @@ export async function getCharacterSkills(
 export async function initializeSkill(
   characterId: string,
   skillType: string,
-  startingLevel: number = 1
+  startingLevel: number = 1,
+  supabaseClient?: any
 ): Promise<{ data: CharacterSkill | null; error: any }> {
   try {
-    const supabase = createClient()
+    const supabase = supabaseClient || createClient()
     const startingXP = calculateXPForLevel(startingLevel)
 
     const { data, error } = await supabase
@@ -211,10 +212,11 @@ export async function addSkillExperience(
   characterId: string,
   skillType: string,
   xpAmount: number,
-  classBonus: number = 1.0 // XP multiplier from class
+  classBonus: number = 1.0, // XP multiplier from class
+  supabaseClient?: any
 ): Promise<{ data: CharacterSkill | null; error: any; leveledUp: boolean; newLevel?: number }> {
   try {
-    const supabase = createClient()
+    const supabase = supabaseClient || createClient()
 
     // Get current skill data
     const { data: skill, error: fetchError } = await supabase
@@ -226,9 +228,9 @@ export async function addSkillExperience(
 
     if (fetchError) {
       // Skill doesn't exist, initialize it
-      const { data: newSkill, error: initError } = await initializeSkill(characterId, skillType)
+      const { data: newSkill, error: initError } = await initializeSkill(characterId, skillType, 1, supabase)
       if (initError || !newSkill) throw initError
-      return addSkillExperience(characterId, skillType, xpAmount, classBonus)
+      return addSkillExperience(characterId, skillType, xpAmount, classBonus, supabase)
     }
 
     // Apply class bonus to XP
@@ -245,7 +247,7 @@ export async function addSkillExperience(
 
     // Check for milestone rewards
     if (leveledUp) {
-      await checkAndGrantMilestoneRewards(characterId, skillType, skill.level, newLevel)
+      await checkAndGrantMilestoneRewards(characterId, skillType, skill.level, newLevel, supabase)
     }
 
     // Update skill
@@ -277,9 +279,10 @@ async function checkAndGrantMilestoneRewards(
   characterId: string,
   skillType: string,
   oldLevel: number,
-  newLevel: number
+  newLevel: number,
+  supabaseClient: any
 ): Promise<void> {
-  const supabase = createClient()
+  const supabase = supabaseClient
   const milestones = [10, 25, 50, 75, 99]
 
   for (const milestone of milestones) {
@@ -293,7 +296,7 @@ async function checkAndGrantMilestoneRewards(
         .single()
 
       if (milestoneData) {
-        await grantMilestoneReward(characterId, milestoneData)
+        await grantMilestoneReward(characterId, milestoneData, supabase)
       }
     }
   }
@@ -302,8 +305,8 @@ async function checkAndGrantMilestoneRewards(
 /**
  * Grant a milestone reward to a character
  */
-async function grantMilestoneReward(characterId: string, milestone: SkillMilestone): Promise<void> {
-  const supabase = createClient()
+async function grantMilestoneReward(characterId: string, milestone: SkillMilestone, supabaseClient: any): Promise<void> {
+  const supabase = supabaseClient
 
   switch (milestone.reward_type) {
     case 'gold':

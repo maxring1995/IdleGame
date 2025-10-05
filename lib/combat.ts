@@ -309,6 +309,21 @@ export async function endCombat(
 
     const actualDamageTaken = (character?.health || 100) - combat.player_current_health
 
+    // Track combat XP gains
+    const combatXP: { [key: string]: number } = {}
+
+    // Calculate Attack XP from damage dealt (1 XP per 5 damage)
+    const attackXP = Math.max(1, Math.floor(damageDealt / 5))
+    combatXP.attack = attackXP
+
+    // Calculate Defense XP from damage taken (1 XP per 2 damage)
+    const defenseXP = Math.max(1, Math.floor(actualDamageTaken / 2))
+    combatXP.defense = defenseXP
+
+    // Calculate Constitution XP (1 XP per turn)
+    const constitutionXP = combat.turn_number - 1
+    combatXP.constitution = constitutionXP
+
     if (victory) {
       // Calculate rewards
       experience = enemy.experience_reward
@@ -329,11 +344,13 @@ export async function endCombat(
       // Award Slayer XP for defeating enemy (10 XP base + level bonus)
       const slayerXP = 10 + (enemy.level * 2)
       await addSkillExperience(characterId, 'slayer', slayerXP)
+      combatXP.slayer = slayerXP
 
       // Award Thieving XP for looting items (5 XP per item)
       if (loot.length > 0) {
         const thievingXP = loot.length * 5
         await addSkillExperience(characterId, 'thieving', thievingXP)
+        combatXP.thieving = thievingXP
       }
 
       // Track quest progress for kill quests
@@ -403,6 +420,7 @@ export async function endCombat(
       damageDealt,
       damageTaken: actualDamageTaken,
       turns: combat.turn_number - 1,
+      combatXP,
     }
 
     return { data: result, error: null }

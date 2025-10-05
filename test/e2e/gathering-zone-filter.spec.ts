@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { signupAndCreateCharacter } from './helpers/auth'
 
 test.describe('Gathering Zone Filter', () => {
   test('should display zone filter dropdown in gathering panel', async ({ page }) => {
@@ -6,8 +7,7 @@ test.describe('Gathering Zone Filter', () => {
     await page.goto('http://localhost:3000')
 
     // Sign up with a new user
-    const username = `testuser_${Date.now()}`
-    const signupButton = page.getByRole('button', { name: /sign up/i })
+        const signupButton = page.getByRole('button', { name: /sign up/i })
 
     if (await signupButton.isVisible()) {
       await page.getByPlaceholder(/username/i).fill(username)

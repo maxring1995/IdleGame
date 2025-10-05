@@ -10,7 +10,7 @@ interface VictoryModalProps {
 }
 
 export default function VictoryModal({ result, enemyName, onClose, onContinue }: VictoryModalProps) {
-  const { victory, experience, gold, loot, damageDealt, damageTaken, turns } = result
+  const { victory, experience, gold, loot, damageDealt, damageTaken, turns, combatXP } = result
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -59,35 +59,76 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
 
         {/* Rewards (Victory Only) */}
         {victory && (
-          <div className="bg-gray-900 rounded-lg p-4 mb-4">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">🎁 Rewards</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">⭐ Experience</span>
-                <span className="text-blue-400 font-semibold">+{experience} XP</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-300">💰 Gold</span>
-                <span className="text-yellow-400 font-semibold">+{gold}</span>
-              </div>
-
-              {loot.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-800">
-                  <div className="text-gray-400 text-xs mb-2">📦 Items Looted:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {loot.map((itemId, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-800 px-3 py-1 rounded text-xs text-green-400 border border-green-400/30"
-                      >
-                        ✨ {itemId.replace(/_/g, ' ')}
-                      </div>
-                    ))}
-                  </div>
+          <>
+            <div className="bg-gray-900 rounded-lg p-4 mb-4">
+              <h3 className="text-sm font-semibold text-gray-400 mb-3">🎁 Rewards</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-300">⭐ Experience</span>
+                  <span className="text-blue-400 font-semibold">+{experience} XP</span>
                 </div>
-              )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-300">💰 Gold</span>
+                  <span className="text-yellow-400 font-semibold">+{gold}</span>
+                </div>
+
+                {loot.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-800">
+                    <div className="text-gray-400 text-xs mb-2">📦 Items Looted:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {loot.map((itemId, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-800 px-3 py-1 rounded text-xs text-green-400 border border-green-400/30"
+                        >
+                          ✨ {itemId.replace(/_/g, ' ')}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+
+            {/* Combat XP Gains */}
+            {combatXP && Object.keys(combatXP).length > 0 && (
+              <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                <h3 className="text-sm font-semibold text-gray-400 mb-3">⚔️ Combat Skills XP</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {combatXP.attack && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">🗡️ Attack</span>
+                      <span className="text-red-400 font-semibold">+{combatXP.attack} XP</span>
+                    </div>
+                  )}
+                  {combatXP.defense && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">🛡️ Defense</span>
+                      <span className="text-blue-400 font-semibold">+{combatXP.defense} XP</span>
+                    </div>
+                  )}
+                  {combatXP.constitution && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">💪 Constitution</span>
+                      <span className="text-green-400 font-semibold">+{combatXP.constitution} XP</span>
+                    </div>
+                  )}
+                  {combatXP.slayer && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">⚔️ Slayer</span>
+                      <span className="text-purple-400 font-semibold">+{combatXP.slayer} XP</span>
+                    </div>
+                  )}
+                  {combatXP.thieving && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">🗝️ Thieving</span>
+                      <span className="text-yellow-400 font-semibold">+{combatXP.thieving} XP</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Penalty (Defeat Only) */}

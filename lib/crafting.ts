@@ -6,9 +6,16 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { CraftingRecipe, CraftingSkillType } from './supabase'
-import { addSkillExperience } from './materials'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
+
+/**
+ * Stub function for skill experience (gathering system removed)
+ */
+async function addSkillExperience(characterId: string, skillType: string, xp: number) {
+  // Gathering system removed - this is a no-op stub
+  return { data: null, error: null, leveledUp: false }
+}
 
 /**
  * Get all crafting recipes

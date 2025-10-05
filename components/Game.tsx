@@ -5,7 +5,6 @@ import { useGameStore } from '@/lib/store'
 import { signOut } from '@/app/actions'
 import Inventory from './Inventory'
 import Combat from './Combat'
-import GatheringSimple from './GatheringSimple'
 import CharacterTab from './CharacterTab'
 import Adventure from './Adventure'
 import CraftingPanel from './CraftingPanel'
@@ -14,6 +13,7 @@ import Merchant from './Merchant'
 import NotificationCenter from './NotificationCenter'
 import ActiveTasksPanel from './ActiveTasksPanel'
 import ToastNotification from './ToastNotification'
+import GatheringContracts from './GatheringContracts'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character } from '@/lib/supabase'
 import { getActiveBuffs, getBuffTimeRemaining, formatTimeRemaining, type ActiveBuff } from '@/lib/consumables'
@@ -27,7 +27,7 @@ interface GameProps {
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'gathering' | 'crafting' | 'quests' | 'merchant' | 'inventory'>('adventure')
+  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'crafting' | 'quests' | 'merchant' | 'inventory' | 'contracts'>('adventure')
   const [activeBuffs, setActiveBuffs] = useState<ActiveBuff[]>([])
 
   useEffect(() => {
@@ -291,17 +291,37 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 <div className="stat-box">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">❤️</span>
-                    <span className="text-sm text-gray-400">Max HP</span>
+                    <span className="text-sm text-gray-400">Health</span>
                   </div>
-                  <span className="text-lg font-bold text-green-400">{character.max_health}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-lg font-bold ${
+                      character.health <= character.max_health * 0.25
+                        ? 'text-red-400'
+                        : character.health < character.max_health
+                          ? 'text-yellow-400'
+                          : 'text-green-400'
+                    }`}>
+                      {character.health}
+                    </span>
+                    <span className="text-sm text-gray-500">/ {character.max_health}</span>
+                  </div>
                 </div>
 
                 <div className="stat-box">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">💧</span>
-                    <span className="text-sm text-gray-400">Max MP</span>
+                    <span className="text-sm text-gray-400">Mana</span>
                   </div>
-                  <span className="text-lg font-bold text-cyan-400">{character.max_mana}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-lg font-bold ${
+                      character.mana <= character.max_mana * 0.25
+                        ? 'text-blue-300'
+                        : 'text-cyan-400'
+                    }`}>
+                      {character.mana}
+                    </span>
+                    <span className="text-sm text-gray-500">/ {character.max_mana}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -316,6 +336,13 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 >
                   <span className="mr-2">🏪</span>
                   <span>Merchant</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('contracts')}
+                  className="w-full btn btn-secondary text-sm py-2.5 justify-start"
+                >
+                  <span className="mr-2">📋</span>
+                  <span>Contracts</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('quests')}
@@ -384,20 +411,6 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('gathering')}
-                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
-                    activeTab === 'gathering'
-                      ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-lg'
-                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-xl">🌾</span>
-                    <span className="text-sm">Gathering</span>
-                  </div>
-                </button>
-
-                <button
                   onClick={() => setActiveTab('crafting')}
                   className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'crafting'
@@ -440,6 +453,20 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 </button>
 
                 <button
+                  onClick={() => setActiveTab('contracts')}
+                  className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
+                    activeTab === 'contracts'
+                      ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-lg'
+                      : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl">📋</span>
+                    <span className="text-sm">Contracts</span>
+                  </div>
+                </button>
+
+                <button
                   onClick={() => setActiveTab('inventory')}
                   className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-semibold transition-all ${
                     activeTab === 'inventory'
@@ -463,14 +490,14 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 <CharacterTab />
               ) : activeTab === 'combat' ? (
                 <Combat />
-              ) : activeTab === 'gathering' ? (
-                <GatheringSimple />
               ) : activeTab === 'crafting' ? (
                 <CraftingPanel />
               ) : activeTab === 'quests' ? (
                 <Quests />
               ) : activeTab === 'merchant' ? (
                 <Merchant />
+              ) : activeTab === 'contracts' ? (
+                <GatheringContracts />
               ) : (
                 <Inventory />
               )}

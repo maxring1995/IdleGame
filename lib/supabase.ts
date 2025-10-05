@@ -153,6 +153,13 @@ export interface CombatResult {
   damageDealt: number
   damageTaken: number
   turns: number
+  combatXP?: {
+    attack?: number
+    defense?: number
+    constitution?: number
+    slayer?: number
+    thieving?: number
+  }
 }
 
 // Gathering System Types
@@ -187,6 +194,15 @@ export interface GatheringNode {
   required_zone_level: number
   respawn_time_ms: number
   created_at: string
+  // Deep Gathering System fields
+  quality_tier: 'poor' | 'standard' | 'rich'
+  max_health: number
+  current_health: number
+  last_harvested_at?: string
+  last_harvested_by?: string
+  is_active: boolean
+  spawn_position: { x: number; y: number }
+  respawn_variance: number
 }
 
 export interface CraftingRecipe {
@@ -240,6 +256,141 @@ export interface MaterialWithDetails extends Material {
   canGather: boolean
   isLocked: boolean
   lockReason?: string
+}
+
+// Deep Gathering System Types
+export type ToolType = 'axe' | 'pickaxe' | 'fishing_rod' | 'hunting_knife' | 'herbalism_sickle' | 'divination_staff'
+export type QualityTier = 'poor' | 'standard' | 'rich'
+export type EncounterType = 'treasure' | 'rare_spawn' | 'monster' | 'wanderer' | 'rune_discovery'
+
+export interface GatheringTool {
+  id: string
+  name: string
+  description?: string
+  tool_type: ToolType
+  tier: number
+  gathering_power: number // Speed multiplier
+  bonus_yield_chance: number // 0.0 - 1.0
+  bonus_yield_amount: number
+  durability_max: number
+  special_bonuses: Record<string, number> // e.g., {"gem_find": 0.15}
+  required_level: number
+  required_skill_type: GatheringSkillType
+  item_id?: string
+  created_at: string
+}
+
+export interface CharacterEquippedTools {
+  character_id: string
+  axe_id?: string
+  axe_durability: number
+  pickaxe_id?: string
+  pickaxe_durability: number
+  fishing_rod_id?: string
+  fishing_rod_durability: number
+  hunting_knife_id?: string
+  hunting_knife_durability: number
+  herbalism_sickle_id?: string
+  herbalism_sickle_durability: number
+  divination_staff_id?: string
+  divination_staff_durability: number
+  updated_at: string
+}
+
+export interface GatheringSpecialization {
+  id: string
+  name: string
+  description?: string
+  skill_type: GatheringSkillType
+  bonuses: Record<string, any> // Flexible bonuses
+  required_skill_level: number
+  icon?: string
+  created_at: string
+}
+
+export interface GatheringHotspot {
+  id: string
+  world_zone: string
+  material_id: string
+  position: { x: number; y: number }
+  yield_multiplier: number
+  duration_minutes: number
+  max_harvesters: number
+  current_harvesters: number
+  spawned_at: string
+  expires_at: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface GatheringEncounter {
+  id: string
+  character_id: string
+  encounter_type: EncounterType
+  encounter_data: Record<string, any>
+  triggered_at: string
+  material_id?: string
+  world_zone?: string
+  resolved: boolean
+  resolved_at?: string
+  resolution_action?: string
+  rewards_granted: Record<string, any>
+  created_at: string
+}
+
+export interface GatheringAchievement {
+  id: string
+  name: string
+  description?: string
+  category: GatheringSkillType | 'general'
+  requirement_type: string
+  requirement_data: Record<string, any>
+  title?: string
+  reward_item_id?: string
+  reward_gold: number
+  sort_order: number
+  created_at: string
+}
+
+export interface CharacterGatheringAchievement {
+  character_id: string
+  achievement_id: string
+  unlocked_at: string
+  progress: Record<string, any>
+}
+
+export interface GatheringStatistics {
+  character_id: string
+  total_wood_gathered: number
+  total_ore_gathered: number
+  total_fish_gathered: number
+  total_meat_gathered: number
+  total_herbs_gathered: number
+  total_essence_gathered: number
+  total_gems_found: number
+  total_rare_spawns_found: number
+  total_treasures_found: number
+  fastest_gather_time_ms?: number
+  total_nodes_depleted: number
+  total_hotspots_claimed: number
+  total_encounters: number
+  total_monsters_fought: number
+  total_wanderers_met: number
+  updated_at: string
+}
+
+export interface GatheringSeasonalEvent {
+  id: string
+  event_name: string
+  event_type: string
+  affected_skills: GatheringSkillType[]
+  bonus_multipliers: Record<string, number>
+  starts_at: string
+  ends_at: string
+  is_active: boolean
+  description?: string
+  announcement_text?: string
+  created_at: string
 }
 
 // Adventure System Types

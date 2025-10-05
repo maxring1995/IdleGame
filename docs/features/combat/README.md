@@ -17,6 +17,7 @@ Turn-based combat system with auto-attack and boss encounters.
 - **Boss Encounters**: Special high-difficulty fights
 - **Loot System**: Probability-based item drops
 - **Combat Logs**: Real-time battle history
+- **Combat XP Display**: Shows XP gained for each combat skill after victory
 
 ### Combat Flow
 1. Select enemy from enemy list
@@ -29,6 +30,16 @@ Turn-based combat system with auto-attack and boss encounters.
 - **Damage Formula**: `attackerAttack - (defenderDefense / 2)` ± 15% variance
 - **Loot Drops**: Probability table per enemy
 - **Boss Bonuses**: Higher stats, better rewards
+
+### Combat Skills & XP Gains
+Each combat awards XP to multiple skills:
+- **Attack XP**: 1 XP per 5 damage dealt
+- **Defense XP**: 1 XP per 2 damage taken
+- **Constitution XP**: 1 XP per turn
+- **Slayer XP**: 10 + (enemy level × 2) XP for victory
+- **Thieving XP**: 5 XP per item looted
+
+The Victory Modal now displays all combat XP gains in a dedicated section.
 
 ### Key Files
 - `lib/combat.ts` - Combat logic
@@ -49,4 +60,4 @@ Turn-based combat system with auto-attack and boss encounters.
 
 ---
 
-**Last Updated:** 2025-10-04
+**Last Updated:** 2025-10-05

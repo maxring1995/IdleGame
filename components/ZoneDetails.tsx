@@ -6,6 +6,7 @@ import { getZoneDetails, getCurrentWeather, attemptLandmarkDiscovery } from '@/l
 import { startExploration } from '@/lib/exploration'
 import { startTravel } from '@/lib/travel'
 import { useGameStore } from '@/lib/store'
+import GatheringZone from './GatheringZone'
 
 interface ZoneDetailsProps {
   zoneId: string
@@ -33,6 +34,7 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
   const [weather, setWeather] = useState<string>('clear')
   const [exploring, setExploring] = useState(false)
   const [discoveryMessage, setDiscoveryMessage] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'overview' | 'gathering'>('overview')
 
   useEffect(() => {
     loadZoneDetails()
@@ -206,7 +208,45 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
         )}
       </div>
 
-      {/* Landmarks */}
+      {/* Tab Navigation */}
+      <div className="panel p-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+              activeTab === 'overview'
+                ? 'bg-gradient-to-b from-amber-500 to-amber-600 text-gray-900 shadow-lg'
+                : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl">🗺️</span>
+              <span className="text-sm">Overview</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('gathering')}
+            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+              activeTab === 'gathering'
+                ? 'bg-gradient-to-b from-green-500 to-green-600 text-white shadow-lg'
+                : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl">⛏️</span>
+              <span className="text-sm">Gathering</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'gathering' ? (
+        <GatheringZone worldZone={zone.id} zoneName={zone.name} />
+      ) : (
+        <>
+          {/* Landmarks */}
       {visibleLandmarks.length > 0 && (
         <div className="panel p-6 space-y-4">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -286,6 +326,8 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
             ))}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

@@ -9,18 +9,21 @@ test.describe('Authentication Edge Cases', () => {
     await page.evaluate(() => localStorage.clear());
 
     const email = `edge${Date.now()}@example.com`;
-    const username = 'edgeuser';
+    const password = 'EdgePassword123';
 
     console.log('Testing with cleared localStorage');
 
+    // Click sign up link
+    await page.getByText("Don't have an account? Sign up").click();
+
     await page.locator('#email').fill(email);
-    await page.locator('#username').fill(username);
-    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.locator('#password').fill(password);
+    await page.getByRole('button', { name: 'Sign Up' }).click();
 
     // Wait for either success or error (max 10 seconds)
     const result = await Promise.race([
       page.waitForSelector('text=Create Your Hero', { timeout: 10000 }).then(() => 'success'),
-      page.waitForSelector('.bg-red-500\\/10', { timeout: 10000 }).then(() => 'error'),
+      page.waitForSelector('.bg-red-900\\/50', { timeout: 10000 }).then(() => 'error'),
       new Promise(resolve => setTimeout(() => resolve('timeout'), 10000))
     ]);
 
@@ -32,7 +35,7 @@ test.describe('Authentication Edge Cases', () => {
     } else if (result === 'success') {
       console.log('✅ Successfully created account and reached character creation');
     } else if (result === 'error') {
-      const errorText = await page.locator('.bg-red-500\\/10').textContent();
+      const errorText = await page.locator('.bg-red-900\\/50').textContent();
       console.log('❌ Error:', errorText);
     }
 
@@ -44,20 +47,23 @@ test.describe('Authentication Edge Cases', () => {
     await page.waitForLoadState('networkidle');
 
     const email = `repeat${Date.now()}@example.com`;
-    const username = 'repeatuser';
+    const password = 'RepeatPassword123';
+
+    // Click sign up link
+    await page.getByText("Don't have an account? Sign up").click();
 
     // First attempt
     await page.locator('#email').fill(email);
-    await page.locator('#username').fill(username);
-    await page.getByRole('button', { name: 'Create Account' }).click();
+    await page.locator('#password').fill(password);
+    await page.getByRole('button', { name: 'Sign Up' }).click();
 
     // Wait for response
     await page.waitForTimeout(5000);
 
     // Check if we got a response (success or error)
     const hasSuccess = await page.getByText('Create Your Hero').isVisible().catch(() => false);
-    const hasError = await page.locator('.bg-red-500\\/10').isVisible().catch(() => false);
-    const isStillLoading = await page.getByText('Loading...').isVisible().catch(() => false);
+    const hasError = await page.locator('.bg-red-900\\/50').isVisible().catch(() => false);
+    const isStillLoading = await page.getByText('Please wait...').isVisible().catch(() => false);
 
     console.log('After signup:', { hasSuccess, hasError, isStillLoading });
 
@@ -70,26 +76,35 @@ test.describe('Authentication Edge Cases', () => {
     await page.waitForLoadState('networkidle');
 
     const email = `rapid${Date.now()}@example.com`;
-    const username = 'rapiduser';
+    const password = 'RapidPassword123';
+
+    // Click sign up link
+    await page.getByText("Don't have an account? Sign up").click();
 
     await page.locator('#email').fill(email);
-    await page.locator('#username').fill(username);
+    await page.locator('#password').fill(password);
 
-    const button = page.getByRole('button', { name: 'Create Account' });
+    const button = page.getByRole('button', { name: 'Sign Up' });
 
-    // Rapidly click the button (simulating impatient user)
+    // Click the button multiple times rapidly
     await button.click();
-    await button.click().catch(() => {}); // Might be disabled
-    await button.click().catch(() => {}); // Might be disabled
+    // Try to click again (may be disabled or in loading state)
+    const canClickAgain = await button.isEnabled().catch(() => false);
 
-    // Wait for response
-    const result = await Promise.race([
-      page.waitForSelector('text=Create Your Hero', { timeout: 10000 }).then(() => 'success'),
-      page.waitForSelector('.bg-red-500\\/10', { timeout: 10000 }).then(() => 'error'),
-      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000))
-    ]);
+    if (canClickAgain) {
+      await button.click().catch(() => {});
+    }
 
-    console.log('Rapid click result:', result);
-    expect(result).not.toBe('timeout');
+    // Wait for navigation or error
+    await page.waitForTimeout(3000);
+
+    // Check for any valid result
+    const hasSuccess = await page.getByText('Create Your Hero').isVisible().catch(() => false);
+    const hasError = await page.locator('.bg-red-900\\/50').isVisible().catch(() => false);
+
+    console.log('Rapid click result:', { hasSuccess, hasError });
+
+    // The test passes if we got any valid response
+    expect(hasSuccess || hasError).toBe(true);
   });
 });

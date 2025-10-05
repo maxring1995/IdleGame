@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Character } from './supabase'
 import { trackQuestProgress } from './quests'
 import { initializeAllSkills } from './skillInitialization'
+import { initializeStarterTools } from './initializeCharacterTools'
 
 /**
  * Create a new character for a user
@@ -58,6 +59,9 @@ export async function createCharacter(userId: string, name: string): Promise<{ d
 
       // Initialize all 20 skills
       await initializeAllSkills(data.id)
+
+      // Initialize starter gathering tools
+      await initializeStarterTools(data.id)
     }
 
     return { data, error: null }

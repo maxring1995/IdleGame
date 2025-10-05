@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
 import { getInventory, equipItem, unequipItem, getAllItems } from '@/lib/inventory'
 import { useConsumable, parseConsumableEffects, getEffectDescription } from '@/lib/consumables'
+import GatheringTools from './GatheringTools'
 
 interface InventoryItemWithDetails {
   id: string
@@ -24,7 +25,7 @@ export default function Inventory() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUsing, setIsUsing] = useState(false)
   const [useMessage, setUseMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [activeTab, setActiveTab] = useState<'equipment' | 'consumables' | 'materials'>('equipment')
+  const [activeTab, setActiveTab] = useState<'equipment' | 'consumables' | 'materials' | 'tools'>('equipment')
 
   useEffect(() => {
     if (character) {
@@ -63,7 +64,7 @@ export default function Inventory() {
     setIsUsing(true)
     setUseMessage(null)
 
-    const { success, error, effects } = await useConsumable(character.id, invItem.id)
+    const { success, error, effects, updatedCharacter } = await useConsumable(character.id, invItem.id)
 
     if (success && effects) {
       // Build success message
@@ -73,21 +74,18 @@ export default function Inventory() {
         text: `Used ${invItem.item.name}! ${effectMessages}`
       })
 
-      // Reload inventory and character
-      await loadInventory()
-
-      // Update character stats in store (health/mana may have changed)
-      const { createClient } = await import('@/utils/supabase/client')
-      const supabase = createClient()
-      const { data: updatedChar } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('id', character.id)
-        .single()
-
-      if (updatedChar) {
+      // Immediately update the global store with new health/mana values if provided
+      if (updatedCharacter) {
+        const updatedChar = {
+          ...character,
+          health: updatedCharacter.health,
+          mana: updatedCharacter.mana
+        }
         updateCharacterStats(updatedChar)
       }
+
+      // Reload inventory
+      await loadInventory()
 
       // Clear selected item if it was deleted
       if (invItem.quantity === 1) {
@@ -152,7 +150,47 @@ export default function Inventory() {
     ? equipmentItems
     : activeTab === 'consumables'
       ? consumableItems
-      : materialItems
+      : activeTab === 'materials'
+        ? materialItems
+        : []
+
+  // If Tools tab is active, render GatheringTools component instead
+  if (activeTab === 'tools') {
+    return (
+      <div>
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('equipment')}
+            className="px-4 py-2 rounded-lg text-sm bg-bg-card text-gray-400 hover:text-white transition-colors"
+          >
+            Equipment ({equipmentItems.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('consumables')}
+            className="px-4 py-2 rounded-lg text-sm bg-bg-card text-gray-400 hover:text-white transition-colors"
+          >
+            Consumables ({consumableItems.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('materials')}
+            className="px-4 py-2 rounded-lg text-sm bg-bg-card text-gray-400 hover:text-white transition-colors"
+          >
+            Materials ({materialItems.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('tools')}
+            className="px-4 py-2 rounded-lg text-sm bg-primary text-black font-semibold transition-colors"
+          >
+            ⚒️ Gathering Tools
+          </button>
+        </div>
+
+        {/* Gathering Tools Component */}
+        <GatheringTools />
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -190,6 +228,16 @@ export default function Inventory() {
               }`}
             >
               Materials ({materialItems.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`px-3 py-1 rounded text-sm ${
+                activeTab === 'tools'
+                  ? 'bg-primary text-black'
+                  : 'bg-bg-card text-gray-400 hover:text-white'
+              }`}
+            >
+              ⚒️ Tools
             </button>
           </div>
         </div>
