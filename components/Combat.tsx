@@ -26,11 +26,23 @@ export default function Combat() {
   const [healthPotions, setHealthPotions] = useState<any[]>([])
   const [isHealing, setIsHealing] = useState(false)
   const [healMessage, setHealMessage] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    checkActiveCombat()
-    loadHealthPotions()
-  }, [character])
+    // Only check active combat on initial load, not on every character update
+    if (!isInitialized && character) {
+      checkActiveCombat()
+      loadHealthPotions()
+      setIsInitialized(true)
+    }
+  }, [character, isInitialized])
+
+  // Separate effect for reloading potions when character changes
+  useEffect(() => {
+    if (character) {
+      loadHealthPotions()
+    }
+  }, [character?.id])
 
   useEffect(() => {
     if (autoAttack && activeCombat && !combatResult && !isAttacking) {
@@ -104,10 +116,27 @@ export default function Combat() {
 
       // Update active combat health if in combat
       if (activeCombat) {
-        setActiveCombat({
-          ...activeCombat,
-          player_current_health: updatedCharacter.health
-        })
+        // Update the database record for active combat
+        const { createClient } = await import('@/utils/supabase/client')
+        const supabase = createClient()
+
+        const { error: updateError } = await supabase
+          .from('active_combat')
+          .update({
+            player_current_health: updatedCharacter.health,
+            updated_at: new Date().toISOString()
+          })
+          .eq('character_id', character.id)
+
+        if (!updateError) {
+          // Update local state only if database update succeeded
+          setActiveCombat({
+            ...activeCombat,
+            player_current_health: updatedCharacter.health
+          })
+        } else {
+          console.error('Failed to update combat health:', updateError)
+        }
       }
 
       // Show success message
