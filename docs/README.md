@@ -13,7 +13,8 @@ docs/
 │   ├── crafting/      # Crafting system
 │   ├── adventure/     # Travel & exploration
 │   ├── notifications/ # Notification system
-│   ├── skills/        # 20-Skill system (NEW!)
+│   ├── skills/        # 20-Skill system
+│   ├── character/     # Character stats system (NEW!)
 │   └── authentication/# Auth system
 ├── bugfixes/          # Bug fix reports
 ├── guides/            # User guides
@@ -25,7 +26,8 @@ docs/
 ### Core Game Systems
 - **[Quest System](features/quests/README.md)** - Quest tracking, progress, rewards
 - **[Combat System](features/combat/README.md)** - Turn-based combat, auto-attack, bosses
-- **[20-Skill System](features/skills/COMPLETE_SKILL_SYSTEM.md)** ⭐ **NEW!** - All 20 skills, 60+ recipes, 70+ materials
+- **[20-Skill System](features/skills/COMPLETE_SKILL_SYSTEM.md)** - All 20 skills, 60+ recipes, 70+ materials
+- **[Character Stats System](features/character/CHARACTER_STATS_SYSTEM.md)** ⭐ **NEW!** - Stat breakdowns, equipment bonuses, active buffs
 - **[Gathering System](features/gathering/README.md)** - 6 gathering skills, 50+ materials
 - **[Crafting System](features/crafting/README.md)** - 60+ recipes, async crafting
 - **[Adventure System](features/adventure/README.md)** - World map, travel, exploration
@@ -52,7 +54,8 @@ All bug fix reports are located in **[bugfixes/](bugfixes/)**:
 
 **Need to...**
 - **Start developing?** → [guides/QUICKSTART.md](guides/QUICKSTART.md)
-- **View all 20 skills?** → [features/skills/COMPLETE_SKILL_SYSTEM.md](features/skills/COMPLETE_SKILL_SYSTEM.md) ⭐
+- **View all 20 skills?** → [features/skills/COMPLETE_SKILL_SYSTEM.md](features/skills/COMPLETE_SKILL_SYSTEM.md)
+- **Understand character stats?** → [features/character/CHARACTER_STATS_SYSTEM.md](features/character/CHARACTER_STATS_SYSTEM.md) ⭐
 - **Understand auth?** → [features/authentication/](features/authentication/)
 - **Fix a bug?** → [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)
 - **Add icons?** → [guides/ICONS.md](guides/ICONS.md)
@@ -66,6 +69,9 @@ All bug fix reports are located in **[bugfixes/](bugfixes/)**:
 
 ## 📅 Latest Updates
 
+- **2025-10-05** - ⭐ **CHARACTER STATS SYSTEM** - Complete stat breakdowns, equipment bonuses, active buffs ([Changelog](CHANGELOG_2025-10-05.md))
+- **2025-10-05** - Moved "Gathering Contracts" from Market tab to Adventure tab
+- **2025-10-05** - Fixed Equipment Manager z-index rendering issue
 - **2025-10-04** - ⭐ **COMPLETE 20-SKILL SYSTEM IMPLEMENTED** - All skills functional with 60+ recipes
 - **2025-10-04** - Added Magic & Ranged combat styles with UI selector
 - **2025-10-04** - Implemented Farming, Cooking, Fletching, Runecrafting skills
@@ -75,7 +81,6 @@ All bug fix reports are located in **[bugfixes/](bugfixes/)**:
 - **2025-10-04** - Created comprehensive E2E tests for quest system
 - **2025-10-03** - PHASE6_CRAFTING.md - Complete crafting system
 - **2025-10-02** - PHASE4_GATHERING.md - Complete gathering system
-- **2025-10-02** - Added comprehensive testing requirements to CLAUDE.md
 
 ## 🤝 Contributing to Documentation
 

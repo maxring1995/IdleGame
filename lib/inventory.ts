@@ -309,9 +309,9 @@ export async function unequipItem(inventoryItemId: string, characterId: string) 
 }
 
 /**
- * Update character stats based on equipped items
+ * Update character stats based on equipped items and landmark bonuses
  */
-async function updateCharacterStats(characterId: string) {
+export async function updateCharacterStats(characterId: string) {
   try {
     const supabase = createClient()
     // Get base character stats
@@ -335,7 +335,7 @@ async function updateCharacterStats(characterId: string) {
 
     if (!equippedItems) return
 
-    // Calculate total bonuses
+    // Calculate total bonuses from equipment
     let attackBonus = 0
     let defenseBonus = 0
     let healthBonus = 0
@@ -350,6 +350,21 @@ async function updateCharacterStats(characterId: string) {
         manaBonus += item.mana_bonus || 0
       }
     })
+
+    // Get bonuses from discovered landmarks
+    const { data: landmarkBonuses } = await supabase
+      .from('character_landmark_bonuses')
+      .select('*')
+      .eq('character_id', characterId)
+
+    if (landmarkBonuses) {
+      landmarkBonuses.forEach(bonus => {
+        attackBonus += bonus.attack_bonus || 0
+        defenseBonus += bonus.defense_bonus || 0
+        healthBonus += bonus.health_bonus || 0
+        manaBonus += bonus.mana_bonus || 0
+      })
+    }
 
     // Base stats (from level)
     const baseAttack = 10 + (character.level - 1) * 2

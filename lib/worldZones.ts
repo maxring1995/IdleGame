@@ -91,12 +91,14 @@ export async function discoverZone(
 ): Promise<{ data: CharacterZoneDiscovery | null; error: Error | null }> {
   try {
     // Check if already discovered
-    const { data: existing } = await supabase
+    const { data: existing, error: existError } = await supabase
       .from('character_zone_discoveries')
       .select('*')
       .eq('character_id', characterId)
       .eq('zone_id', zoneId)
-      .single()
+      .maybeSingle()
+
+    if (existError) throw existError
 
     if (existing) {
       return { data: existing, error: null }
@@ -163,7 +165,7 @@ export async function canAccessZone(
         .select('*')
         .eq('character_id', characterId)
         .eq('zone_id', zoneId)
-        .single()
+        .maybeSingle()
 
       if (!discovery) {
         return {
@@ -236,7 +238,7 @@ export async function getZoneDetails(
       .select('*')
       .eq('character_id', characterId)
       .eq('zone_id', zoneId)
-      .single()
+      .maybeSingle()
 
     return {
       data: {
@@ -344,6 +346,10 @@ export async function attemptLandmarkDiscovery(
           })
 
         if (insertError) throw insertError
+
+        // Grant landmark bonuses
+        await grantLandmarkBonuses(characterId, landmark.id)
+
         return { data: landmark, error: null }
       }
     }
@@ -352,6 +358,54 @@ export async function attemptLandmarkDiscovery(
   } catch (err) {
     console.error('Error attempting landmark discovery:', err)
     return { data: null, error: err as Error }
+  }
+}
+
+/**
+ * Grant stat bonuses from a discovered landmark
+ */
+async function grantLandmarkBonuses(
+  characterId: string,
+  landmarkId: string
+): Promise<void> {
+  try {
+    // Get landmark details with bonuses
+    const { data: landmark, error: landmarkError } = await supabase
+      .from('zone_landmarks')
+      .select('*')
+      .eq('id', landmarkId)
+      .single()
+
+    if (landmarkError || !landmark) return
+
+    // Create landmark bonus record
+    const { error: bonusError } = await supabase
+      .from('character_landmark_bonuses')
+      .insert({
+        character_id: characterId,
+        landmark_id: landmarkId,
+        attack_bonus: landmark.attack_bonus || 0,
+        defense_bonus: landmark.defense_bonus || 0,
+        health_bonus: landmark.health_bonus || 0,
+        mana_bonus: landmark.mana_bonus || 0,
+        speed_bonus: landmark.speed_bonus || 0,
+        discovery_bonus: landmark.discovery_bonus || 0,
+        gold_find_bonus: landmark.gold_find_bonus || 0,
+        xp_bonus: landmark.xp_bonus || 0
+      })
+
+    if (bonusError) {
+      console.error('Error creating landmark bonus:', bonusError)
+      return
+    }
+
+    // Update character stats immediately if there are stat bonuses
+    if (landmark.attack_bonus || landmark.defense_bonus || landmark.health_bonus || landmark.mana_bonus) {
+      const { updateCharacterStats } = await import('./inventory')
+      await updateCharacterStats(characterId)
+    }
+  } catch (err) {
+    console.error('Error granting landmark bonuses:', err)
   }
 }
 
@@ -369,7 +423,7 @@ export async function discoverLandmark(
       .select('*')
       .eq('character_id', characterId)
       .eq('landmark_id', landmarkId)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       return { data: existing, error: null }
@@ -387,6 +441,10 @@ export async function discoverLandmark(
       .single()
 
     if (error) throw error
+
+    // Grant landmark bonuses
+    await grantLandmarkBonuses(characterId, landmarkId)
+
     return { data, error: null }
   } catch (err) {
     console.error('Error discovering landmark:', err)
@@ -515,7 +573,7 @@ export async function updateZoneTimeSpent(
       .select('*')
       .eq('character_id', characterId)
       .eq('zone_id', zoneId)
-      .single()
+      .maybeSingle()
 
     if (fetchError) throw fetchError
 

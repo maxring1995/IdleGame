@@ -29,7 +29,12 @@
       "Bash(do)",
       "Bash(done)",
       "Read(//Users/maxring/Documents/GitHub/**)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(open http://localhost:3000)",
+      "Bash(open http://localhost:3000/test-zones)",
+      "Bash(open http://localhost:3001)",
+      "Bash(killall:*)",
+      "mcp__supabase__execute_sql"
     ],
     "deny": [],
     "ask": []

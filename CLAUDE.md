@@ -69,6 +69,88 @@ npm run test:e2e:ui
 npx playwright show-report
 ```
 
+### Direct Character Access for Testing
+
+For manual testing and debugging, you can bypass authentication and directly access a specific character:
+
+**URL Pattern:**
+```
+http://localhost:3000/test-direct
+```
+
+**Setup:**
+Create `app/test-direct/page.tsx` to bypass login and load a character directly:
+
+```typescript
+import { createClient } from '@/utils/supabase/server'
+import Game from '@/components/Game'
+
+export default async function TestDirectPage() {
+  const supabase = await createClient()
+
+  // Get user by email (replace with actual user email)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', 'user@example.com')  // ← Update this email
+    .single()
+
+  if (!profile) {
+    return <div>User not found</div>
+  }
+
+  // Get character
+  const { data: character } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('user_id', profile.id)
+    .single()
+
+  if (!character) {
+    return <div>Character not found</div>
+  }
+
+  // Create mock user
+  const mockUser = {
+    id: profile.id,
+    email: profile.email,
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString()
+  }
+
+  return (
+    <div>
+      {/* Testing banner */}
+      <div className="bg-yellow-900/50 border-b border-yellow-500/50 px-4 py-2 text-center">
+        <p className="text-yellow-300 text-sm font-semibold">
+          ⚠️ TESTING MODE - Direct Character Access
+        </p>
+      </div>
+
+      <Game
+        initialUser={mockUser as any}
+        initialProfile={profile}
+        initialCharacter={character}
+      />
+    </div>
+  )
+}
+```
+
+**When to Use:**
+- Manual testing of game features
+- Debugging specific character states
+- Testing exploration/expedition rewards
+- Quick iteration without login flow
+- E2E testing setup
+
+**Important:**
+- Never deploy to production with this route
+- Update the email to match your test user
+- Add `.gitignore` entry if using sensitive data
+
 ## Architecture
 
 ### Authentication System

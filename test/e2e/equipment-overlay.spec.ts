@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test'
+import { signupAndCreateCharacter } from './helpers/auth'
 
 test.describe('Equipment Overlay', () => {
   test('should open equipment overlay and display slots correctly', async ({ page }) => {
-    // Login
-    await page.goto('/login')
-    await page.fill('input[name="email"]', 'indate@live.se')
-    await page.fill('input[name="password"]', 'indate123')
-    await page.click('button:has-text("Log In")')
+    // Setup: Create account and character
+    const success = await signupAndCreateCharacter(page, 'equipment')
+
+    if (!success) {
+      console.log('Warning: Setup may have failed, but continuing test')
+    }
 
     // Wait for game to load
     await page.waitForSelector('button:has-text("Inventory")', { timeout: 10000 })

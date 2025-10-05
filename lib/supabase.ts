@@ -153,6 +153,13 @@ export interface CombatResult {
   damageDealt: number
   damageTaken: number
   turns: number
+  combatXP?: {
+    attack?: number
+    defense?: number
+    constitution?: number
+    slayer?: number
+    thieving?: number
+  }
 }
 
 // Gathering System Types
@@ -187,6 +194,15 @@ export interface GatheringNode {
   required_zone_level: number
   respawn_time_ms: number
   created_at: string
+  // Deep Gathering System fields
+  quality_tier: 'poor' | 'standard' | 'rich'
+  max_health: number
+  current_health: number
+  last_harvested_at?: string
+  last_harvested_by?: string
+  is_active: boolean
+  spawn_position: { x: number; y: number }
+  respawn_variance: number
 }
 
 export interface CraftingRecipe {
@@ -240,6 +256,141 @@ export interface MaterialWithDetails extends Material {
   canGather: boolean
   isLocked: boolean
   lockReason?: string
+}
+
+// Deep Gathering System Types
+export type ToolType = 'axe' | 'pickaxe' | 'fishing_rod' | 'hunting_knife' | 'herbalism_sickle' | 'divination_staff'
+export type QualityTier = 'poor' | 'standard' | 'rich'
+export type EncounterType = 'treasure' | 'rare_spawn' | 'monster' | 'wanderer' | 'rune_discovery'
+
+export interface GatheringTool {
+  id: string
+  name: string
+  description?: string
+  tool_type: ToolType
+  tier: number
+  gathering_power: number // Speed multiplier
+  bonus_yield_chance: number // 0.0 - 1.0
+  bonus_yield_amount: number
+  durability_max: number
+  special_bonuses: Record<string, number> // e.g., {"gem_find": 0.15}
+  required_level: number
+  required_skill_type: GatheringSkillType
+  item_id?: string
+  created_at: string
+}
+
+export interface CharacterEquippedTools {
+  character_id: string
+  axe_id?: string
+  axe_durability: number
+  pickaxe_id?: string
+  pickaxe_durability: number
+  fishing_rod_id?: string
+  fishing_rod_durability: number
+  hunting_knife_id?: string
+  hunting_knife_durability: number
+  herbalism_sickle_id?: string
+  herbalism_sickle_durability: number
+  divination_staff_id?: string
+  divination_staff_durability: number
+  updated_at: string
+}
+
+export interface GatheringSpecialization {
+  id: string
+  name: string
+  description?: string
+  skill_type: GatheringSkillType
+  bonuses: Record<string, any> // Flexible bonuses
+  required_skill_level: number
+  icon?: string
+  created_at: string
+}
+
+export interface GatheringHotspot {
+  id: string
+  world_zone: string
+  material_id: string
+  position: { x: number; y: number }
+  yield_multiplier: number
+  duration_minutes: number
+  max_harvesters: number
+  current_harvesters: number
+  spawned_at: string
+  expires_at: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface GatheringEncounter {
+  id: string
+  character_id: string
+  encounter_type: EncounterType
+  encounter_data: Record<string, any>
+  triggered_at: string
+  material_id?: string
+  world_zone?: string
+  resolved: boolean
+  resolved_at?: string
+  resolution_action?: string
+  rewards_granted: Record<string, any>
+  created_at: string
+}
+
+export interface GatheringAchievement {
+  id: string
+  name: string
+  description?: string
+  category: GatheringSkillType | 'general'
+  requirement_type: string
+  requirement_data: Record<string, any>
+  title?: string
+  reward_item_id?: string
+  reward_gold: number
+  sort_order: number
+  created_at: string
+}
+
+export interface CharacterGatheringAchievement {
+  character_id: string
+  achievement_id: string
+  unlocked_at: string
+  progress: Record<string, any>
+}
+
+export interface GatheringStatistics {
+  character_id: string
+  total_wood_gathered: number
+  total_ore_gathered: number
+  total_fish_gathered: number
+  total_meat_gathered: number
+  total_herbs_gathered: number
+  total_essence_gathered: number
+  total_gems_found: number
+  total_rare_spawns_found: number
+  total_treasures_found: number
+  fastest_gather_time_ms?: number
+  total_nodes_depleted: number
+  total_hotspots_claimed: number
+  total_encounters: number
+  total_monsters_fought: number
+  total_wanderers_met: number
+  updated_at: string
+}
+
+export interface GatheringSeasonalEvent {
+  id: string
+  event_name: string
+  event_type: string
+  affected_skills: GatheringSkillType[]
+  bonus_multipliers: Record<string, number>
+  starts_at: string
+  ends_at: string
+  is_active: boolean
+  description?: string
+  announcement_text?: string
+  created_at: string
 }
 
 // Adventure System Types
@@ -353,6 +504,7 @@ export interface ExplorationUpdate {
   rewards: ExplorationReward[]
   timeSpent: number
   completed: boolean
+  event?: ExplorationEvent
 }
 
 // Extended types with discovery info
@@ -700,4 +852,359 @@ export interface CharacterSkillChallenge {
   completed: boolean
   completed_at?: string
   claimed: boolean
+}
+
+// ============================================================================
+// EXPLORATION 2.0 TYPES
+// ============================================================================
+
+// Exploration Skills
+export type ExplorationSkillType = 'cartography' | 'survival' | 'archaeology' | 'tracking'
+
+export interface ExplorationSkill {
+  id: string
+  character_id: string
+  skill_type: ExplorationSkillType
+  level: number
+  experience: number
+  total_experience: number
+  created_at: string
+  updated_at: string
+}
+
+// Exploration Events
+export type ExplorationEventType = 'discovery' | 'encounter' | 'puzzle' | 'hazard' | 'treasure' | 'npc' | 'mystery'
+
+export interface ExplorationEvent {
+  id: string
+  event_name: string
+  event_type: ExplorationEventType
+  zone_id?: string
+  zone_type?: string
+  min_danger_level: number
+  max_danger_level: number
+  description: string
+  flavor_text?: string
+  trigger_chance: number
+  min_progress: number
+  max_progress: number
+  required_skills: Record<string, number>
+  choices: ExplorationChoice[]
+  rewards: Record<string, any>
+  created_at: string
+}
+
+export interface ExplorationChoice {
+  text: string
+  skill_check?: Record<string, number>
+  requires_item?: string
+  outcomes: {
+    success?: ExplorationOutcome
+    failure?: ExplorationOutcome
+    always?: ExplorationOutcome
+  }
+}
+
+export interface ExplorationOutcome {
+  message?: string
+  xp?: number
+  gold?: number
+  health?: number
+  items?: string[]
+  discovery?: string
+  safe_passage?: boolean
+  lost?: boolean
+  time?: number
+  safe?: boolean
+  consumes_item?: boolean
+}
+
+export interface ExplorationEventLog {
+  id: string
+  character_id: string
+  event_id: string
+  zone_id: string
+  choice_made?: string
+  outcome: Record<string, any>
+  rewards_gained: Record<string, any>
+  timestamp: string
+}
+
+// Expedition Supplies
+export type SupplyType = 'food' | 'tool' | 'light' | 'medicine' | 'map' | 'special'
+
+export interface ExpeditionSupply {
+  id: string
+  name: string
+  supply_type: SupplyType
+  description?: string
+  effect: Record<string, number>
+  duration?: number
+  stack_size: number
+  cost: number
+  level_required: number
+  icon?: string
+  created_at: string
+}
+
+// Expeditions
+export type ExpeditionType = 'scout' | 'standard' | 'deep' | 'legendary'
+export type ExpeditionStatus = 'planning' | 'active' | 'completed' | 'failed' | 'abandoned'
+
+export interface CharacterExpedition {
+  id: string
+  character_id: string
+  zone_id: string
+  expedition_type: ExpeditionType
+  supplies_used: Array<{id: string, quantity: number}>
+  started_at: string
+  completed_at?: string
+  total_distance: number
+  areas_discovered: number
+  events_encountered: number
+  status: ExpeditionStatus
+  created_at: string
+}
+
+// Map Progress
+export interface CharacterMapProgress {
+  id: string
+  character_id: string
+  zone_id: string
+  explored_tiles: Array<{x: number, y: number}>
+  total_tiles: number
+  tiles_explored: number
+  points_of_interest: Array<{x: number, y: number, type: string, name: string}>
+  last_position?: {x: number, y: number}
+  created_at: string
+  updated_at: string
+}
+
+// Companions
+export type CompanionType = 'npc' | 'pet' | 'mount' | 'familiar'
+export type CompanionStatus = 'idle' | 'exploring' | 'resting' | 'injured'
+
+export interface ExplorationCompanion {
+  id: string
+  name: string
+  companion_type: CompanionType
+  specialization?: string
+  description?: string
+  personality?: string
+  abilities: CompanionAbility[]
+  bonuses: Record<string, number>
+  hire_cost?: number
+  upkeep_cost: number
+  level_required: number
+  loyalty_max: number
+  rarity: string
+  icon?: string
+  created_at: string
+}
+
+export interface CompanionAbility {
+  name: string
+  description: string
+  cooldown?: number
+}
+
+export interface CharacterCompanion {
+  id: string
+  character_id: string
+  companion_id: string
+  nickname?: string
+  loyalty_level: number
+  experience: number
+  level: number
+  is_active: boolean
+  hired_at: string
+  last_expedition?: string
+  total_expeditions: number
+  status: CompanionStatus
+}
+
+// Challenges
+export type ChallengeType = 'puzzle' | 'timed' | 'combat' | 'stealth' | 'riddle' | 'mechanism'
+
+export interface ExplorationChallenge {
+  id: string
+  name: string
+  challenge_type: ChallengeType
+  zone_id?: string
+  difficulty: number
+  description: string
+  puzzle_data?: Record<string, any>
+  time_limit?: number
+  required_items: string[]
+  required_skills: Record<string, number>
+  success_rewards: Record<string, any>
+  failure_penalty: Record<string, any>
+  hint_text?: string
+  solution_clue?: string
+  created_at: string
+}
+
+// Hidden Locations
+export type HiddenLocationType = 'dungeon' | 'treasure_vault' | 'ancient_ruins' | 'secret_shop' | 'boss_lair' | 'portal'
+
+export interface HiddenLocation {
+  id: string
+  zone_id: string
+  name: string
+  location_type: HiddenLocationType
+  discovery_requirements: Record<string, any>
+  description: string
+  lore_text?: string
+  is_legendary: boolean
+  coordinates?: {x: number, y: number}
+  rewards: Record<string, any>
+  one_time_only: boolean
+  respawn_hours?: number
+  created_at: string
+}
+
+// Discoveries
+export type DiscoveryType = 'location' | 'creature' | 'artifact' | 'lore' | 'npc' | 'secret'
+
+export interface CharacterDiscovery {
+  id: string
+  character_id: string
+  discovery_type: DiscoveryType
+  discovery_id: string
+  zone_id: string
+  discovered_at: string
+  discovery_method?: string
+  notes?: string
+}
+
+// Journal
+export type JournalEntryType = 'lore' | 'creature' | 'location' | 'artifact' | 'quest' | 'personal'
+
+export interface ExplorationJournalEntry {
+  id: string
+  entry_type: JournalEntryType
+  title: string
+  content: string
+  zone_id?: string
+  unlock_condition: Record<string, any>
+  category?: string
+  subcategory?: string
+  illustration_url?: string
+  page_number?: number
+  created_at: string
+}
+
+export interface CharacterJournalEntry {
+  id: string
+  character_id: string
+  journal_entry_id: string
+  unlocked_at: string
+  times_read: number
+  is_favorite: boolean
+  player_notes?: string
+}
+
+// Hazards
+export type HazardType = 'weather' | 'terrain' | 'trap' | 'environmental' | 'magical'
+
+export interface EnvironmentalHazard {
+  id: string
+  zone_id: string
+  hazard_name: string
+  hazard_type: HazardType
+  description: string
+  damage_per_tick: number
+  effect: Record<string, any>
+  avoidance_skill?: string
+  avoidance_difficulty: number
+  occurrence_chance: number
+  duration_seconds?: number
+  warning_text?: string
+  created_at: string
+}
+
+// Messages
+export type MessageType = 'hint' | 'warning' | 'treasure' | 'lore' | 'joke' | 'direction'
+
+export interface ExplorationMessage {
+  id: string
+  author_id: string
+  zone_id: string
+  coordinates: {x: number, y: number}
+  message_type: MessageType
+  content: string
+  rating: number
+  reports: number
+  is_hidden: boolean
+  created_at: string
+  expires_at: string
+}
+
+// Weather
+export type WeatherType = 'clear' | 'rain' | 'storm' | 'snow' | 'fog' | 'sandstorm' | 'blizzard' | 'magical_storm'
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter'
+
+export interface WeatherPattern {
+  id: string
+  zone_id: string
+  weather_type: WeatherType
+  season?: Season
+  probability: number
+  effects: Record<string, number>
+  description?: string
+  duration_hours: number
+  created_at: string
+}
+
+// Guilds
+export type GuildRank = 'leader' | 'officer' | 'veteran' | 'member' | 'recruit'
+
+export interface ExplorationGuild {
+  id: string
+  name: string
+  description?: string
+  leader_id: string
+  emblem?: string
+  level: number
+  experience: number
+  member_limit: number
+  treasury_gold: number
+  shared_map_data: boolean
+  created_at: string
+  disbanded_at?: string
+}
+
+export interface ExplorationGuildMember {
+  id: string
+  guild_id: string
+  character_id: string
+  rank: GuildRank
+  joined_at: string
+  contribution_points: number
+  last_active: string
+}
+
+// Achievements
+export type AchievementTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'legendary'
+
+export interface ExplorationAchievement {
+  id: string
+  name: string
+  description: string
+  category: string
+  requirement: Record<string, any>
+  reward: Record<string, any>
+  points: number
+  icon?: string
+  is_hidden: boolean
+  tier: AchievementTier
+  created_at: string
+}
+
+export interface CharacterExplorationAchievement {
+  id: string
+  character_id: string
+  achievement_id: string
+  unlocked_at: string
+  progress: Record<string, any>
 }

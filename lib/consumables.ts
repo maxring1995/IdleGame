@@ -37,24 +37,43 @@ export interface ActiveBuff {
  */
 export function parseConsumableEffects(item: Item): ConsumableEffect[] {
   const effects: ConsumableEffect[] = []
+  const description = item.description?.toLowerCase() || ''
 
-  // Instant restoration effects
+  // Parse healing from description if not in health_bonus
   if (item.health_bonus > 0) {
     effects.push({
       type: 'restore_health',
       value: item.health_bonus
     })
+  } else {
+    // Check for "Restores X HP" pattern in description
+    const hpMatch = item.description?.match(/restores?\s+(\d+)\s+hp/i)
+    if (hpMatch && hpMatch[1]) {
+      effects.push({
+        type: 'restore_health',
+        value: parseInt(hpMatch[1])
+      })
+    }
   }
 
+  // Parse mana from description if not in mana_bonus
   if (item.mana_bonus > 0) {
     effects.push({
       type: 'restore_mana',
       value: item.mana_bonus
     })
+  } else {
+    // Check for "Restores X MP/Mana" pattern in description
+    const mpMatch = item.description?.match(/restores?\s+(\d+)\s+(?:mp|mana)/i)
+    if (mpMatch && mpMatch[1]) {
+      effects.push({
+        type: 'restore_mana',
+        value: parseInt(mpMatch[1])
+      })
+    }
   }
 
   // Buff effects (based on item description keywords)
-  const description = item.description?.toLowerCase() || ''
   const duration = 5 * 60 * 1000 // 5 minutes default
 
   if (description.includes('strength') || description.includes('attack')) {
@@ -115,7 +134,12 @@ export function parseConsumableEffects(item: Item): ConsumableEffect[] {
 export async function useConsumable(
   characterId: string,
   inventoryItemId: string
-): Promise<{ success: boolean; error?: string; effects?: ConsumableEffect[] }> {
+): Promise<{
+  success: boolean
+  error?: string
+  effects?: ConsumableEffect[]
+  updatedCharacter?: { health: number; mana: number }
+}> {
   const supabase = createClient()
 
   try {
@@ -238,7 +262,15 @@ export async function useConsumable(
     // Clean up expired buffs
     await cleanExpiredBuffs(characterId)
 
-    return { success: true, effects }
+    // Return updated character data along with effects
+    return {
+      success: true,
+      effects,
+      updatedCharacter: {
+        health: character.health,
+        mana: character.mana
+      }
+    }
   } catch (err) {
     console.error('Error using consumable:', err)
     return { success: false, error: 'An unexpected error occurred' }

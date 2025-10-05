@@ -4,12 +4,16 @@ import type {
   ExplorationUpdate,
   ZoneLandmark,
   ExplorationReward,
-  ExplorationRewardConfig
+  ExplorationRewardConfig,
+  ExplorationEvent
 } from './supabase'
 import { attemptLandmarkDiscovery, updateZoneTimeSpent } from './worldZones'
 import { addTravelLogEntry } from './travel'
 import { addItem } from './inventory'
 import { addExperience, addGold } from './character'
+import { rollForEvent } from './explorationEvents'
+import { applySkillEffects, addExplorationSkillXP, getExplorationSkill } from './explorationSkills'
+import { revealTiles, getTilesInRadius, getRevealRadius } from './mapProgress'
 
 // ============================================================================
 // Exploration Management
@@ -125,14 +129,27 @@ async function checkExplorationRewards(
 
       if (!config) continue
 
-      // Roll for reward based on chance
-      if (Math.random() <= config.reward_chance) {
-        const items: string[] = []
-        const gold = Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min
-        const xp = Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min
+      // MASSIVELY IMPROVED REWARDS - 10x better loot
+      // Boost reward chance to minimum 80% (was using config which was only 5-35%)
+      const boostedRewardChance = Math.max(config.reward_chance, 0.80)
 
-        // Roll 1-3 items from loot table
-        const itemCount = Math.floor(Math.random() * 3) + 1
+      // BONUS: Every 10% milestone gives GUARANTEED MEGA LOOT
+      const isMilestone = percent % 10 === 0
+      const guaranteedReward = isMilestone || Math.random() <= boostedRewardChance
+
+      if (guaranteedReward) {
+        const items: string[] = []
+        // 3x gold multiplier (5x on milestones!)
+        const goldMultiplier = isMilestone ? 5 : 3
+        const gold = (Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min) * goldMultiplier
+        // 3x XP multiplier (5x on milestones!)
+        const xpMultiplier = isMilestone ? 5 : 3
+        const xp = (Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min) * xpMultiplier
+
+        // Roll 10-20 items from loot table (30-50 items on milestones!)
+        const baseItemCount = isMilestone ? 30 : 10
+        const itemRange = isMilestone ? 21 : 11
+        const itemCount = Math.floor(Math.random() * itemRange) + baseItemCount
         for (let i = 0; i < itemCount; i++) {
           const itemId = rollLootTable(config.loot_table)
           if (itemId) items.push(itemId)
@@ -169,11 +186,12 @@ async function checkExplorationRewards(
         if (xp > 0) rewardSummary.push(`${xp} XP`)
 
         if (rewardSummary.length > 0) {
+          const treasureType = isMilestone ? '🎁 MEGA TREASURE CHEST' : '💰 Treasure'
           await addTravelLogEntry(
             characterId,
             zoneId,
             'landmark_found' as any, // Using landmark_found as closest type for rewards
-            `Found treasure at ${percent}%! Received: ${rewardSummary.join(', ')}`
+            `${treasureType} found at ${percent}%! Received: ${rewardSummary.join(', ')}`
           )
         }
       }
@@ -202,16 +220,29 @@ export async function processExploration(
     const started = new Date(exploration.started_at)
     const timeSpent = Math.floor((now.getTime() - started.getTime()) / 1000) // seconds
 
-    // Calculate progress (1% per 30 seconds, 50 minutes to 100%)
-    const progress = Math.min(Math.floor(timeSpent / 30), 100)
+    // Get zone danger level for event rolling
+    const { data: zone } = await supabase
+      .from('world_zones')
+      .select('danger_level')
+      .eq('id', exploration.zone_id)
+      .single()
 
-    // Roll for discoveries every 10% progress increase
+    // Apply skill effects to exploration speed
+    const { data: modifiedValues } = await applySkillEffects(characterId, {
+      explorationSpeed: 15 // base: 1% per 15 seconds (DOUBLED speed)
+    })
+
+    // Calculate progress with skill bonuses
+    const effectiveSpeed = modifiedValues?.explorationSpeed || 15
+    const progress = Math.min(Math.floor(timeSpent / effectiveSpeed), 100)
+
+    // Roll for discoveries every 5% progress increase (DOUBLED frequency)
     const discoveries: ZoneLandmark[] = []
-    const progressBrackets = Math.floor(progress / 10)
-    const previousBrackets = Math.floor(exploration.exploration_progress / 10)
+    const progressBrackets = Math.floor(progress / 5)
+    const previousBrackets = Math.floor(exploration.exploration_progress / 5)
 
     if (progressBrackets > previousBrackets) {
-      // Attempt discovery for each new 10% bracket
+      // Attempt discovery for each new 5% bracket
       for (let i = previousBrackets; i < progressBrackets; i++) {
         const { data: discovery } = await attemptLandmarkDiscovery(
           characterId,
@@ -220,7 +251,31 @@ export async function processExploration(
 
         if (discovery) {
           discoveries.push(discovery)
+          // Grant archaeology XP for discoveries (3x increased)
+          await addExplorationSkillXP(characterId, 'archaeology', 60)
         }
+      }
+    }
+
+    // Roll for exploration events (20% chance every progress tick - 4x increase)
+    let triggeredEvent: ExplorationEvent | null = null
+    if (progress > exploration.exploration_progress && Math.random() < 0.20) {
+      const { data: event } = await rollForEvent(
+        characterId,
+        exploration.zone_id,
+        progress,
+        zone?.danger_level || 10
+      )
+
+      if (event) {
+        triggeredEvent = event
+        // Log the event for the player to respond to later
+        await supabase.from('exploration_event_log').insert({
+          character_id: characterId,
+          event_id: event.id,
+          zone_id: exploration.zone_id,
+          outcome: { pending: true }
+        })
       }
     }
 
@@ -256,6 +311,36 @@ export async function processExploration(
       )
     }
 
+    // Grant general exploration XP (4x increased for all skills)
+    if (progress > exploration.exploration_progress) {
+      await addExplorationSkillXP(characterId, 'survival', 20)
+      await addExplorationSkillXP(characterId, 'tracking', 15)
+      await addExplorationSkillXP(characterId, 'cartography', 18)
+
+      // Reveal map tiles based on progress
+      const progressIncrease = progress - exploration.exploration_progress
+      if (progressIncrease > 0) {
+        // Get cartography skill level for reveal bonus
+        const { data: cartographySkill } = await getExplorationSkill(characterId, 'cartography')
+        const cartographyLevel = cartographySkill?.level || 1
+
+        // Base reveal radius, increased by cartography
+        const baseRadius = 2
+        const revealRadius = getRevealRadius(baseRadius, cartographyLevel)
+
+        // Calculate current position based on progress (simulate movement)
+        const mapSize = 20
+        const currentX = Math.floor((progress / 100) * mapSize)
+        const currentY = Math.floor(Math.random() * mapSize)
+
+        // Get tiles to reveal
+        const tilesToReveal = getTilesInRadius(currentX, currentY, revealRadius, mapSize, mapSize)
+
+        // Reveal tiles on map
+        await revealTiles(characterId, exploration.zone_id, tilesToReveal, { x: currentX, y: currentY })
+      }
+    }
+
     // Check if completed or should auto-stop
     const completed = progress >= 100 ||
                      (exploration.is_auto && exploration.auto_stop_at != null && progress >= exploration.auto_stop_at)
@@ -266,7 +351,8 @@ export async function processExploration(
         discoveries,
         rewards,
         timeSpent,
-        completed
+        completed,
+        event: triggeredEvent as any // Include the triggered event if any
       },
       error: null
     }

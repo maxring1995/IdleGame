@@ -1,20 +1,17 @@
 import { test, expect } from '@playwright/test'
+import { signupAndCreateCharacter } from './helpers/auth'
 
 test.describe('Gathering System - Basic Flow', () => {
-  const testUsername = `gatherer_${Date.now()}`
-
+  
   test('complete gathering flow', async ({ page }) => {
-    // Sign up
-    await page.goto('/login')
-    await page.click('text=Sign up')
-    await page.fill('input[name="email"]', `${testUsername}@test.com`)
-    await page.fill('input[name="password"]', 'TestPassword123!')
-    await page.click('button:has-text("Sign Up")')
+    // Setup: Create account and character
+    const success = await signupAndCreateCharacter(page, 'gathering-simple')
 
-    // Create character
-    await page.waitForSelector('h2:has-text("Create Your Character")', { timeout: 10000 })
-    await page.fill('input[placeholder="Enter character name"]', 'TestHero')
-    await page.click('button:has-text("Create Character")')
+    if (!success) {
+      console.log('Warning: Setup may have failed, but continuing test')
+    }
+
+    // Character creation handled by helper
 
     // Wait for game
     await page.waitForSelector('text=TestHero', { timeout: 10000 })

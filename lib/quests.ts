@@ -107,6 +107,11 @@ export async function getQuestDefinitions(characterLevel: number, characterId?: 
         if (completion) return false
       }
 
+      // Filter out completed non-repeatable quests
+      if (!quest.repeatable && !quest.reset_interval && completedQuestIds.has(quest.id)) {
+        return false
+      }
+
       return true
     })
   }
@@ -482,10 +487,24 @@ export async function trackQuestProgress(
     }
 
     // Check if targetId matches (if specified)
-    const targetMatches = !progress.targetId || progress.targetId === eventData.targetId
-    console.log('[Quest Tracking]   Target Match?', targetMatches, `("${progress.targetId}" === "${eventData.targetId}")`)
+    // For kill quests, we allow partial matching (e.g., "goblin" matches "goblin_scout")
+    let targetMatches = false
+    if (!progress.targetId) {
+      // No specific target required
+      targetMatches = true
+    } else if (eventType === 'kill' && eventData.targetId) {
+      // For kill quests, check if the enemy ID contains the quest target
+      // This allows "goblin" to match "goblin_scout", "goblin_warrior", etc.
+      targetMatches = eventData.targetId.includes(progress.targetId) ||
+                     progress.targetId.includes(eventData.targetId)
+    } else {
+      // For other quest types, require exact match
+      targetMatches = progress.targetId === eventData.targetId
+    }
 
-    if (progress.targetId && progress.targetId !== eventData.targetId) {
+    console.log('[Quest Tracking]   Target Match?', targetMatches, `("${progress.targetId}" ~= "${eventData.targetId}")`)
+
+    if (!targetMatches) {
       console.log('[Quest Tracking]   ❌ SKIP: TargetId mismatch')
       continue
     }

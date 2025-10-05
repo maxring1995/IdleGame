@@ -230,7 +230,7 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
 
   // Modal mode: render with overlay wrapper (embedded mode removed for simplicity)
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex flex-col" onClick={onClose}>
       <div className="flex-1 flex flex-col max-w-[1800px] w-full mx-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="panel-glass border-b p-6">

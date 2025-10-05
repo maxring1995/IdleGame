@@ -6,6 +6,8 @@ import { useGameStore } from '@/lib/store'
 import { startCombat, executeTurn, endCombat, getActiveCombat, abandonCombat } from '@/lib/combat'
 import { getEnemyById } from '@/lib/enemies'
 import { getCharacter } from '@/lib/character'
+import { getInventory } from '@/lib/inventory'
+import { useConsumable } from '@/lib/consumables'
 import EnemyList from './EnemyList'
 import CombatLog from './CombatLog'
 import VictoryModal from './VictoryModal'
@@ -21,10 +23,26 @@ export default function Combat() {
   const [autoAttack, setAutoAttack] = useState(false)
   const [autoAttackInterval, setAutoAttackInterval] = useState<NodeJS.Timeout | null>(null)
   const [combatStyle, setCombatStyle] = useState<'melee' | 'magic' | 'ranged'>('melee')
+  const [healthPotions, setHealthPotions] = useState<any[]>([])
+  const [isHealing, setIsHealing] = useState(false)
+  const [healMessage, setHealMessage] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    checkActiveCombat()
-  }, [character])
+    // Only check active combat on initial load, not on every character update
+    if (!isInitialized && character) {
+      checkActiveCombat()
+      loadHealthPotions()
+      setIsInitialized(true)
+    }
+  }, [character, isInitialized])
+
+  // Separate effect for reloading potions when character changes
+  useEffect(() => {
+    if (character) {
+      loadHealthPotions()
+    }
+  }, [character?.id])
 
   useEffect(() => {
     if (autoAttack && activeCombat && !combatResult && !isAttacking) {
@@ -62,6 +80,77 @@ export default function Combat() {
       setCurrentEnemy(enemy)
       setView('combat')
     }
+  }
+
+  async function loadHealthPotions() {
+    if (!character) return
+
+    const { data: inventory } = await getInventory(character.id)
+    if (inventory) {
+      const potions = inventory.filter((item: any) =>
+        item.item.type === 'consumable' &&
+        (item.item.name?.toLowerCase().includes('health') ||
+         item.item.description?.toLowerCase().includes('hp'))
+      )
+      setHealthPotions(potions)
+    }
+  }
+
+  async function handleHeal() {
+    if (!character || healthPotions.length === 0) return
+
+    setIsHealing(true)
+    setHealMessage(null)
+
+    const potion = healthPotions[0] // Use first available potion
+    const { success, effects, updatedCharacter } = await useConsumable(character.id, potion.id)
+
+    if (success && updatedCharacter) {
+      // Immediately update the global store with new health/mana values
+      const updatedChar = {
+        ...character,
+        health: updatedCharacter.health,
+        mana: updatedCharacter.mana
+      }
+      updateCharacterStats(updatedChar)
+
+      // Update active combat health if in combat
+      if (activeCombat) {
+        // Update the database record for active combat
+        const { createClient } = await import('@/utils/supabase/client')
+        const supabase = createClient()
+
+        const { error: updateError } = await supabase
+          .from('active_combat')
+          .update({
+            player_current_health: updatedCharacter.health,
+            updated_at: new Date().toISOString()
+          })
+          .eq('character_id', character.id)
+
+        if (!updateError) {
+          // Update local state only if database update succeeded
+          setActiveCombat({
+            ...activeCombat,
+            player_current_health: updatedCharacter.health
+          })
+        } else {
+          console.error('Failed to update combat health:', updateError)
+        }
+      }
+
+      // Show success message
+      const healAmount = effects?.find((e: any) => e.type === 'restore_health')?.value || 0
+      setHealMessage(`Healed ${healAmount} HP!`)
+
+      // Reload potions
+      await loadHealthPotions()
+
+      // Clear message after 3 seconds
+      setTimeout(() => setHealMessage(null), 3000)
+    }
+
+    setIsHealing(false)
   }
 
   async function handleSelectEnemy(enemy: Enemy) {
@@ -161,6 +250,56 @@ export default function Combat() {
   if (view === 'selection') {
     return (
       <div className="space-y-6">
+        {/* Quick Status Bar */}
+        {character && (
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                {/* HP Display */}
+                <div className="flex items-center gap-3">
+                  <span className="text-red-400 font-semibold flex items-center gap-1">
+                    <span className="text-lg">❤️</span> Health
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="progress-bar h-5 w-48">
+                      <div
+                        className={`progress-fill ${
+                          (character.health / character.max_health) <= 0.25
+                            ? 'bg-gradient-to-r from-red-600 to-red-700'
+                            : 'bg-gradient-to-r from-green-500 to-green-600'
+                        }`}
+                        style={{ width: `${(character.health / character.max_health) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-mono text-gray-300">
+                      {character.health}/{character.max_health}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Potion Quick Use */}
+                {healthPotions.length > 0 && character.health < character.max_health && (
+                  <button
+                    onClick={handleHeal}
+                    disabled={isHealing}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all flex items-center gap-2"
+                  >
+                    <span>❤️</span>
+                    <span>{isHealing ? 'Healing...' : 'Use Potion'}</span>
+                    <span className="badge badge-uncommon">{healthPotions.reduce((sum, p) => sum + p.quantity, 0)}</span>
+                  </button>
+                )}
+
+                {healMessage && (
+                  <div className="animate-pulse text-emerald-400 font-semibold">
+                    {healMessage}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-4 text-red-400 flex items-center gap-3">
             <span className="text-2xl">⚠️</span>
@@ -447,8 +586,36 @@ export default function Combat() {
         </div>
       </div>
 
-      {/* Attack Controls */}
-      <div className="flex justify-center">
+      {/* Attack Controls & Quick Actions */}
+      <div className="flex flex-col items-center gap-4">
+        {/* Heal Button and Potion Count */}
+        {healthPotions.length > 0 && (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleHeal}
+              disabled={isHealing || character.health >= character.max_health}
+              className={`relative px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                character.health >= character.max_health
+                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed opacity-50'
+                  : isHealing
+                    ? 'bg-emerald-600/50 text-white cursor-wait'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700 transform hover:scale-105 active:scale-95'
+              }`}
+            >
+              <span className="text-xl">❤️</span>
+              <span>{isHealing ? 'Healing...' : 'Use Potion'}</span>
+              <span className="badge badge-uncommon">{healthPotions.reduce((sum, p) => sum + p.quantity, 0)}</span>
+            </button>
+
+            {healMessage && (
+              <div className="animate-pulse bg-emerald-500/20 border border-emerald-500/50 rounded-lg px-4 py-2 text-emerald-400 font-semibold">
+                {healMessage}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Attack Button */}
         <button
           onClick={handleAttack}
           disabled={isAttacking || autoAttack}

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { signupAndCreateCharacter } from './helpers/auth'
 
 test('Complete user journey: signup → character creation → game', async ({ page }) => {
   console.log('\n🎮 Starting full game flow test...\n');

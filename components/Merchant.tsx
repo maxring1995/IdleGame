@@ -405,6 +405,10 @@ export default function Merchant() {
   const filteredMerchantItems = filterItems(merchantInventory)
   const filteredPlayerItems = filterItems(playerInventory.filter(item => !item.equipped))
 
+  // Check if player level is too low for any merchant
+  const isLevelTooLow = character.level < 1
+  const levelsUntilMerchant = Math.max(0, 1 - character.level)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -421,6 +425,52 @@ export default function Merchant() {
             </div>
           </div>
         </div>
+
+        {/* Show helpful message if no zones available due to level */}
+        {zones.length === 0 && isLevelTooLow && (
+          <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl p-8 text-center">
+            <div className="inline-block p-6 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 mb-6">
+              <span className="text-7xl">🔒</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-3">Merchants Unlock at Level 1</h3>
+            <p className="text-gray-300 mb-4">
+              You are currently level {character.level}.
+              {levelsUntilMerchant === 1
+                ? " Just 1 more level to go!"
+                : ` ${levelsUntilMerchant} more levels to go!`}
+            </p>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4 mt-6 text-left max-w-md mx-auto">
+              <p className="text-sm font-semibold text-amber-400 mb-2">📚 How to Level Up:</p>
+              <ul className="text-sm text-gray-300 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-400">•</span>
+                  <span>Complete adventures in the Adventure tab to gain experience</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400">•</span>
+                  <span>Fight enemies in the Combat tab for XP rewards</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400">•</span>
+                  <span>Stay idle to automatically gain 5 XP every 5 seconds</span>
+                </li>
+              </ul>
+            </div>
+            <div className="mt-6 text-sm text-gray-400">
+              <p>🎯 Once you reach level 1, you'll unlock:</p>
+              <div className="flex items-center justify-center gap-4 mt-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🏘️</span>
+                  <span>Havenbrook Village</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🌲</span>
+                  <span>Whispering Woods</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Zone & Merchant Selection */}
         {zones.length > 0 && (
@@ -445,7 +495,7 @@ export default function Merchant() {
             </div>
 
             {/* Merchant Selection */}
-            {zoneMerchants.length > 0 && (
+            {zoneMerchants.length > 0 ? (
               <div>
                 <label className="text-sm text-gray-400 block mb-2">Merchant:</label>
                 <select
@@ -463,7 +513,45 @@ export default function Merchant() {
                   ))}
                 </select>
               </div>
+            ) : (
+              <div className="flex items-center justify-center py-3">
+                <p className="text-sm text-gray-500 italic">No merchants in this zone</p>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Show upcoming zones for players who have access to some zones */}
+        {zones.length > 0 && character.level < 50 && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/5 to-blue-500/5 border border-purple-500/20 rounded-lg">
+            <p className="text-xs text-gray-400 mb-2">🗺️ Upcoming Zones:</p>
+            <div className="flex flex-wrap gap-2">
+              {character.level < 10 && (
+                <div className="text-xs px-2 py-1 bg-white/5 rounded">
+                  <span className="text-gray-500">Lv. 10:</span> <span className="text-gray-300">⛰️ Ironpeak Foothills</span>
+                </div>
+              )}
+              {character.level < 20 && (
+                <div className="text-xs px-2 py-1 bg-white/5 rounded">
+                  <span className="text-gray-500">Lv. 20:</span> <span className="text-gray-300">🌫️ Shadowfen Marsh</span>
+                </div>
+              )}
+              {character.level < 25 && (
+                <div className="text-xs px-2 py-1 bg-white/5 rounded">
+                  <span className="text-gray-500">Lv. 25:</span> <span className="text-gray-300">🔥 Emberpeak Mines</span>
+                </div>
+              )}
+              {character.level < 40 && (
+                <div className="text-xs px-2 py-1 bg-white/5 rounded">
+                  <span className="text-gray-500">Lv. 40:</span> <span className="text-gray-300">❄️ Frostspire Mountains</span>
+                </div>
+              )}
+              {character.level < 50 && (
+                <div className="text-xs px-2 py-1 bg-white/5 rounded">
+                  <span className="text-gray-500">Lv. 50:</span> <span className="text-gray-300">💀 The Shattered Wastes</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
