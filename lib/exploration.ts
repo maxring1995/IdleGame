@@ -129,14 +129,27 @@ async function checkExplorationRewards(
 
       if (!config) continue
 
-      // Roll for reward based on chance
-      if (Math.random() <= config.reward_chance) {
-        const items: string[] = []
-        const gold = Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min
-        const xp = Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min
+      // MASSIVELY IMPROVED REWARDS - 10x better loot
+      // Boost reward chance to minimum 80% (was using config which was only 5-35%)
+      const boostedRewardChance = Math.max(config.reward_chance, 0.80)
 
-        // Roll 3-8 items from loot table (increased from 1-3 for more loot)
-        const itemCount = Math.floor(Math.random() * 6) + 3
+      // BONUS: Every 10% milestone gives GUARANTEED MEGA LOOT
+      const isMilestone = percent % 10 === 0
+      const guaranteedReward = isMilestone || Math.random() <= boostedRewardChance
+
+      if (guaranteedReward) {
+        const items: string[] = []
+        // 3x gold multiplier (5x on milestones!)
+        const goldMultiplier = isMilestone ? 5 : 3
+        const gold = (Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min) * goldMultiplier
+        // 3x XP multiplier (5x on milestones!)
+        const xpMultiplier = isMilestone ? 5 : 3
+        const xp = (Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min) * xpMultiplier
+
+        // Roll 10-20 items from loot table (30-50 items on milestones!)
+        const baseItemCount = isMilestone ? 30 : 10
+        const itemRange = isMilestone ? 21 : 11
+        const itemCount = Math.floor(Math.random() * itemRange) + baseItemCount
         for (let i = 0; i < itemCount; i++) {
           const itemId = rollLootTable(config.loot_table)
           if (itemId) items.push(itemId)
@@ -173,11 +186,12 @@ async function checkExplorationRewards(
         if (xp > 0) rewardSummary.push(`${xp} XP`)
 
         if (rewardSummary.length > 0) {
+          const treasureType = isMilestone ? '🎁 MEGA TREASURE CHEST' : '💰 Treasure'
           await addTravelLogEntry(
             characterId,
             zoneId,
             'landmark_found' as any, // Using landmark_found as closest type for rewards
-            `Found treasure at ${percent}%! Received: ${rewardSummary.join(', ')}`
+            `${treasureType} found at ${percent}%! Received: ${rewardSummary.join(', ')}`
           )
         }
       }

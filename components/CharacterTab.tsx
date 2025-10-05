@@ -5,12 +5,14 @@ import { useGameStore } from '@/lib/store'
 import EquipmentOverlay from './EquipmentOverlay'
 import SkillsPanel from './SkillsPanel'
 import CharacterStats from './CharacterStats'
+import Character3DShowcase from './Character3DShowcase'
 
 export default function CharacterTab() {
   const { character } = useGameStore()
   const [showEquipmentManager, setShowEquipmentManager] = useState(false)
   const [showSkillsPanel, setShowSkillsPanel] = useState(false)
   const [showCharacterStats, setShowCharacterStats] = useState(false)
+  const [show3DShowcase, setShow3DShowcase] = useState(false)
 
   if (!character) return null
 
@@ -21,8 +23,19 @@ export default function CharacterTab() {
         onClose={() => setShowEquipmentManager(false)}
       />
 
-      {/* Character Stats View */}
-      {showCharacterStats ? (
+      {/* 3D Showcase View */}
+      {show3DShowcase ? (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShow3DShowcase(false)}
+            className="btn btn-secondary mb-4"
+          >
+            ← Back to Character Menu
+          </button>
+          <Character3DShowcase />
+        </div>
+      ) : showCharacterStats ? (
+        /* Character Stats View */
         <div className="space-y-4">
           <button
             onClick={() => setShowCharacterStats(false)}
@@ -139,19 +152,25 @@ export default function CharacterTab() {
             </div>
           </button>
 
-          {/* Appearance Card (Coming Soon) */}
-          <div className="panel p-6 text-left opacity-60">
+          {/* 3D Showcase Card */}
+          <button
+            onClick={() => setShow3DShowcase(true)}
+            className="panel p-6 text-left hover:bg-white/5 transition-all group"
+          >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center text-2xl shadow-lg">
-                🎨
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
+                🎭
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-white mb-1">Appearance</h3>
-                <p className="text-sm text-gray-400 mb-3">Customize your character's look</p>
-                <div className="badge badge-common text-xs">Coming Soon</div>
+                <h3 className="text-lg font-bold text-white mb-1">3D Character Viewer</h3>
+                <p className="text-sm text-gray-400 mb-3">Interactive 3D model with animations and controls</p>
+                <div className="flex items-center gap-2 text-xs text-pink-400">
+                  <span>Click to open</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Titles Card (Coming Soon) */}
           <div className="panel p-6 text-left opacity-60">

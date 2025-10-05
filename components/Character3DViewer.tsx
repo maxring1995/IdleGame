@@ -11,6 +11,9 @@ interface Character3DViewerProps {
   interactive?: boolean
   autoRotate?: boolean
   showControls?: boolean
+  animationState?: 'idle' | 'attack' | 'defend' | 'victory' | 'defeat'
+  scale?: number
+  showAnimationControls?: boolean
 }
 
 export default function Character3DViewer({
@@ -19,6 +22,9 @@ export default function Character3DViewer({
   interactive = false,
   autoRotate = true,
   showControls = false,
+  animationState = 'idle',
+  scale = 1,
+  showAnimationControls = false,
 }: Character3DViewerProps) {
   return (
     <div
@@ -46,7 +52,11 @@ export default function Character3DViewer({
 
         {/* Character model */}
         <Suspense fallback={null}>
-          <CharacterModel characterId={characterId} />
+          <CharacterModel
+            characterId={characterId}
+            animationState={animationState}
+            scale={scale}
+          />
         </Suspense>
 
         {/* Ground plane for shadow */}
