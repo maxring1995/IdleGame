@@ -124,12 +124,24 @@ body {
 }
 
 @layer components {
-  /* Button System */
+  /* Button System with Enhanced Animations */
   .btn {
     @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
-    @apply border border-transparent;
+    @apply border border-transparent relative overflow-hidden;
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900;
+    @apply transform active:scale-95;
     box-shadow: var(--shadow-sm);
+  }
+
+  .btn::before {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: transform 0.6s;
+  }
+
+  .btn:hover::before {
+    @apply translate-x-full;
   }
 
   .btn-primary {
@@ -138,11 +150,13 @@ body {
     @apply text-gray-900 font-bold;
     @apply border-amber-400/50;
     box-shadow: var(--shadow-md), var(--shadow-glow-gold);
+    animation: pulse-gold 2s infinite;
   }
 
   .btn-primary:active {
     @apply from-amber-600 to-amber-700;
     box-shadow: var(--shadow-inset);
+    animation: none;
   }
 
   .btn-secondary {
@@ -337,5 +351,255 @@ body {
       transform: translateX(0);
       opacity: 1;
     }
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% {
+      box-shadow: var(--shadow-md), 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    50% {
+      box-shadow: var(--shadow-md), 0 0 30px rgba(245, 158, 11, 0.5);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shimmerText {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes rotateIn {
+    from {
+      transform: rotate(-180deg) scale(0);
+      opacity: 0;
+    }
+    to {
+      transform: rotate(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes bounceIn {
+    0% {
+      transform: scale(0.3);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Animation utility classes */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-rotate-in {
+    animation: rotateIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Shimmer text effect */
+  .text-shimmer {
+    background: linear-gradient(90deg,
+      var(--color-gold-light) 0%,
+      var(--color-gold) 40%,
+      var(--color-gold-light) 50%,
+      var(--color-gold) 60%,
+      var(--color-gold-light) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerText 3s linear infinite;
+  }
+
+  /* Tab animations */
+  .tab-indicator {
+    @apply absolute bottom-0 left-0 h-1 bg-gradient-to-r from-amber-400 to-amber-500;
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Floating action button */
+  .fab {
+    @apply fixed bottom-6 right-6 w-14 h-14 rounded-full;
+    @apply flex items-center justify-center;
+    @apply shadow-xl transition-all duration-300;
+    @apply hover:scale-110 active:scale-95;
+    @apply z-50;
+  }
+
+  .fab-primary {
+    @apply bg-gradient-to-br from-amber-500 to-amber-600;
+    @apply hover:from-amber-400 hover:to-amber-500;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  /* Card hover states */
+  .card-lift {
+    @apply transition-all duration-300 hover:-translate-y-1;
+    @apply hover:shadow-xl;
+  }
+
+  /* Glassmorphism cards */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply rounded-xl p-4 transition-all duration-300;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Modern notification badge */
+  .notification-badge {
+    @apply absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5;
+    @apply bg-gradient-to-r from-red-500 to-red-600;
+    @apply text-white text-xs font-bold;
+    @apply rounded-full flex items-center justify-center;
+    @apply animate-bounce-in;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply relative overflow-hidden bg-gray-800/50 rounded-lg;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%
+    );
+    animation: skeleton-wave 1.5s infinite;
+  }
+
+  @keyframes skeleton-wave {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Smooth transitions for tab content */
+  .tab-content-enter {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  .tab-content-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: all 300ms ease-out;
+  }
+
+  /* Interactive hover effect */
+  .interactive-hover {
+    @apply relative overflow-hidden;
+  }
+
+  .interactive-hover::after {
+    content: '';
+    @apply absolute inset-0 bg-white/5 opacity-0;
+    @apply transition-opacity duration-300;
+  }
+
+  .interactive-hover:hover::after {
+    @apply opacity-100;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Utility scale classes */
+  .scale-98 {
+    transform: scale(0.98);
+  }
+
+  .scale-102 {
+    transform: scale(1.02);
   }
 }
