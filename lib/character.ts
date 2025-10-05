@@ -3,6 +3,7 @@ import { Character } from './supabase'
 import { trackQuestProgress } from './quests'
 import { initializeAllSkills } from './skillInitialization'
 import { initializeStarterTools } from './initializeCharacterTools'
+import { initializeExplorationSkills } from './explorationSkills'
 
 /**
  * Create a new character for a user
@@ -59,6 +60,9 @@ export async function createCharacter(userId: string, name: string): Promise<{ d
 
       // Initialize all 20 skills
       await initializeAllSkills(data.id)
+
+      // Initialize exploration skills (cartography, survival, archaeology, tracking)
+      await initializeExplorationSkills(data.id)
 
       // Initialize starter gathering tools
       await initializeStarterTools(data.id)
@@ -235,5 +239,46 @@ export async function addGold(characterId: string, amount: number) {
   } catch (error) {
     console.error('Add gold error:', error)
     return { data: null, error }
+  }
+}
+
+/**
+ * Update character health
+ */
+export async function updateCharacterHealth(
+  characterId: string,
+  amount: number
+): Promise<{ data: Character | null; error: Error | null }> {
+  const supabase = createClient()
+
+  try {
+    // Get current health and max health
+    const { data: character, error: fetchError } = await supabase
+      .from('characters')
+      .select('health, max_health')
+      .eq('id', characterId)
+      .single()
+
+    if (fetchError) throw fetchError
+    if (!character) throw new Error('Character not found')
+
+    // Calculate new health (clamp between 0 and max_health)
+    const newHealth = Math.max(0, Math.min(character.max_health, character.health + amount))
+
+    const { data, error } = await supabase
+      .from('characters')
+      .update({
+        health: newHealth,
+        last_active: new Date().toISOString()
+      })
+      .eq('id', characterId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (err) {
+    console.error('Error updating health:', err)
+    return { data: null, error: err as Error }
   }
 }

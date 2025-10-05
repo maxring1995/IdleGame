@@ -168,7 +168,8 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
       actor: 'player',
       action: 'attack',
       damage: playerDamage,
-      message: actionMessages[combatStyle]
+      message: actionMessages[combatStyle],
+      combatStyle: combatStyle // Track which combat style was used
     })
 
     // Award XP based on combat style
@@ -312,16 +313,52 @@ export async function endCombat(
     // Track combat XP gains
     const combatXP: { [key: string]: number } = {}
 
-    // Calculate Attack XP from damage dealt (1 XP per 5 damage)
-    const attackXP = Math.max(1, Math.floor(damageDealt / 5))
-    combatXP.attack = attackXP
+    // Calculate total XP awarded during combat based on combat log and damage
+    const combatLog = combat.combat_log || []
+    const playerAttacks = combatLog.filter((action: any) => action.actor === 'player' && action.action === 'attack')
+    const totalTurns = combat.turn_number - 1
 
-    // Calculate Defense XP from damage taken (1 XP per 2 damage)
+    // Count attacks by combat style
+    const meleeAttacks = playerAttacks.filter((action: any) => !action.combatStyle || action.combatStyle === 'melee')
+    const magicAttacks = playerAttacks.filter((action: any) => action.combatStyle === 'magic')
+    const rangedAttacks = playerAttacks.filter((action: any) => action.combatStyle === 'ranged')
+
+    // Calculate total damage by style
+    const meleeDamage = meleeAttacks.reduce((sum: number, action: any) => sum + (action.damage || 0), 0)
+    const magicDamage = magicAttacks.reduce((sum: number, action: any) => sum + (action.damage || 0), 0)
+    const rangedDamage = rangedAttacks.reduce((sum: number, action: any) => sum + (action.damage || 0), 0)
+
+    // Melee combat skills
+    if (meleeAttacks.length > 0) {
+      // Attack XP: 2 XP per melee attack
+      const attackXP = meleeAttacks.length * 2
+      combatXP.attack = attackXP
+
+      // Strength XP: 1 XP per 2 damage dealt
+      const strengthXP = Math.max(1, Math.floor(meleeDamage / 2))
+      combatXP.strength = strengthXP
+    }
+
+    // Magic combat skills
+    if (magicAttacks.length > 0) {
+      // Magic XP: 3 XP per cast + damage bonus (1 XP per 2 damage)
+      const magicXP = (magicAttacks.length * 3) + Math.max(1, Math.floor(magicDamage / 2))
+      combatXP.magic = magicXP
+    }
+
+    // Ranged combat skills
+    if (rangedAttacks.length > 0) {
+      // Ranged XP: 2 XP per shot + accuracy bonus (1 XP per 3 damage)
+      const rangedXP = (rangedAttacks.length * 2) + Math.max(1, Math.floor(rangedDamage / 3))
+      combatXP.ranged = rangedXP
+    }
+
+    // Defense XP from damage taken (1 XP per 2 damage)
     const defenseXP = Math.max(1, Math.floor(actualDamageTaken / 2))
     combatXP.defense = defenseXP
 
-    // Calculate Constitution XP (1 XP per turn)
-    const constitutionXP = combat.turn_number - 1
+    // Constitution XP (1 XP per turn)
+    const constitutionXP = totalTurns
     combatXP.constitution = constitutionXP
 
     if (victory) {

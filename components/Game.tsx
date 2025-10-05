@@ -14,9 +14,12 @@ import NotificationCenter from './NotificationCenter'
 import ActiveTasksPanel from './ActiveTasksPanel'
 import ToastNotification from './ToastNotification'
 import GatheringContracts from './GatheringContracts'
+import DiscoveriesPanel from './DiscoveriesPanel'
+import Character3DViewer from './Character3DViewer'
 import { User } from '@supabase/supabase-js'
-import { Profile, Character } from '@/lib/supabase'
+import { Profile, Character, CharacterSkill } from '@/lib/supabase'
 import { getActiveBuffs, getBuffTimeRemaining, formatTimeRemaining, type ActiveBuff } from '@/lib/consumables'
+import { getCharacterSkills } from '@/lib/skills'
 
 interface GameProps {
   initialUser: User
@@ -24,13 +27,70 @@ interface GameProps {
   initialCharacter: Character
 }
 
+// New hierarchical tab structure
+type MainTab = 'adventure' | 'character' | 'inventory' | 'crafting' | 'market'
+type AdventureSubTab = 'exploration' | 'combat' | 'quests' | 'discoveries' | 'gathering_contracts'
+type MarketSubTab = 'merchant'
+
+// Component for displaying combat skills in sidebar
+function CombatSkillDisplay({ skillType, icon, label }: { skillType: string; icon: string; label: string }) {
+  const { character } = useGameStore()
+  const [skill, setSkill] = useState<CharacterSkill | null>(null)
+
+  useEffect(() => {
+    if (!character) return
+
+    async function loadSkill() {
+      const { data } = await getCharacterSkills(character!.id)
+      if (data) {
+        const found = data.find(s => s.skill_type === skillType)
+        if (found) setSkill(found)
+      }
+    }
+    loadSkill()
+  }, [character?.id, skillType])
+
+  if (!skill) return null
+
+  const xpForNextLevel = skill.level * 100
+  const progress = (skill.experience / xpForNextLevel) * 100
+
+  return (
+    <div className="stat-box group hover:bg-gray-800/40 transition-all duration-300 cursor-default p-2">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm transition-transform duration-300 group-hover:scale-110">{icon}</span>
+          <span className="text-xs text-gray-400">{label}</span>
+        </div>
+        <span className="text-sm font-bold text-emerald-400 transition-all duration-300 group-hover:text-emerald-300">
+          {skill.level}
+        </span>
+      </div>
+      <div className="progress-bar h-1">
+        <div
+          className="progress-fill bg-gradient-to-r from-emerald-500 to-emerald-600"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function Game({ initialUser, initialProfile, initialCharacter }: GameProps) {
   const { user, profile, character, setUser, setProfile, setCharacter, reset } = useGameStore()
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'adventure' | 'character' | 'combat' | 'crafting' | 'quests' | 'merchant' | 'inventory' | 'contracts'>('adventure')
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('adventure')
+  const [adventureSubTab, setAdventureSubTab] = useState<AdventureSubTab>('exploration')
+  const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>('merchant')
   const [activeBuffs, setActiveBuffs] = useState<ActiveBuff[]>([])
   const [isTabTransitioning, setIsTabTransitioning] = useState(false)
   const [showQuickMenu, setShowQuickMenu] = useState(false)
+  const [showQuickActionsSettings, setShowQuickActionsSettings] = useState(false)
+  const [customQuickActions, setCustomQuickActions] = useState<Array<{tab: MainTab, subTab?: string, label: string, icon: string}>>([
+    { tab: 'market', subTab: 'merchant', label: 'Merchant', icon: '🏪' },
+    { tab: 'adventure', subTab: 'gathering_contracts', label: 'Gathering Contracts', icon: '📋' },
+    { tab: 'adventure', subTab: 'quests', label: 'Quests', icon: '📜' },
+  ])
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +116,18 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
     return () => clearInterval(interval)
   }, [character?.id])
 
+  // Load custom quick actions from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('quickActions')
+    if (saved) {
+      try {
+        setCustomQuickActions(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to load quick actions:', e)
+      }
+    }
+  }, [])
+
   async function handleSignOut() {
     setIsLoading(true)
     const result = await signOut()
@@ -68,13 +140,21 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
     }
   }
 
-  const handleTabChange = (tab: typeof activeTab) => {
-    if (tab === activeTab) return
+  const handleMainTabChange = (tab: MainTab) => {
+    if (tab === activeMainTab) return
     setIsTabTransitioning(true)
     setTimeout(() => {
-      setActiveTab(tab)
+      setActiveMainTab(tab)
       setIsTabTransitioning(false)
     }, 150)
+  }
+
+  const handleQuickActionClick = (action: typeof customQuickActions[0]) => {
+    setActiveMainTab(action.tab)
+    if (action.subTab) {
+      if (action.tab === 'adventure') setAdventureSubTab(action.subTab as AdventureSubTab)
+      else if (action.tab === 'market') setMarketSubTab(action.subTab as MarketSubTab)
+    }
   }
 
   if (!character) return null
@@ -84,16 +164,27 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
   const healthPercent = (character.health / character.max_health) * 100
   const manaPercent = (character.mana / character.max_mana) * 100
 
-  const tabConfig = [
-    { id: 'adventure', label: 'Adventure', icon: '🗺️', color: 'amber' },
-    { id: 'character', label: 'Character', icon: '👤', color: 'blue' },
-    { id: 'combat', label: 'Combat', icon: '⚔️', color: 'red' },
-    { id: 'crafting', label: 'Crafting', icon: '🔨', color: 'amber' },
-    { id: 'quests', label: 'Quests', icon: '📜', color: 'cyan' },
-    { id: 'merchant', label: 'Merchant', icon: '🏪', color: 'yellow' },
-    { id: 'contracts', label: 'Contracts', icon: '📋', color: 'emerald' },
-    { id: 'inventory', label: 'Inventory', icon: '🎒', color: 'purple' },
-  ] as const
+  // Main tab configuration
+  const mainTabConfig = [
+    { id: 'adventure' as MainTab, label: 'Adventure', icon: '🗺️', color: 'emerald', hasSubTabs: true },
+    { id: 'character' as MainTab, label: 'Character', icon: '👤', color: 'blue', hasSubTabs: false },
+    { id: 'inventory' as MainTab, label: 'Inventory', icon: '🎒', color: 'purple', hasSubTabs: false },
+    { id: 'crafting' as MainTab, label: 'Crafting', icon: '🔨', color: 'amber', hasSubTabs: false },
+    { id: 'market' as MainTab, label: 'Market', icon: '🏪', color: 'yellow', hasSubTabs: false },
+  ]
+
+  // Sub-tab configurations
+  const adventureSubTabs = [
+    { id: 'exploration' as AdventureSubTab, label: 'Exploration', icon: '🗺️' },
+    { id: 'combat' as AdventureSubTab, label: 'Combat', icon: '⚔️' },
+    { id: 'quests' as AdventureSubTab, label: 'Quests', icon: '📜' },
+    { id: 'discoveries' as AdventureSubTab, label: 'Discoveries', icon: '📍' },
+    { id: 'gathering_contracts' as AdventureSubTab, label: 'Gathering Contracts', icon: '📋' },
+  ]
+
+  const marketSubTabs = [
+    { id: 'merchant' as MarketSubTab, label: 'Merchant', icon: '🏪' },
+  ]
 
   return (
     <div className="min-h-screen bg-mesh-gradient">
@@ -246,9 +337,12 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
             {/* Character Portrait */}
             <div className="panel p-6 text-center animate-fade-in-up">
               <div className="relative inline-block mb-4 group">
-                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 flex items-center justify-center text-6xl font-bold text-white shadow-xl transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
-                  {character.name.charAt(0).toUpperCase()}
-                </div>
+                <Character3DViewer
+                  characterId={character.id}
+                  size={128}
+                  interactive={false}
+                  autoRotate={true}
+                />
                 {/* Animated glow ring */}
                 <div className="absolute -inset-2 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 rounded-xl opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300 -z-10" />
                 {/* Level badge overlay */}
@@ -369,42 +463,55 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="panel p-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <span className="text-purple-400">🎯</span>
-                Quick Actions
+            {/* Combat Skills */}
+            <div className="panel p-5 animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <span className="text-emerald-400">🎯</span>
+                Combat Skills
               </h3>
               <div className="space-y-2">
+                <CombatSkillDisplay skillType="attack" icon="⚔️" label="Attack" />
+                <CombatSkillDisplay skillType="strength" icon="💪" label="Strength" />
+                <CombatSkillDisplay skillType="defense" icon="🛡️" label="Defense" />
+                <CombatSkillDisplay skillType="constitution" icon="❤️" label="Constitution" />
+                <CombatSkillDisplay skillType="magic" icon="✨" label="Magic" />
+                <CombatSkillDisplay skillType="ranged" icon="🏹" label="Ranged" />
+              </div>
+            </div>
+
+            {/* Customizable Quick Actions */}
+            <div className="panel p-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-purple-400">🎯</span>
+                  Quick Actions
+                </h3>
                 <button
-                  onClick={() => handleTabChange('merchant')}
-                  className="w-full btn btn-secondary text-sm py-2.5 justify-start group hover:bg-yellow-900/20 hover:border-yellow-500/30 transition-all duration-300"
+                  onClick={() => setShowQuickActionsSettings(true)}
+                  className="text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-gray-700/50 rounded-lg"
+                  title="Customize Quick Actions"
                 >
-                  <span className="mr-2 transition-transform duration-300 group-hover:scale-125">🏪</span>
-                  <span>Merchant</span>
-                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                  <span className="text-sm">⚙️</span>
                 </button>
-                <button
-                  onClick={() => handleTabChange('contracts')}
-                  className="w-full btn btn-secondary text-sm py-2.5 justify-start group hover:bg-emerald-900/20 hover:border-emerald-500/30 transition-all duration-300"
-                >
-                  <span className="mr-2 transition-transform duration-300 group-hover:scale-125">📋</span>
-                  <span>Contracts</span>
-                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button
-                  onClick={() => handleTabChange('quests')}
-                  className="w-full btn btn-secondary text-sm py-2.5 justify-start group hover:bg-cyan-900/20 hover:border-cyan-500/30 transition-all duration-300"
-                >
-                  <span className="mr-2 transition-transform duration-300 group-hover:scale-125">📜</span>
-                  <span>Quests</span>
-                  <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </button>
-                <button className="w-full btn btn-secondary text-sm py-2.5 justify-start group cursor-not-allowed opacity-60">
-                  <span className="mr-2">🏆</span>
-                  <span>Achievements</span>
-                  <span className="ml-auto badge badge-common text-xs animate-pulse">Soon</span>
-                </button>
+              </div>
+              <div className="space-y-2">
+                {customQuickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickActionClick(action)}
+                    className="w-full btn btn-secondary text-sm py-2.5 justify-start group hover:bg-purple-900/20 hover:border-purple-500/30 transition-all duration-300"
+                  >
+                    <span className="mr-2 transition-transform duration-300 group-hover:scale-125">{action.icon}</span>
+                    <span>{action.label}</span>
+                    <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                  </button>
+                ))}
+                {customQuickActions.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    <p>No quick actions set</p>
+                    <p className="text-xs mt-1">Click ⚙️ to customize</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -414,18 +521,16 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
           {/* Main Content Area */}
           <div className="col-span-12 lg:col-span-9">
-            {/* Modern Animated Tab Navigation */}
-            <div className="panel mb-6 p-2 relative animate-fade-in-up">
+            {/* Hierarchical Tab Navigation */}
+            <div className="panel mb-4 p-2 relative animate-fade-in-up">
               <div className="flex gap-2 overflow-x-auto scrollbar-hide relative">
-                {tabConfig.map((tab) => {
-                  const isActive = activeTab === tab.id
+                {mainTabConfig.map((tab) => {
+                  const isActive = activeMainTab === tab.id
                   const colorMap = {
                     amber: { from: 'from-amber-500', to: 'to-amber-600', text: 'text-gray-900', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' },
                     blue: { from: 'from-blue-500', to: 'to-blue-600', text: 'text-white', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]' },
-                    red: { from: 'from-red-500', to: 'to-red-600', text: 'text-white', glow: 'shadow-[0_0_20px_rgba(220,38,38,0.3)]' },
-                    cyan: { from: 'from-cyan-500', to: 'to-cyan-600', text: 'text-white', glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]' },
-                    yellow: { from: 'from-yellow-500', to: 'to-yellow-600', text: 'text-gray-900', glow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]' },
                     emerald: { from: 'from-emerald-500', to: 'to-emerald-600', text: 'text-white', glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]' },
+                    yellow: { from: 'from-yellow-500', to: 'to-yellow-600', text: 'text-gray-900', glow: 'shadow-[0_0_20px_rgba(234,179,8,0.3)]' },
                     purple: { from: 'from-purple-500', to: 'to-purple-600', text: 'text-white', glow: 'shadow-[0_0_20px_rgba(168,85,247,0.3)]' },
                   }
                   const colors = colorMap[tab.color as keyof typeof colorMap]
@@ -433,8 +538,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => handleTabChange(tab.id as typeof activeTab)}
-                      className={`flex-1 min-w-[100px] py-3 px-3 rounded-lg font-semibold transition-all duration-300 transform relative overflow-hidden group ${
+                      onClick={() => handleMainTabChange(tab.id)}
+                      className={`flex-1 min-w-[110px] py-3 px-4 rounded-lg font-semibold transition-all duration-300 transform relative overflow-hidden group ${
                         isActive
                           ? `bg-gradient-to-b ${colors.from} ${colors.to} ${colors.text} shadow-lg ${colors.glow} scale-105`
                           : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white hover:scale-102'
@@ -448,6 +553,9 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                           {tab.icon}
                         </span>
                         <span className="text-xs sm:text-sm whitespace-nowrap">{tab.label}</span>
+                        {tab.hasSubTabs && (
+                          <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse opacity-60" title="Has sub-tabs" />
+                        )}
                       </div>
 
                       {/* Active indicator */}
@@ -460,36 +568,176 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               </div>
             </div>
 
+            {/* Sub-Tab Navigation (conditional) */}
+            {activeMainTab === 'adventure' && (
+              <div className="panel mb-6 p-2 animate-slide-down">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {adventureSubTabs.map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setAdventureSubTab(subTab.id)}
+                      className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                        adventureSubTab === subTab.id
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-gray-800/30 text-gray-400 hover:bg-gray-700/50 hover:text-white border border-transparent'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
+            {activeMainTab === 'market' && (
+              <div className="panel mb-6 p-2 animate-slide-down">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {marketSubTabs.map((subTab) => (
+                    <button
+                      key={subTab.id}
+                      onClick={() => setMarketSubTab(subTab.id)}
+                      className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                        marketSubTab === subTab.id
+                          ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'
+                          : 'bg-gray-800/30 text-gray-400 hover:bg-gray-700/50 hover:text-white border border-transparent'
+                      }`}
+                    >
+                      <span>{subTab.icon}</span>
+                      <span>{subTab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Content Panel with smooth transitions */}
             <div
               className={`panel p-6 min-h-[700px] transition-all duration-300 ${
                 isTabTransitioning ? 'opacity-0 scale-98' : 'opacity-100 scale-100 animate-fade-in-up'
               }`}
             >
-              {activeTab === 'adventure' ? (
-                <Adventure />
-              ) : activeTab === 'character' ? (
-                <CharacterTab />
-              ) : activeTab === 'combat' ? (
-                <Combat />
-              ) : activeTab === 'crafting' ? (
-                <CraftingPanel />
-              ) : activeTab === 'quests' ? (
-                <Quests />
-              ) : activeTab === 'merchant' ? (
-                <Merchant />
-              ) : activeTab === 'contracts' ? (
-                <GatheringContracts />
-              ) : (
-                <Inventory />
+              {/* Adventure Tab Content */}
+              {activeMainTab === 'adventure' && (
+                <>
+                  {adventureSubTab === 'exploration' && <Adventure />}
+                  {adventureSubTab === 'combat' && <Combat />}
+                  {adventureSubTab === 'quests' && <Quests />}
+                  {adventureSubTab === 'discoveries' && <DiscoveriesPanel />}
+                  {adventureSubTab === 'gathering_contracts' && <GatheringContracts />}
+                </>
               )}
+
+              {/* Character Tab Content */}
+              {activeMainTab === 'character' && <CharacterTab />}
+
+              {/* Inventory Tab Content */}
+              {activeMainTab === 'inventory' && <Inventory />}
+
+              {/* Crafting Tab Content */}
+              {activeMainTab === 'crafting' && <CraftingPanel />}
+
+              {/* Market Tab Content */}
+              {activeMainTab === 'market' && <Merchant />}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Quick Actions Settings Modal */}
+      {showQuickActionsSettings && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in-up" onClick={() => setShowQuickActionsSettings(false)}>
+          <div className="panel p-6 max-w-2xl w-full mx-4 animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <span className="text-3xl">⚙️</span>
+                Customize Quick Actions
+              </h2>
+              <button
+                onClick={() => setShowQuickActionsSettings(false)}
+                className="text-gray-400 hover:text-white transition-colors text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-gray-400 mb-6">
+              Choose up to 4 shortcuts that will appear in your Quick Actions panel for fast navigation.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Available Shortcuts</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { tab: 'adventure' as MainTab, subTab: 'exploration', label: 'Exploration', icon: '🗺️' },
+                    { tab: 'adventure' as MainTab, subTab: 'combat', label: 'Combat', icon: '⚔️' },
+                    { tab: 'adventure' as MainTab, subTab: 'quests', label: 'Quests', icon: '📜' },
+                    { tab: 'adventure' as MainTab, subTab: 'gathering_contracts', label: 'Gathering Contracts', icon: '📋' },
+                    { tab: 'character' as MainTab, subTab: 'overview', label: 'Character', icon: '👤' },
+                    { tab: 'inventory' as MainTab, label: 'Inventory', icon: '🎒' },
+                    { tab: 'crafting' as MainTab, label: 'Crafting', icon: '🔨' },
+                    { tab: 'market' as MainTab, subTab: 'merchant', label: 'Merchant', icon: '🏪' },
+                  ].map((action, index) => {
+                    const isSelected = customQuickActions.some(a => a.tab === action.tab && a.subTab === action.subTab)
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          if (isSelected) {
+                            setCustomQuickActions(customQuickActions.filter(a => !(a.tab === action.tab && a.subTab === action.subTab)))
+                          } else if (customQuickActions.length < 4) {
+                            setCustomQuickActions([...customQuickActions, action])
+                          }
+                        }}
+                        disabled={!isSelected && customQuickActions.length >= 4}
+                        className={`p-3 rounded-lg border-2 transition-all duration-300 flex items-center gap-3 ${
+                          isSelected
+                            ? 'bg-purple-500/20 border-purple-500/50 text-white'
+                            : customQuickActions.length >= 4
+                              ? 'bg-gray-800/30 border-gray-700/30 text-gray-600 cursor-not-allowed'
+                              : 'bg-gray-800/30 border-gray-700/50 text-gray-300 hover:bg-gray-700/40 hover:border-gray-600/60'
+                        }`}
+                      >
+                        <span className="text-2xl">{action.icon}</span>
+                        <span className="text-sm font-medium">{action.label}</span>
+                        {isSelected && <span className="ml-auto text-green-400">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-sm text-blue-300">
+                  <strong>Tip:</strong> Quick Actions provide instant access to your most-used features without navigating through tabs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                {customQuickActions.length} / 4 shortcuts selected
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('quickActions', JSON.stringify(customQuickActions))
+                    setShowQuickActionsSettings(false)
+                  }}
+                  className="btn btn-primary"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         {/* Quick Menu FAB */}
         <button
           onClick={() => setShowQuickMenu(!showQuickMenu)}
@@ -504,7 +752,7 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleTabChange('inventory')
+                  handleMainTabChange('inventory')
                   setShowQuickMenu(false)
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-lg hover:from-purple-400 hover:to-purple-500 transition-all duration-300 hover:scale-105 whitespace-nowrap text-sm font-semibold flex items-center gap-2"
@@ -515,7 +763,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleTabChange('character')
+                  handleMainTabChange('character')
+                  setCharacterSubTab('overview')
                   setShowQuickMenu(false)
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-400 hover:to-blue-500 transition-all duration-300 hover:scale-105 whitespace-nowrap text-sm font-semibold flex items-center gap-2"
@@ -526,7 +775,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  handleTabChange('combat')
+                  handleMainTabChange('adventure')
+                  setAdventureSubTab('combat')
                   setShowQuickMenu(false)
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-lg hover:from-red-400 hover:to-red-500 transition-all duration-300 hover:scale-105 whitespace-nowrap text-sm font-semibold flex items-center gap-2"

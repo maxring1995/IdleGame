@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { ZoneDetails as ZoneDetailsType, WorldZone } from '@/lib/supabase'
+import type { ZoneDetails as ZoneDetailsType, WorldZone, CharacterMapProgress } from '@/lib/supabase'
 import { getZoneDetails, getCurrentWeather, attemptLandmarkDiscovery } from '@/lib/worldZones'
 import { startExploration } from '@/lib/exploration'
 import { startTravel } from '@/lib/travel'
+import { getMapProgress } from '@/lib/mapProgress'
 import { useGameStore } from '@/lib/store'
 import GatheringZone from './GatheringZone'
+import ExpeditionPlanner from './ExpeditionPlanner'
+import InteractiveMap from './InteractiveMap'
 
 interface ZoneDetailsProps {
   zoneId: string
@@ -34,11 +37,16 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
   const [weather, setWeather] = useState<string>('clear')
   const [exploring, setExploring] = useState(false)
   const [discoveryMessage, setDiscoveryMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'gathering'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'gathering' | 'map'>('overview')
+  const [showExpeditionPlanner, setShowExpeditionPlanner] = useState(false)
+  const [mapProgress, setMapProgress] = useState<CharacterMapProgress | null>(null)
 
   useEffect(() => {
     loadZoneDetails()
     loadWeather()
+    if (character) {
+      loadMapProgress()
+    }
   }, [zoneId, character])
 
   async function loadZoneDetails() {
@@ -62,6 +70,15 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
   async function loadWeather() {
     const { data } = await getCurrentWeather(zoneId)
     if (data) setWeather(data)
+  }
+
+  async function loadMapProgress() {
+    if (!character) return
+
+    const { data, error } = await getMapProgress(character.id, zoneId)
+    if (data && !error) {
+      setMapProgress(data)
+    }
   }
 
   async function handleExplore() {
@@ -220,8 +237,22 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
             }`}
           >
             <div className="flex flex-col items-center gap-1">
-              <span className="text-xl">🗺️</span>
+              <span className="text-xl">📜</span>
               <span className="text-sm">Overview</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('map')}
+            className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+              activeTab === 'map'
+                ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-800/40 text-gray-400 hover:bg-gray-700/60 hover:text-white'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xl">🗺️</span>
+              <span className="text-sm">Map</span>
             </div>
           </button>
 
@@ -244,6 +275,45 @@ export default function ZoneDetails({ zoneId, onTravelTo }: ZoneDetailsProps) {
       {/* Tab Content */}
       {activeTab === 'gathering' ? (
         <GatheringZone worldZone={zone.id} zoneName={zone.name} />
+      ) : activeTab === 'map' ? (
+        <>
+          {/* Map Actions */}
+          <div className="panel p-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Zone Map</h3>
+              <p className="text-sm text-gray-400">Explore to reveal more of the area</p>
+            </div>
+            <button
+              onClick={() => setShowExpeditionPlanner(true)}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <span>🎒</span>
+              <span>Plan Expedition</span>
+            </button>
+          </div>
+
+          {/* Interactive Map */}
+          {character && mapProgress && (
+            <InteractiveMap
+              characterId={character.id}
+              zoneId={zoneId}
+              mapProgress={mapProgress}
+              showControls={true}
+            />
+          )}
+
+          {/* Expedition Planner Modal */}
+          {showExpeditionPlanner && (
+            <ExpeditionPlanner
+              zone={zone}
+              onStart={() => {
+                setShowExpeditionPlanner(false)
+                // Trigger exploration or other actions
+              }}
+              onClose={() => setShowExpeditionPlanner(false)}
+            />
+          )}
+        </>
       ) : (
         <>
           {/* Landmarks */}

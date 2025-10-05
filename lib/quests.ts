@@ -107,6 +107,11 @@ export async function getQuestDefinitions(characterLevel: number, characterId?: 
         if (completion) return false
       }
 
+      // Filter out completed non-repeatable quests
+      if (!quest.repeatable && !quest.reset_interval && completedQuestIds.has(quest.id)) {
+        return false
+      }
+
       return true
     })
   }

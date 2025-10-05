@@ -238,16 +238,24 @@ export async function resolveEncounter(
       return { success: false, error: updateError.message, rewards: null }
     }
 
-    // Update statistics
-    await supabase
+    // Update statistics - fetch current values first
+    const { data: stats } = await supabase
       .from('gathering_statistics')
-      .update({
-        total_encounters: supabase.raw('total_encounters + 1') as any,
-        ...(encounter.encounter_type === 'treasure' && { total_treasures_found: supabase.raw('total_treasures_found + 1') as any }),
-        ...(encounter.encounter_type === 'monster' && action === 'fight' && { total_monsters_fought: supabase.raw('total_monsters_fought + 1') as any }),
-        ...(encounter.encounter_type === 'wanderer' && { total_wanderers_met: supabase.raw('total_wanderers_met + 1') as any })
-      })
+      .select('total_encounters, total_treasures_found, total_monsters_fought, total_wanderers_met')
       .eq('character_id', encounter.character_id)
+      .single()
+
+    if (stats) {
+      await supabase
+        .from('gathering_statistics')
+        .update({
+          total_encounters: stats.total_encounters + 1,
+          ...(encounter.encounter_type === 'treasure' && { total_treasures_found: stats.total_treasures_found + 1 }),
+          ...(encounter.encounter_type === 'monster' && action === 'fight' && { total_monsters_fought: stats.total_monsters_fought + 1 }),
+          ...(encounter.encounter_type === 'wanderer' && { total_wanderers_met: stats.total_wanderers_met + 1 })
+        })
+        .eq('character_id', encounter.character_id)
+    }
 
     revalidatePath('/game')
 

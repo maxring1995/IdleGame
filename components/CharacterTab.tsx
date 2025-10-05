@@ -4,11 +4,13 @@ import { useState } from 'react'
 import { useGameStore } from '@/lib/store'
 import EquipmentOverlay from './EquipmentOverlay'
 import SkillsPanel from './SkillsPanel'
+import CharacterStats from './CharacterStats'
 
 export default function CharacterTab() {
   const { character } = useGameStore()
   const [showEquipmentManager, setShowEquipmentManager] = useState(false)
   const [showSkillsPanel, setShowSkillsPanel] = useState(false)
+  const [showCharacterStats, setShowCharacterStats] = useState(false)
 
   if (!character) return null
 
@@ -19,8 +21,19 @@ export default function CharacterTab() {
         onClose={() => setShowEquipmentManager(false)}
       />
 
-      {/* Skills Panel View */}
-      {showSkillsPanel ? (
+      {/* Character Stats View */}
+      {showCharacterStats ? (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowCharacterStats(false)}
+            className="btn btn-secondary mb-4"
+          >
+            ← Back to Character Menu
+          </button>
+          <CharacterStats character={character} />
+        </div>
+      ) : showSkillsPanel ? (
+        /* Skills Panel View */
         <div className="space-y-4">
           <button
             onClick={() => setShowSkillsPanel(false)}
@@ -106,19 +119,25 @@ export default function CharacterTab() {
             </div>
           </div>
 
-          {/* Character Stats Card (Coming Soon) */}
-          <div className="panel p-6 text-left opacity-60">
+          {/* Character Stats Card */}
+          <button
+            onClick={() => setShowCharacterStats(true)}
+            className="panel p-6 text-left hover:bg-white/5 transition-all group"
+          >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-2xl shadow-lg">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
                 📈
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-white mb-1">Character Stats</h3>
                 <p className="text-sm text-gray-400 mb-3">Detailed breakdown of your stats and bonuses</p>
-                <div className="badge badge-common text-xs">Coming Soon</div>
+                <div className="flex items-center gap-2 text-xs text-cyan-400">
+                  <span>Click to open</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Appearance Card (Coming Soon) */}
           <div className="panel p-6 text-left opacity-60">

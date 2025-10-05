@@ -33,7 +33,8 @@
       "Bash(open http://localhost:3000)",
       "Bash(open http://localhost:3000/test-zones)",
       "Bash(open http://localhost:3001)",
-      "Bash(killall:*)"
+      "Bash(killall:*)",
+      "mcp__supabase__execute_sql"
     ],
     "deny": [],
     "ask": []

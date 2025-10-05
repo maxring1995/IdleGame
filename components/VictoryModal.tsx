@@ -95,12 +95,37 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
               <div className="bg-gray-900 rounded-lg p-4 mb-4">
                 <h3 className="text-sm font-semibold text-gray-400 mb-3">⚔️ Combat Skills XP</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  {/* Melee Skills */}
                   {combatXP.attack && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-300">🗡️ Attack</span>
+                      <span className="text-gray-300">⚔️ Attack</span>
                       <span className="text-red-400 font-semibold">+{combatXP.attack} XP</span>
                     </div>
                   )}
+                  {combatXP.strength && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">💪 Strength</span>
+                      <span className="text-orange-400 font-semibold">+{combatXP.strength} XP</span>
+                    </div>
+                  )}
+
+                  {/* Magic Skills */}
+                  {combatXP.magic && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">✨ Magic</span>
+                      <span className="text-purple-400 font-semibold">+{combatXP.magic} XP</span>
+                    </div>
+                  )}
+
+                  {/* Ranged Skills */}
+                  {combatXP.ranged && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">🏹 Ranged</span>
+                      <span className="text-green-400 font-semibold">+{combatXP.ranged} XP</span>
+                    </div>
+                  )}
+
+                  {/* Defensive Skills */}
                   {combatXP.defense && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-300">🛡️ Defense</span>
@@ -109,14 +134,16 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
                   )}
                   {combatXP.constitution && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-300">💪 Constitution</span>
-                      <span className="text-green-400 font-semibold">+{combatXP.constitution} XP</span>
+                      <span className="text-gray-300">❤️ Constitution</span>
+                      <span className="text-pink-400 font-semibold">+{combatXP.constitution} XP</span>
                     </div>
                   )}
+
+                  {/* Support Skills */}
                   {combatXP.slayer && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-300">⚔️ Slayer</span>
-                      <span className="text-purple-400 font-semibold">+{combatXP.slayer} XP</span>
+                      <span className="text-gray-300">🎯 Slayer</span>
+                      <span className="text-indigo-400 font-semibold">+{combatXP.slayer} XP</span>
                     </div>
                   )}
                   {combatXP.thieving && (

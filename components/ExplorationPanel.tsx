@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
-import type { ActiveExploration, WorldZone, ZoneLandmark, ExplorationReward, Item } from '@/lib/supabase'
+import type { ActiveExploration, WorldZone, ZoneLandmark, ExplorationReward, Item, ExplorationEvent } from '@/lib/supabase'
 import { getActiveExploration, processExploration, stopExploration } from '@/lib/exploration'
 import { getInventory } from '@/lib/inventory'
+import { initializeExplorationSkills } from '@/lib/explorationSkills'
 import AdventureCompletionModal from './AdventureCompletionModal'
+import ExplorationEventModal from './ExplorationEventModal'
+import ExplorationSkillsPanel from './ExplorationSkillsPanel'
 
 interface ExplorationPanelProps {
   onExplorationComplete?: () => void
@@ -35,6 +38,9 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
   const [loading, setLoading] = useState(true)
   const [stopping, setStopping] = useState(false)
   const [showCompletionModal, setShowCompletionModal] = useState(false)
+  const [currentEvent, setCurrentEvent] = useState<ExplorationEvent | null>(null)
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [showSkills, setShowSkills] = useState(false)
 
   useEffect(() => {
     if (character) {
@@ -57,6 +63,8 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
       setExploration(data)
       setProgress(data.exploration_progress)
       await loadZone(data.zone_id)
+      // Initialize exploration skills if needed
+      await initializeExplorationSkills(character.id)
     }
     setLoading(false)
   }
@@ -88,6 +96,12 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
       if (data) {
         setProgress(data.progress)
         setTimeSpent(data.timeSpent)
+
+        // Check for triggered events
+        if (data.event) {
+          setCurrentEvent(data.event)
+          setShowEventModal(true)
+        }
 
         // Add new discoveries
         if (data.discoveries.length > 0) {
@@ -241,14 +255,27 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
           <span className="text-3xl">🔍</span>
           Exploring {zone?.name || 'Zone'}
         </h2>
-        <button
-          onClick={handleStop}
-          disabled={stopping}
-          className="btn btn-secondary text-sm"
-        >
-          {stopping ? 'Stopping...' : 'Stop Exploring'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSkills(!showSkills)}
+            className="btn btn-secondary text-sm"
+          >
+            {showSkills ? 'Hide Skills' : 'View Skills'}
+          </button>
+          <button
+            onClick={handleStop}
+            disabled={stopping}
+            className="btn btn-secondary text-sm"
+          >
+            {stopping ? 'Stopping...' : 'Stop Exploring'}
+          </button>
+        </div>
       </div>
+
+      {/* Skills Panel */}
+      {showSkills && character && (
+        <ExplorationSkillsPanel characterId={character.id} />
+      )}
 
       {/* Progress Circle and Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +316,7 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         </div>
 
         {/* Stats */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="stat-box">
             <div className="flex items-center gap-2 text-gray-400">
               <span className="text-xl">⏱️</span>
@@ -310,6 +337,36 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
             </div>
           </div>
 
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">💰</span>
+              <span>Gold Earned</span>
+            </div>
+            <div className="text-2xl font-bold text-yellow-400">
+              {totalGold.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">⭐</span>
+              <span>XP Earned</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-400">
+              {totalXP.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">🎁</span>
+              <span>Items Found</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-400">
+              {sessionItems.length}
+            </div>
+          </div>
+
           {exploration?.is_auto && exploration?.auto_stop_at && (
             <div className="stat-box">
               <div className="flex items-center gap-2 text-gray-400">
@@ -324,6 +381,48 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         </div>
       </div>
 
+      {/* Items Found This Session */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <span>🎁</span>
+          Items Found ({sessionItems.length})
+        </h3>
+        {sessionItems.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {sessionItems.map((sessionItem, idx) => (
+              <div
+                key={`session-item-${idx}`}
+                className={`p-2 rounded-lg border text-center transition-all hover:scale-105
+                  ${sessionItem.item.rarity === 'legendary' ? 'bg-yellow-500/10 border-yellow-500/50' :
+                    sessionItem.item.rarity === 'epic' ? 'bg-purple-500/10 border-purple-500/50' :
+                    sessionItem.item.rarity === 'rare' ? 'bg-blue-500/10 border-blue-500/50' :
+                    sessionItem.item.rarity === 'uncommon' ? 'bg-green-500/10 border-green-500/50' :
+                    'bg-gray-500/10 border-gray-500/50'
+                  }`}
+              >
+                <div className={`text-xs font-semibold mb-1
+                  ${sessionItem.item.rarity === 'legendary' ? 'text-yellow-400' :
+                    sessionItem.item.rarity === 'epic' ? 'text-purple-400' :
+                    sessionItem.item.rarity === 'rare' ? 'text-blue-400' :
+                    sessionItem.item.rarity === 'uncommon' ? 'text-green-400' :
+                    'text-gray-400'
+                  }`}
+                >
+                  {sessionItem.item.name}
+                </div>
+                {sessionItem.quantity > 1 && (
+                  <div className="text-xs text-gray-500">x{sessionItem.quantity}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-4 bg-gray-800/30 border border-gray-700/50 rounded-lg text-center">
+            <p className="text-sm text-gray-400">No items found yet... keep exploring!</p>
+          </div>
+        )}
+      </div>
+
       {/* Recent Rewards */}
       {rewards.length > 0 && (
         <div className="space-y-3">
@@ -331,7 +430,7 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
             <span>💎</span>
             Recent Rewards
           </h3>
-          <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
             {rewards.slice(-10).reverse().map((reward, idx) => (
               <div
                 key={`reward-${idx}`}
@@ -410,15 +509,18 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
       )}
 
       {/* Progress Info */}
-      <div className="p-4 bg-gray-800/30 border border-gray-700/50 rounded-lg space-y-2">
-        <div className="text-sm text-gray-400">
-          <strong className="text-white">Exploration Rate:</strong> 1% every 30 seconds (50 minutes to 100%)
+      <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-lg space-y-2">
+        <div className="text-sm text-gray-300">
+          <strong className="text-emerald-400">⚡ Exploration Rate:</strong> 1% every 15 seconds (25 minutes to 100%)
         </div>
-        <div className="text-sm text-gray-400">
-          <strong className="text-white">Discovery Chance:</strong> Rolled every 10% progress
+        <div className="text-sm text-gray-300">
+          <strong className="text-blue-400">🎯 Discovery Chance:</strong> Rolled every 5% progress
         </div>
-        <div className="text-sm text-gray-400">
-          <strong className="text-white">Reward Chance:</strong> Rolled every 1% progress (increases with progress!)
+        <div className="text-sm text-gray-300">
+          <strong className="text-amber-400">💎 Reward Chance:</strong> 25-50% every 1% progress (increases as you explore!)
+        </div>
+        <div className="text-sm text-gray-300">
+          <strong className="text-purple-400">🎁 Items Per Reward:</strong> 3-8 items with rarity-based drop rates
         </div>
         {exploration?.is_auto && (
           <div className="text-sm text-blue-400 flex items-center gap-2">
@@ -440,6 +542,24 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
             : 'You\'ve covered most of the area, but there may be more to find...'}
         </p>
       </div>
+
+      {/* Exploration Event Modal */}
+      {character && (
+        <ExplorationEventModal
+          isOpen={showEventModal}
+          event={currentEvent}
+          characterId={character.id}
+          zoneId={exploration?.zone_id || ''}
+          onClose={() => {
+            setShowEventModal(false)
+            setCurrentEvent(null)
+          }}
+          onComplete={(outcome) => {
+            // Handle event completion
+            console.log('Event completed:', outcome)
+          }}
+        />
+      )}
 
       {/* Adventure Completion Modal */}
       <AdventureCompletionModal

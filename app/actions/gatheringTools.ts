@@ -38,7 +38,7 @@ export async function getCharacterEquippedTools(characterId: string) {
   const supabase = await createClient()
 
   // Get equipped tools for the character
-  const { data: equipped, error: equippedError } = await supabase
+  let { data: equipped, error: equippedError } = await supabase
     .from('character_equipped_tools')
     .select('*')
     .eq('character_id', characterId)
@@ -54,14 +54,39 @@ export async function getCharacterEquippedTools(characterId: string) {
     }
   }
 
-  // If no equipped tools row exists, return error
+  // If no equipped tools row exists, initialize starter tools
   if (!equipped || equippedError?.code === 'PGRST116') {
-    console.error('[gatheringTools] No tools found for character:', characterId)
-    return {
-      success: false,
-      equipped: null,
-      error: 'No equipped tools found. Please contact support or create a new character.'
+    console.log('[gatheringTools] No tools found for character, initializing starter tools...')
+
+    // Initialize starter tools
+    const { initializeStarterTools } = await import('@/lib/initializeCharacterTools')
+    const { error: initError } = await initializeStarterTools(characterId)
+
+    if (initError) {
+      return {
+        success: false,
+        equipped: null,
+        error: 'Failed to initialize starter tools'
+      }
     }
+
+    // Fetch the newly created tools
+    const { data: newEquipped, error: newError } = await supabase
+      .from('character_equipped_tools')
+      .select('*')
+      .eq('character_id', characterId)
+      .single()
+
+    if (newError || !newEquipped) {
+      return {
+        success: false,
+        equipped: null,
+        error: 'Failed to load initialized tools'
+      }
+    }
+
+    // Set equipped to the newly created tools
+    equipped = newEquipped
   }
 
   // Fetch tool details for each slot
