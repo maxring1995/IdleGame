@@ -45,11 +45,22 @@ export default function GatheringSimple() {
     if (character) {
       loadMaterials()
     }
-  }, [character, activeSkill])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id, activeSkill])
 
   useEffect(() => {
     if (!character) return
 
+    // Initial check for active session
+    checkGatheringProgress(character.id).then(({ data }) => {
+      if (data) {
+        setActiveSession(data)
+      } else {
+        setActiveSession(null)
+      }
+    })
+
+    // Only poll if there might be an active session
     const interval = setInterval(async () => {
       const { data } = await checkGatheringProgress(character.id)
       if (data) {
@@ -70,12 +81,14 @@ export default function GatheringSimple() {
 
         setActiveSession(data)
       } else {
+        // No active session, stop polling by clearing interval
         setActiveSession(null)
       }
-    }, 1000)
+    }, 2000) // Increased to 2 seconds to reduce load
 
     return () => clearInterval(interval)
-  }, [character, activeSession, addNotification])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadMaterials() {
     if (!character) return

@@ -24,7 +24,8 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
   useEffect(() => {
     loadZones()
     loadEnemies()
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   useEffect(() => {
     if (filterMode === 'zone' && selectedZone) {

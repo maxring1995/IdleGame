@@ -12,6 +12,7 @@ import {
   type QuestDefinition,
   type QuestProgress
 } from '@/lib/quests'
+import { generateContextualQuests, refreshDynamicQuests } from '@/lib/dynamic-quests'
 import { useNotificationStore, notificationHelpers } from '@/lib/notificationStore'
 import { getInventory } from '@/lib/inventory'
 import QuestCompletionModal from './QuestCompletionModal'
@@ -54,11 +55,15 @@ export default function Quests() {
     xp: number
     items: SessionItem[]
   } | null>(null)
+  const [generatingQuests, setGeneratingQuests] = useState(false)
 
   useEffect(() => {
     if (!character) return
     loadQuests()
-  }, [character])
+    // Auto-refresh dynamic quests on load
+    refreshDynamicQuests(character.id, 3).catch(console.error)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadQuests() {
     if (!character) return
@@ -80,6 +85,48 @@ export default function Quests() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleGenerateDynamicQuests() {
+    if (!character || generatingQuests) return
+    setGeneratingQuests(true)
+    setError(null)
+
+    try {
+      const { data: newQuests, error } = await generateContextualQuests(character.id, 3)
+      if (error) throw error
+
+      if (newQuests && newQuests.length > 0) {
+        addNotification({
+          type: 'success',
+          category: 'quest',
+          title: '✨ Dynamic Quests Generated',
+          message: `${newQuests.length} new quests tailored to your activities!`,
+          icon: '📜'
+        })
+        await loadQuests()
+        setFilter('available') // Switch to available tab
+      } else {
+        addNotification({
+          type: 'info',
+          category: 'quest',
+          title: 'No New Quests',
+          message: 'You already have plenty of quests! Complete some first.',
+          icon: '📜'
+        })
+      }
+    } catch (err: any) {
+      setError(err.message)
+      addNotification({
+        type: 'error',
+        category: 'quest',
+        title: 'Quest Generation Failed',
+        message: err.message,
+        icon: '⚠️'
+      })
+    } finally {
+      setGeneratingQuests(false)
     }
   }
 
@@ -239,13 +286,23 @@ export default function Quests() {
               Complete quests to earn XP, gold, and rare items
             </p>
           </div>
-          <button
-            onClick={loadQuests}
-            disabled={loading}
-            className="btn btn-secondary"
-          >
-            {loading ? '↻' : '🔄'} Refresh
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerateDynamicQuests}
+              disabled={generatingQuests || loading}
+              className="btn btn-primary"
+              title="Generate quests tailored to your current activities"
+            >
+              {generatingQuests ? '✨ Generating...' : '✨ Generate Quests'}
+            </button>
+            <button
+              onClick={loadQuests}
+              disabled={loading}
+              className="btn btn-secondary"
+            >
+              {loading ? '↻' : '🔄'} Refresh
+            </button>
+          </div>
         </div>
 
         {/* Error Display */}
@@ -340,8 +397,15 @@ export default function Quests() {
                   <div className="text-4xl">{questDef.icon || '📜'}</div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold text-white">{questDef.title}</h3>
-                      <span className="badge badge-common">Lv. {questDef.level_requirement}</span>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-lg font-bold text-white">{questDef.title}</h3>
+                        {questDef.is_dynamic && (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 w-fit">
+                            ✨ Dynamic
+                          </span>
+                        )}
+                      </div>
+                      <span className="badge badge-common whitespace-nowrap">Lv. {questDef.level_requirement}</span>
                     </div>
                     <p className="text-sm text-gray-400 mb-3">{questDef.objective}</p>
 

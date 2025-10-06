@@ -345,6 +345,12 @@ export async function completeQuest(characterId: string, questId: string) {
       completed_at: new Date().toISOString()
     })
 
+  // If this is a dynamic quest, mark it as completed in history
+  if (questDef.is_dynamic) {
+    const { completeDynamicQuest } = await import('./dynamic-quests')
+    await completeDynamicQuest(characterId, questId)
+  }
+
   return { data: { quest: data, rewards }, error: null }
 }
 

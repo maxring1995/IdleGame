@@ -82,7 +82,7 @@ export default function CraftingPanel() {
 
   // Poll active session
   useEffect(() => {
-    if (!character) return
+    if (!character?.id) return
 
     async function checkSession(charId: string) {
       const { data } = await getActiveCraftingSession(charId)
@@ -94,10 +94,14 @@ export default function CraftingPanel() {
       }
     }
 
+    // Initial check
     checkSession(character.id)
-    const interval = setInterval(() => checkSession(character.id), 1000)
+
+    // Poll every 2 seconds instead of 1 to reduce load
+    const interval = setInterval(() => checkSession(character.id), 2000)
     return () => clearInterval(interval)
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   // Select recipe and load details
   async function handleSelectRecipe(recipe: CraftingRecipe) {

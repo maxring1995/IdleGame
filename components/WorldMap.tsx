@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import type { WorldZoneWithDiscovery } from '@/lib/supabase'
-import { getDiscoveredZones } from '@/lib/worldZones'
 import { useGameStore } from '@/lib/store'
+import { useZonesStore } from '@/lib/stores/zonesStore'
 
 interface WorldMapProps {
   onZoneSelect: (zoneId: string) => void
@@ -30,36 +30,18 @@ function getDangerColor(level: number): string {
 
 export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps) {
   const { character } = useGameStore()
-  const [zones, setZones] = useState<WorldZoneWithDiscovery[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { discoveredZones, isLoadingDiscovered, error, fetchDiscoveredZones } = useZonesStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
 
   useEffect(() => {
-    loadZones()
-  }, [character])
-
-  async function loadZones() {
-    if (!character) return
-
-    setLoading(true)
-    setError(null)
-
-    const { data, error: err } = await getDiscoveredZones(character.id)
-
-    if (err) {
-      setError(err.message)
-      setLoading(false)
-      return
+    if (character?.id) {
+      fetchDiscoveredZones(character.id)
     }
-
-    setZones(data || [])
-    setLoading(false)
-  }
+  }, [character?.id, fetchDiscoveredZones])
 
   // Filter zones
-  const filteredZones = zones.filter(zone => {
+  const filteredZones = discoveredZones.filter(zone => {
     const matchesSearch = zone.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          zone.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesType = filterType === 'all' || zone.zone_type === filterType
@@ -67,10 +49,10 @@ export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps
   })
 
   // Separate discovered and undiscovered
-  const discoveredZones = filteredZones.filter(z => z.isDiscovered)
-  const undiscoveredZones = filteredZones.filter(z => !z.isDiscovered && !z.is_hidden)
+  const discovered = filteredZones.filter(z => z.isDiscovered)
+  const undiscovered = filteredZones.filter(z => !z.isDiscovered && !z.is_hidden)
 
-  if (loading) {
+  if (isLoadingDiscovered) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
@@ -96,7 +78,7 @@ export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps
           World Map
         </h2>
         <div className="text-sm text-gray-400">
-          {discoveredZones.length} / {zones.filter(z => !z.is_hidden).length} zones discovered
+          {discovered.length} / {discoveredZones.filter(z => !z.is_hidden).length} zones discovered
         </div>
       </div>
 
@@ -132,14 +114,14 @@ export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps
       </div>
 
       {/* Discovered Zones */}
-      {discoveredZones.length > 0 && (
+      {discovered.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-300 flex items-center gap-2">
             <span className="text-xl">✓</span>
             Discovered Zones
           </h3>
           <div className="grid grid-cols-1 gap-3">
-            {discoveredZones.map(zone => (
+            {discovered.map(zone => (
               <ZoneCard
                 key={zone.id}
                 zone={zone}
@@ -153,14 +135,14 @@ export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps
       )}
 
       {/* Undiscovered Zones (visible but locked) */}
-      {undiscoveredZones.length > 0 && (
+      {undiscovered.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-300 flex items-center gap-2">
             <span className="text-xl">🔍</span>
             Unexplored Zones
           </h3>
           <div className="grid grid-cols-1 gap-3">
-            {undiscoveredZones.map(zone => (
+            {undiscovered.map(zone => (
               <ZoneCard
                 key={zone.id}
                 zone={zone}
@@ -256,6 +238,12 @@ function ZoneCard({ zone, isSelected, onSelect, characterLevel, locked = false }
               <div className="flex items-center gap-1 text-gray-400">
                 <span>🌡️</span>
                 <span className="capitalize">{zone.climate}</span>
+              </div>
+            )}
+            {!locked && zone.isDiscovered && (
+              <div className="flex items-center gap-1 text-amber-400">
+                <span>⭐</span>
+                <span>Zone Bonuses Active</span>
               </div>
             )}
           </div>

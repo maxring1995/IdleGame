@@ -10,6 +10,7 @@ import { CraftingRecipe, CraftingSkillType } from './supabase'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
 import { getCraftingBonuses, applyCraftingBonuses } from './bonuses'
+import { applyZoneCraftingModifiers } from './zone-modifiers'
 
 /**
  * Stub function for skill experience (gathering system removed)
@@ -216,7 +217,19 @@ export async function craftItem(characterId: string, recipeId: string) {
 
   // Get crafting bonuses from discovered landmarks
   const { data: bonuses } = await getCraftingBonuses(characterId)
-  const craftingBonuses = bonuses || { quality_bonus: 0, speed_bonus: 0, cost_reduction: 0 }
+  const landmarkBonuses = bonuses || { quality_bonus: 0, speed_bonus: 0, cost_reduction: 0 }
+
+  // Get zone crafting modifiers
+  const { data: zoneModifiers } = await applyZoneCraftingModifiers(
+    characterId,
+    recipe.required_skill_type,
+    1.0, // Base success rate (100%)
+    100  // Base cost (doesn't matter, we'll use the modifier percentage)
+  )
+
+  // Combine landmark and zone bonuses
+  const totalCostReduction = landmarkBonuses.cost_reduction + (zoneModifiers ? (100 - zoneModifiers.modified_cost) / 100 : 0)
+  const totalQualityBonus = landmarkBonuses.quality_bonus + (zoneModifiers?.quality_bonus || 0)
 
   // Check ingredients
   const { hasIngredients, missing, error: checkError } = await checkIngredients(characterId, recipeId)
@@ -229,13 +242,13 @@ export async function craftItem(characterId: string, recipeId: string) {
     }
   }
 
-  // Apply cost reduction bonus to ingredients
+  // Apply cost reduction bonus to ingredients (combining landmark + zone bonuses)
   const adjustedIngredients: Record<string, number> = {}
   const originalIngredients = recipe.ingredients as Record<string, number>
 
   for (const [materialId, quantity] of Object.entries(originalIngredients)) {
-    // Apply cost reduction (minimum 1 per ingredient)
-    const reducedCost = Math.max(1, Math.floor(quantity * (1 - craftingBonuses.cost_reduction)))
+    // Apply combined cost reduction (minimum 1 per ingredient)
+    const reducedCost = Math.max(1, Math.floor(quantity * (1 - totalCostReduction)))
     adjustedIngredients[materialId] = reducedCost
   }
 
@@ -274,7 +287,12 @@ export async function craftItem(characterId: string, recipeId: string) {
       experienceGained: recipe.experience_reward,
       leveledUp,
       newLevel,
-      bonusesApplied: craftingBonuses,
+      bonusesApplied: {
+        landmark: landmarkBonuses,
+        zone: zoneModifiers,
+        totalCostReduction,
+        totalQualityBonus
+      },
       materialsSaved: Object.entries(originalIngredients).reduce((total, [materialId, origQty]) => {
         return total + (origQty - (adjustedIngredients[materialId] || 0))
       }, 0)

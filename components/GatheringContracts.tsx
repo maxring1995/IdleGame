@@ -33,7 +33,8 @@ export default function GatheringContracts() {
     if (character) {
       loadContracts()
     }
-  }, [character, activeTab])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id, activeTab])
 
   // Update timer every second
   useEffect(() => {

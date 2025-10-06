@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { getGatheringSpeedBonus, calculateGatheringTime } from '@/lib/bonuses'
+import { applyZoneGatheringModifiers } from '@/lib/zone-modifiers'
 
 export async function getMaterialsForSkill(characterId: string, skillType: string) {
   const supabase = await createClient()
@@ -113,14 +114,36 @@ export async function startGatheringSimple(
   // Calculate speed bonus from combat skills
   const { data: speedBonus } = await getGatheringSpeedBonus(characterId, material.required_skill_type)
 
-  // Apply bonuses to gathering time
-  const gatheringTimePerUnit = calculateGatheringTime(
+  // Apply skill and synergy bonuses to gathering time
+  const baseGatheringTime = calculateGatheringTime(
     material.gathering_time_ms,
     skillLevel,
     speedBonus || 0
   )
 
+  // Apply zone modifiers (spawn rate affects gathering speed)
+  const { data: zoneModifiers } = await applyZoneGatheringModifiers(
+    characterId,
+    material.required_skill_type,
+    baseGatheringTime
+  )
+
+  const gatheringTimePerUnit = zoneModifiers?.modified_time_ms || baseGatheringTime
+  const spawnRateModifier = zoneModifiers?.spawn_rate_modifier || 1.0
+  const zoneXPBonus = zoneModifiers?.xp_bonus || 0
+
   const totalTime = gatheringTimePerUnit * quantity
+
+  // Cache the calculated gathering time and modifiers in the session
+  // This prevents recalculating bonuses on every progress check
+  await supabase
+    .from('active_gathering')
+    .update({
+      cached_gathering_time_ms: gatheringTimePerUnit,
+      cached_spawn_rate_modifier: spawnRateModifier,
+      cached_zone_xp_bonus: zoneXPBonus
+    })
+    .eq('character_id', characterId)
 
   revalidatePath('/game')
   return {
@@ -131,7 +154,9 @@ export async function startGatheringSimple(
       material: material.name,
       quantity,
       speedBonus: speedBonus || 0,
-      gatheringTimePerUnit
+      gatheringTimePerUnit,
+      spawnRateModifier,
+      zoneXPBonus
     }
   }
 }
@@ -141,7 +166,7 @@ export async function checkGatheringProgress(characterId: string) {
 
   const { data: session } = await supabase
     .from('active_gathering')
-    .select('*')
+    .select('*, cached_gathering_time_ms, cached_spawn_rate_modifier')
     .eq('character_id', characterId)
     .maybeSingle()
 
@@ -155,23 +180,10 @@ export async function checkGatheringProgress(characterId: string) {
 
   if (!material || matError) return { data: null, error: 'Material not found' }
 
-  // Get skill level and speed bonus for accurate time calculations
-  const { data: skill } = await supabase
-    .from('character_skills')
-    .select('level')
-    .eq('character_id', characterId)
-    .eq('skill_type', session.skill_type)
-    .maybeSingle()
-
-  const skillLevel = skill?.level || 1
-  const { data: speedBonus } = await getGatheringSpeedBonus(characterId, session.skill_type)
-
-  // Calculate actual gathering time with bonuses applied
-  const gatheringTime = calculateGatheringTime(
-    material.gathering_time_ms,
-    skillLevel,
-    speedBonus || 0
-  )
+  // Use cached gathering time from session (set when gathering started)
+  // This avoids recalculating bonuses on every progress check
+  const gatheringTime = session.cached_gathering_time_ms || material.gathering_time_ms
+  const spawnRateModifier = session.cached_spawn_rate_modifier || 1.0
 
   const now = new Date()
   const lastGathered = new Date(session.last_gathered_at)
@@ -205,8 +217,9 @@ export async function checkGatheringProgress(characterId: string) {
       progress,
       timeRemaining,
       isComplete: newQuantityGathered >= session.quantity_goal,
-      speedBonus: speedBonus || 0,
-      gatheringTime: gatheringTime
+      speedBonus: 0, // Bonus already applied in cached time
+      gatheringTime: gatheringTime,
+      spawnRateModifier
     },
     error: null
   }
@@ -217,7 +230,7 @@ export async function collectGathering(characterId: string) {
 
   const { data: session } = await supabase
     .from('active_gathering')
-    .select('*')
+    .select('*, cached_zone_xp_bonus')
     .eq('character_id', characterId)
     .maybeSingle()
 
@@ -268,8 +281,10 @@ export async function collectGathering(characterId: string) {
       })
   }
 
-  // Add XP (use quantity_gathered, not quantity_goal)
-  const totalXP = material.experience_reward * session.quantity_gathered
+  // Calculate XP with zone bonus applied (use cached bonus from session start)
+  const baseXP = material.experience_reward * session.quantity_gathered
+  const zoneXPBonus = session.cached_zone_xp_bonus || 0
+  const totalXP = Math.floor(baseXP * (1 + zoneXPBonus))
 
   const { data: skill } = await supabase
     .from('character_skills')

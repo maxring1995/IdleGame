@@ -21,7 +21,7 @@
 6. [World Zones & Exploration](#6-world-zones--exploration)
 7. [Gathering System](#7-gathering-system)
 8. [Crafting System](#8-crafting-system)
-9. [Quest System](#9-quest-system)
+9. [Quest System](#9-quest-system) ⭐ **NEW: Dynamic Quest Generation**
 10. [Exploration & Adventure System](#10-exploration--adventure-system)
 11. [Economy & Merchants](#11-economy--merchants)
 
@@ -2357,12 +2357,312 @@ getSkillsByCategory(
 
 ## 6. World Zones & Exploration
 
-*🚧 To be documented - This section will cover world zones (5 tiers), zone requirements, landmarks, discovery bonuses, travel system, and exploration skills.*
+### Overview
+Exploration zones are now dynamic environments that provide significant bonuses to all game systems. Each zone has unique modifiers that affect combat, gathering, crafting, and merchants, making zone selection a strategic decision.
 
-### Placeholder Connections
-- 🔗 **Character System** - Level requirements for zones, stat bonuses from landmarks
-- 🔗 **Gathering System** - Zone-specific materials
-- 🔗 **Quest System** - Zone-based quests
+### Key Features
+- ✅ **Zone Modifiers** - Each zone provides unique bonuses to all systems
+- ✅ **Combat Bonuses** - Attack, defense, and regeneration modifiers
+- ✅ **Gathering Bonuses** - Skill-specific spawn rate and XP bonuses
+- ✅ **Crafting Bonuses** - Success rate, cost reduction, and quality bonuses
+- ✅ **Merchant Bonuses** - Price discounts and unique items
+- ✅ **7 Unique Zones** - Each with distinct modifier profiles
+- ✅ **Real-time Application** - Bonuses automatically apply in current zone
+
+### 6.1 Zone Modifier System
+
+**Core Concept:** Zones affect all game activities performed within them, making location choice strategically important.
+
+**Modifier Categories:**
+
+1. **Combat Modifiers**
+   - `damage_bonus` - Percentage increase/decrease to player attack (e.g., +15%)
+   - `defense_bonus` - Percentage increase/decrease to player defense (e.g., +10%)
+   - `hp_regen_bonus` - Health regeneration rate modifier
+   - `mp_regen_bonus` - Mana regeneration rate modifier
+
+2. **Gathering Modifiers**
+   - `spawn_rate_modifiers` - Per-skill gathering speed multipliers (e.g., mining: 2.0 = 2x faster)
+   - `xp_bonus` - Additional XP from gathering activities (e.g., +10%)
+
+3. **Crafting Modifiers**
+   - `success_rate_bonus` - Increased success chance for specific crafting types
+   - `cost_reduction` - Reduced material consumption (e.g., -15%)
+   - `quality_bonus` - Increased chance for higher quality items
+
+4. **Merchant Modifiers**
+   - `price_modifier` - Price multiplier (0.95 = 5% cheaper, 1.1 = 10% more expensive)
+   - `unique_items` - Zone-exclusive items available for purchase
+
+### 6.2 Zone Profiles
+
+**Zone 1: Havenbrook Village** 🏘️ (Levels 1-5)
+```
+Combat:
+- +5% Defense
+- +5% HP Regen
+
+Gathering:
+- Fishing: 1.2x speed (+20%)
+- Hunting: 1.1x speed (+10%)
+
+Crafting:
+- All crafting: +5% success rate
+
+Theme: Balanced beginner zone, safe haven for learning
+```
+
+**Zone 2: Whispering Woods** 🌲 (Levels 5-10)
+```
+Combat:
+- +10% HP Regen
+- +20% MP Regen
+
+Gathering:
+- Woodcutting: 1.5x speed (+50%)
+- Alchemy: 1.8x speed (+80%)
+- Hunting: 1.3x speed (+30%)
+- +10% Gathering XP
+
+Crafting:
+- Alchemy: +25% success, -15% cost
+- All crafting: +5% success
+- +10% quality bonus
+
+Merchants:
+- 5% cheaper prices
+- Unique: Forest Cloak, Nature Staff, Herbal Remedy
+
+Theme: Nature/alchemy specialist zone
+```
+
+**Zone 3: Ironpeak Foothills** ⛰️ (Levels 10-15)
+```
+Combat:
+- +15% Attack
+- +10% Defense
+- -10% MP Regen (harsh environment)
+
+Gathering:
+- Mining: 2.0x speed (+100%)
+- Hunting: 1.2x speed (+20%)
+- +15% Gathering XP
+
+Crafting:
+- Smithing: +30% success, -20% cost
+- +15% quality bonus
+
+Merchants:
+- 10% higher prices (remote location)
+- Unique: Mountain Pickaxe, Stone Armor
+
+Theme: Mining and combat specialist zone
+```
+
+**Zone 4: Shadowfen Marsh** 🌿 (Levels 20-25)
+```
+Combat:
+- +5% Attack
+- -5% Defense (treacherous terrain)
+- -10% HP Regen (hazardous)
+- +15% MP Regen (mystical energy)
+
+Gathering:
+- Alchemy: 2.0x speed (+100%)
+- Hunting: 1.8x speed (+80%)
+- Fishing: 1.5x speed (+50%)
+- Magic: 1.3x speed (+30%)
+- +20% Gathering XP
+
+Crafting:
+- Alchemy: +35% success, -25% cost
+- +5% quality bonus
+
+Merchants:
+- 15% higher prices
+- Unique: Poison Vial, Swamp Boots, Dark Herbs
+
+Theme: High-risk, high-reward alchemy zone
+```
+
+**Zone 5: Emberpeak Mines** 🔥 (Levels 30+)
+```
+Combat:
+- +20% Attack
+- +15% Defense
+- -5% HP Regen (intense heat)
+- -15% MP Regen (draining environment)
+
+Gathering:
+- Mining: 3.0x speed (+200%)
+- Magic: 1.5x speed (+50%)
+- +30% Gathering XP
+
+Crafting:
+- Smithing: +50% success, -30% cost
+- All crafting: +10% success
+- +25% quality bonus
+
+Merchants:
+- 20% higher prices
+- Unique: Molten Ore, Fire Resistant Armor, Ember Gem
+
+Theme: Extreme mining and smithing zone
+```
+
+**Zone 6: Frostspire Mountains** ❄️ (Levels 30+)
+```
+Combat:
+- +10% Attack
+- +20% Defense
+- +35% MP Regen (frozen magic)
+
+Gathering:
+- Magic: 2.5x speed (+150%)
+- Mining: 1.5x speed (+50%)
+- Alchemy: 1.2x speed (+20%)
+- +25% Gathering XP
+
+Crafting:
+- Enchanting: +50% success, -25% cost
+- Alchemy: +20% success
+- All crafting: +10% success
+- +20% quality bonus
+
+Merchants:
+- 30% higher prices
+- Unique: Frost Crystal, Ice Armor, Frozen Essence
+
+Theme: Magic and enchanting specialist zone
+```
+
+**Zone 7: The Shattered Wastes** 💀 (Levels 60+)
+```
+Combat:
+- +25% Attack
+- +25% Defense
+- +10% HP Regen
+- +30% MP Regen
+
+Gathering:
+- Magic: 2.0x speed (+100%)
+- Alchemy: 1.5x speed (+50%)
+- Mining: 1.5x speed (+50%)
+- Hunting: 1.5x speed (+50%)
+- +50% Gathering XP
+
+Crafting:
+- All crafting: +25% success, -20% cost
+- +35% quality bonus
+
+Merchants:
+- 50% higher prices
+- Unique: Void Shard, Corrupted Essence, Demon Core, Legendary Artifact
+
+Theme: Endgame zone with powerful bonuses across all systems
+```
+
+### 6.3 Strategic Zone Selection
+
+**Gathering Optimization:**
+- **For Mining:** Emberpeak Mines (3x speed) > Ironpeak Foothills (2x) > Frostspire (1.5x)
+- **For Alchemy:** Shadowfen Marsh (2x speed) or Whispering Woods (1.8x + cheaper crafting)
+- **For Woodcutting:** Whispering Woods (1.5x speed)
+- **For Magic Runes:** Frostspire Mountains (2.5x speed) > Shattered Wastes (2x)
+
+**Combat Training:**
+- **For Melee:** Ironpeak Foothills (+15% attack, +10% defense)
+- **For Magic:** Frostspire Mountains (+35% MP regen) or Whispering Woods (+20% MP regen)
+- **Endgame:** The Shattered Wastes (+25% attack/defense, +30% MP regen)
+
+**Crafting Optimization:**
+- **For Smithing:** Emberpeak Mines (+50% success, -30% cost)
+- **For Alchemy:** Shadowfen Marsh (+35% success, -25% cost) > Whispering Woods (+25%, -15%)
+- **For Enchanting:** Frostspire Mountains (+50% success, -25% cost)
+
+**Merchant Savings:**
+- **Best Prices:** Whispering Woods (-5%)
+- **Avoid if buying:** The Shattered Wastes (+50%), Frostspire (+30%)
+
+### 6.4 Technical Implementation
+
+**Database Schema:**
+```sql
+-- world_zones table
+system_modifiers JSONB  -- Stores all modifier data
+
+-- Example structure:
+{
+  "combat": {
+    "damage_bonus": 0.15,
+    "defense_bonus": 0.1,
+    "hp_regen_bonus": 0,
+    "mp_regen_bonus": -0.1
+  },
+  "gathering": {
+    "spawn_rate_modifiers": {
+      "mining": 2.0,
+      "woodcutting": 0.3
+    },
+    "xp_bonus": 0.15
+  },
+  "crafting": {
+    "success_rate_bonus": {
+      "smithing": 0.3,
+      "all": 0
+    },
+    "cost_reduction": {
+      "smithing": 0.2
+    },
+    "quality_bonus": 0.15
+  },
+  "merchants": {
+    "price_modifier": 1.1,
+    "unique_items": ["mountain_pickaxe", "stone_armor"]
+  }
+}
+```
+
+**SQL Functions:**
+- `get_character_zone_modifiers(character_id)` - Get modifiers for current zone
+- `apply_zone_combat_modifiers(...)` - Apply combat bonuses
+- `apply_zone_gathering_modifiers(...)` - Apply gathering bonuses
+- `apply_zone_crafting_modifiers(...)` - Apply crafting bonuses
+- `get_zone_merchant_modifiers(...)` - Get merchant modifiers
+
+**TypeScript Library:** `/lib/zone-modifiers.ts`
+- Full type definitions
+- Helper functions for formatting and display
+- Integration with all game systems
+
+**UI Components:**
+- `ZoneModifiersDisplay` - Shows active bonuses in character sheet
+- World Map - Shows "Zone Bonuses Active" indicator on discovered zones
+
+### 6.5 Modifier Stacking
+
+Zone modifiers **stack multiplicatively** with other bonuses:
+
+**Example: Gathering in Whispering Woods**
+1. Base gathering time: 3000ms
+2. Skill efficiency (level 50): -25% → 2250ms
+3. Combat skill synergy: -10% → 2025ms
+4. Zone modifier (alchemy 1.8x): ÷1.8 → 1125ms
+5. **Final time: 1125ms** (62.5% faster than base!)
+
+**Example: Crafting in Emberpeak Mines**
+1. Base cost: 10 Iron Ore
+2. Landmark bonus: -15% → 8.5 ore
+3. Zone modifier (smithing): -30% → 5.95 ore
+4. **Final cost: 6 Iron Ore** (40% total savings!)
+
+### Connections to Other Systems
+- 🔗 **Character System** - Zone modifiers apply to character combat stats
+- 🔗 **Gathering System** - Speed bonuses and XP modifiers
+- 🔗 **Crafting System** - Success rate, cost, and quality bonuses
+- 🔗 **Merchant System** - Dynamic pricing based on zone
+- 🔗 **Combat System** - Attack, defense, and regen modifiers
+- 🔗 **Quest System** - Zone-specific quest chains (future feature)
 
 ---
 
@@ -3624,15 +3924,20 @@ getRecipeWithDetails(
 
 The **Quest System** provides story-driven objectives, daily/weekly tasks, and challenging boss encounters. Players complete quests to earn XP, gold, and item rewards while progressing through the game.
 
+⭐ **NEW in v1.0.0**: **Dynamic Quest Generation** - Context-aware quests that adapt to your playstyle! See [section 9.14](#914-dynamic-quest-generation-) for details.
+
 ### 9.1 Quest Overview
 
 **📊 Quest Statistics:**
-- **45 Total Quests** across 6 quest types
+- **45 Total Static Quests** across 6 quest types
+- **∞ Dynamic Quests** generated based on player activities ✨
 - **6 Quest Categories**: Standard, Boss, Daily, Weekly, Chain, Skill
+- **6 Dynamic Categories**: Zone Exploration, Combat Item, Skill Gathering, Merchant Trade, Boss Challenge, Crafting Mastery
 - **6 Objective Types**: Kill, Gather, Craft, Explore, Level, Gold
 - **Automatic Progress Tracking** via database triggers
 - **Quest Chains** with prerequisite requirements
 - **Repeatable Quests** with daily/weekly resets
+- **Context-Aware Generation** based on zones, items, skills, and activities
 
 **🎯 Quest Types Breakdown:**
 
@@ -4442,8 +4747,210 @@ async function endCombat(characterId: string, victory: boolean) {
 
 ---
 
+### 9.14 Dynamic Quest Generation ✨
+
+**NEW in v1.0.0** - Context-aware quests that respond to player activities!
+
+The **Dynamic Quest Generation System** creates personalized quests based on the player's current state and activities. Instead of static quest lists, quests are generated dynamically to create unique, tailored experiences.
+
+#### 🎯 How It Works
+
+Dynamic quests are generated based on:
+- **Recently discovered zones** → "Map the Ancient Ruins"
+- **Equipped items** → "Win 5 battles using Steel Longsword"
+- **Skill levels** → "Gather 20 Mithril Ore with your advanced Mining skills"
+- **Merchant interactions** → "Trade with 3 different merchants"
+- **Boss availability** → "Defeat the Shadow Dragon"
+
+#### 📊 Quest Categories (6 Types)
+
+| Category | Weight | Description | Example |
+|----------|--------|-------------|---------|
+| **Zone Exploration** 🗺️ | 15 | Map recently discovered zones | "Discover all 5 landmarks in Ancient Ruins" |
+| **Combat Item** ⚔️ | 14 | Master equipped weapons/armor | "Win 8 battles using Legendary Sword" |
+| **Skill Gathering** ⛏️ | 13 | Advanced gathering challenges | "Gather 30 Dragon Scales using Hunting" |
+| **Merchant Trade** 💰 | 10 | Build trade networks | "Trade with 5 different merchants" |
+| **Boss Challenge** 👑 | 8 | Elite enemy encounters | "Defeat the Shadow Dragon" |
+| **Crafting Mastery** 🔨 | 12 | High-quality crafting | "Craft 5 Epic items" |
+
+Higher weight = more likely to be selected (weighted random selection)
+
+#### 💎 Scalable Rewards
+
+Rewards automatically scale with character level and difficulty:
+
+```
+XP Reward = Base XP + (XP per Level × Character Level) + Difficulty Bonus
+Gold Reward = Base Gold + (Gold per Level × Character Level) + Difficulty Bonus
+```
+
+**Example** (Zone Exploration quest):
+- **Level 5 character**: 250 XP, 125 gold
+- **Level 35 character**: 550 XP, 275 gold (same quest template!)
+
+#### 🎨 Visual Indicators
+
+Dynamic quests display a distinctive purple ✨ badge:
+
+```
+✨ Dynamic
+```
+
+This distinguishes them from static quests in the Quest Journal.
+
+#### 🔄 Auto-Refresh System
+
+- Automatically generates up to **3 dynamic quests** when needed
+- Refreshes on character login
+- Prevents duplicates for active quests
+- Manual refresh via "✨ Generate Quests" button
+
+#### 📝 Template System
+
+Quests use placeholder templates with context substitution:
+
+**Zone Exploration Template**:
+```
+Title: "Map the {zone_name}"
+Objective: "Discover all {landmark_count} landmarks in {zone_name}"
+
+Generates:
+"Map the Ancient Ruins"
+"Discover all 5 landmarks in Ancient Ruins"
+```
+
+**Combat Item Template**:
+```
+Title: "Master the {weapon_name}"
+Objective: "Win {win_count} battles using {weapon_name}"
+
+Generates:
+"Master the Steel Longsword"
+"Win 7 battles using Steel Longsword"
+```
+
+**Skill Gathering Template**:
+```
+Title: "Advanced {skill_name}"
+Objective: "Gather {quantity} {material_name} using {skill_name}"
+
+Generates:
+"Advanced Woodcutting"
+"Gather 30 Yew Logs using Woodcutting"
+```
+
+#### 🗄️ Database Schema
+
+**New Tables**:
+- `quest_templates` - Reusable templates (10 default templates)
+- `dynamic_quest_history` - Tracks generated quests and prevents duplicates
+
+**Extended Tables**:
+- `quest_definitions` - Added `is_dynamic`, `template_id`, `context_snapshot`, `generated_at`
+
+**SQL Functions**:
+- `get_player_context(character_id)` → Returns player state (zones, skills, items, etc.)
+- `check_template_conditions(template_id, context)` → Validates template requirements
+- `calculate_quest_rewards(template_id, level, difficulty)` → Computes scaled rewards
+
+#### 🚀 Usage Example
+
+**Player State**:
+- Level 25
+- Recently discovered: Ancient Ruins, Desert Oasis
+- Equipped: Steel Longsword (uncommon)
+- Skills: Woodcutting 35, Mining 20, Attack 40
+
+**Click "✨ Generate Quests"** →
+
+**Generated Quests**:
+1. 🗺️ **Map the Ancient Ruins**
+   - Objective: Discover all 5 landmarks
+   - Rewards: 450 XP, 225 gold
+
+2. ⚔️ **Master the Steel Longsword**
+   - Objective: Win 8 battles using Steel Longsword
+   - Rewards: 550 XP, 270 gold
+
+3. 🪓 **Advanced Woodcutting**
+   - Objective: Gather 30 Yew Logs
+   - Rewards: 625 XP, 325 gold
+
+#### 📊 Statistics
+
+- **10 Default Templates** across 6 categories
+- **21 Unit Tests** (all passing ✅)
+- **Weighted Random Selection** (15-8 weight range)
+- **Level-Based Scaling** (1-99 character levels)
+- **Context Analysis** (zones, skills, items, merchants)
+
+#### 🔧 Technical Implementation
+
+**TypeScript Functions** (`lib/dynamic-quests.ts`):
+- `analyzePlayerState(characterId)` - Gets player context
+- `generateContextualQuests(characterId, count)` - Creates personalized quests
+- `refreshDynamicQuests(characterId, targetCount)` - Maintains quest pool
+- `completeDynamicQuest(characterId, questId)` - Marks as complete
+
+**UI Integration** (`components/Quests.tsx`):
+- "✨ Generate Quests" button in header
+- Purple dynamic badge on quest cards
+- Auto-refresh on character login
+- Toast notifications for generation success/failure
+
+#### 🧪 Testing Coverage
+
+**Unit Tests** (21 tests, all passing):
+- Template selection by level ✅
+- Condition matching (zones, items, skills) ✅
+- Reward scaling (XP, gold, difficulty) ✅
+- Template substitution logic ✅
+- Weighted random selection ✅
+- Parameter generation for all quest types ✅
+- Edge cases (no items, no zones, min/max levels) ✅
+
+**Run Tests**:
+```bash
+npm test -- dynamic-quests.test.ts
+# 21 passed, 21 total
+```
+
+#### 🎮 Player Benefits
+
+1. **Personalized Experience** - Every playthrough feels unique
+2. **Contextual Objectives** - Quests match current activities
+3. **Progressive Scaling** - Rewards always feel appropriate
+4. **Reduced Grind** - Quests guide you to what you're already doing
+5. **Replayability** - Different zones/skills = different quests
+
+#### 📖 Full Documentation
+
+- **Detailed Guide**: [docs/features/quests/DYNAMIC_QUESTS.md](../features/quests/DYNAMIC_QUESTS.md) (600+ lines)
+  - Complete API reference
+  - Template placeholder guide
+  - Generation algorithm walkthrough
+  - Troubleshooting guide
+  - Migration instructions
+- **Code**: `lib/dynamic-quests.ts` (450+ lines)
+- **Migration**: `supabase/migrations/20241006000000_add_dynamic_quests.sql`
+- **Tests**: `test/unit/dynamic-quests.test.ts` (21 tests)
+
+#### 🔮 Future Enhancements
+
+Planned features for future versions:
+- **Quest Chains** - Dynamic quests that unlock follow-ups
+- **Seasonal Quests** - Holiday/event-specific templates
+- **Daily/Weekly Rotation** - Guaranteed fresh quests
+- **Party Quests** - Group-based dynamic objectives
+- **Multi-Objective Quests** - "Gather 20 logs AND craft 5 arrows"
+- **Time-Limited Quests** - "Complete within 1 hour"
+- **Conditional Rewards** - Bonus rewards for speed/perfection
+
+---
+
 ### 9.13 Related Systems
 
+**Static Quest Integration:**
 - 🔗 **Combat System** - Kill quests track enemy defeats in `endCombat()`
 - 🔗 **Gathering System** - Gather quests track materials in `completeGathering()`
 - 🔗 **Crafting System** - Craft quests track items in `craftItem()`
@@ -4454,10 +4961,25 @@ async function endCombat(characterId: string, victory: boolean) {
 - 🔗 **Notification System** - Quest progress/completion notifications
 - 🔗 **Boss System** - Boss quests linked to boss enemies
 
+**Dynamic Quest Integration:** ✨
+- 🔗 **World Zones** - Generates quests for recently discovered zones
+- 🔗 **Equipment System** - Creates quests based on equipped weapons/armor
+- 🔗 **Skills System** - Generates gathering/crafting quests matching skill levels
+- 🔗 **Merchant System** - Creates trade network quests based on merchant interactions
+- 🔗 **Boss System** - Generates boss challenge quests for appropriate levels
+- 🔗 **Feedback Loops** - Uses player context (zones, skills, items) for generation
+
 📖 **Full Documentation**:
-- Code: `lib/quests.ts` (598 lines), `components/Quests.tsx` (545 lines)
-- Database: 3 tables (quest_definitions, quests, quest_completions) with 45 quest definitions
-- Components: `Quests.tsx` (main UI), `QuestCompletionModal.tsx` (rewards)
+- **Static Quests**:
+  - Code: `lib/quests.ts` (598 lines), `components/Quests.tsx` (550+ lines)
+  - Database: 3 tables (quest_definitions, quests, quest_completions) with 45 static quest definitions
+  - Components: `Quests.tsx` (main UI), `QuestCompletionModal.tsx` (rewards)
+- **Dynamic Quests**: ✨
+  - Code: `lib/dynamic-quests.ts` (450+ lines)
+  - Database: 2 new tables (quest_templates, dynamic_quest_history), 3 SQL functions
+  - Templates: 10 default templates across 6 categories
+  - Tests: `test/unit/dynamic-quests.test.ts` (21 passing tests)
+  - Documentation: [docs/features/quests/DYNAMIC_QUESTS.md](../features/quests/DYNAMIC_QUESTS.md) (600+ lines)
 
 ---
 

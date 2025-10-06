@@ -21,10 +21,11 @@ export default function TravelPanel({ onTravelComplete }: TravelPanelProps) {
   useEffect(() => {
     if (character) {
       loadTravel()
-      const interval = setInterval(updateProgress, 1000)
+      const interval = setInterval(updateProgress, 2000) // Increased to 2s to reduce load
       return () => clearInterval(interval)
     }
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadTravel() {
     if (!character) return

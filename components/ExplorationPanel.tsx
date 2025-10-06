@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
+import { useZonesStore } from '@/lib/stores/zonesStore'
 import type { ActiveExploration, WorldZone, ZoneLandmark, ExplorationReward, Item, ExplorationEvent } from '@/lib/supabase'
 import { getActiveExploration, processExploration, stopExploration } from '@/lib/exploration'
 import { getInventory } from '@/lib/inventory'
@@ -26,6 +27,7 @@ interface SessionItem {
 
 export default function ExplorationPanel({ onExplorationComplete }: ExplorationPanelProps) {
   const { character } = useGameStore()
+  const { getZoneById, fetchAllZones } = useZonesStore()
   const [exploration, setExploration] = useState<ActiveExploration | null>(null)
   const [zone, setZone] = useState<WorldZone | null>(null)
   const [progress, setProgress] = useState(0)
@@ -46,15 +48,18 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
 
   useEffect(() => {
     if (character) {
+      // Ensure zones are loaded
+      fetchAllZones()
       loadExploration()
     }
-  }, [character])
+  }, [character, fetchAllZones])
 
   useEffect(() => {
     if (!character?.id || !exploration?.id) return
 
-    const interval = setInterval(updateProgress, 1000)
+    const interval = setInterval(updateProgress, 2000) // Increased to 2s to reduce load
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character?.id, exploration?.id])
 
   async function loadExploration() {
@@ -64,24 +69,13 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
     if (data) {
       setExploration(data)
       setProgress(data.exploration_progress)
-      await loadZone(data.zone_id)
+      // Get zone from cache (no API call)
+      const cachedZone = getZoneById(data.zone_id)
+      if (cachedZone) setZone(cachedZone)
       // Initialize exploration skills if needed
       await initializeExplorationSkills(character.id)
     }
     setLoading(false)
-  }
-
-  async function loadZone(zoneId: string) {
-    const { createClient } = await import('@/utils/supabase/client')
-    const supabase = createClient()
-
-    const { data } = await supabase
-      .from('world_zones')
-      .select('*')
-      .eq('id', zoneId)
-      .single()
-
-    if (data) setZone(data)
   }
 
   async function updateProgress() {

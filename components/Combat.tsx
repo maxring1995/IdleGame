@@ -41,12 +41,13 @@ export default function Combat() {
     }
   }, [character, isInitialized])
 
-  // Separate effect for reloading potions and abilities when character changes
+  // Separate effect for reloading potions and abilities when character ID changes (not on every stat update)
   useEffect(() => {
     if (character) {
       loadHealthPotions()
       loadAbilities()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character?.id])
 
   useEffect(() => {

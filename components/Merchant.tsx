@@ -51,7 +51,8 @@ export default function Merchant() {
     if (character) {
       loadData()
     }
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadData() {
     if (!character) return

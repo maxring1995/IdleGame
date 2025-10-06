@@ -94,6 +94,93 @@ export interface Quest {
   completed_at?: string
 }
 
+// Dynamic Quest System Types
+export interface QuestTemplate {
+  id: string
+  category: 'zone_exploration' | 'combat_item' | 'skill_gathering' | 'merchant_trade' | 'boss_challenge' | 'crafting_mastery'
+  title_template: string
+  description_template?: string
+  objective_template: string
+  min_character_level: number
+  max_character_level: number
+  base_xp_reward: number
+  base_gold_reward: number
+  base_item_rewards: Record<string, number>
+  difficulty_multiplier: number
+  xp_per_level: number
+  gold_per_level: number
+  required_conditions: Record<string, any>
+  weight: number
+  is_repeatable: boolean
+  reset_interval?: 'daily' | 'weekly' | 'monthly' | null
+  icon: string
+  created_at: string
+}
+
+export interface QuestDefinition {
+  id: string
+  title: string
+  description?: string
+  level_requirement: number
+  objective: string
+  xp_reward: number
+  gold_reward: number
+  item_rewards?: Record<string, number>
+  icon?: string
+  created_at?: string
+  prerequisite_quest_id?: string
+  quest_type?: 'standard' | 'daily' | 'weekly' | 'repeatable' | 'chain' | 'boss' | 'skill'
+  repeatable?: boolean
+  reset_interval?: 'daily' | 'weekly' | 'monthly' | null
+  required_skill_type?: string
+  required_skill_level?: number
+  is_boss_quest?: boolean
+  boss_enemy_id?: string
+  objectives?: QuestObjective[]
+  completion_count?: number
+  // Dynamic quest fields
+  is_dynamic?: boolean
+  template_id?: string
+  context_snapshot?: Record<string, any>
+  generated_at?: string
+}
+
+export interface QuestObjective {
+  type: 'kill' | 'gather' | 'craft' | 'explore' | 'level' | 'gold' | 'skill'
+  description: string
+  goal: number
+  current?: number
+  targetId?: string
+}
+
+export interface DynamicQuestHistory {
+  id: string
+  character_id: string
+  template_id: string
+  quest_definition_id?: string
+  context_snapshot: Record<string, any>
+  generated_at: string
+  completed_at?: string
+}
+
+export interface PlayerContext {
+  character_id: string
+  level: number
+  class_id?: string
+  race_id?: string
+  skills: Record<string, number>
+  recent_zones: string[]
+  equipped_items: Record<string, {
+    item_id: string
+    name: string
+    rarity: string
+  }>
+  merchant_visits: number
+  total_xp: number
+  gold: number
+  generated_at: string
+}
+
 export interface Achievement {
   id: string
   character_id: string

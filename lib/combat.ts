@@ -4,6 +4,7 @@ import { addExperience, addGold, deleteCharacter } from './character'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
 import { addSkillExperience } from './skills'
+import { applyZoneCombatModifiers } from './zone-modifiers'
 
 export interface ClassAbility {
   id: string
@@ -202,6 +203,16 @@ export async function useAbilityInCombat(
 
     if (!character || !enemy) throw new Error('Character or enemy not found')
 
+    // Apply zone modifiers to character stats
+    const { data: zoneModifiers } = await applyZoneCombatModifiers(
+      characterId,
+      character.attack,
+      character.defense
+    )
+
+    const modifiedAttack = zoneModifiers?.modified_damage || character.attack
+    const modifiedDefense = zoneModifiers?.modified_defense || character.defense
+
     // Check mana cost
     if (character.mana < ability.resource_cost) {
       throw new Error('Not enough mana')
@@ -267,8 +278,8 @@ export async function useAbilityInCombat(
         message: `${enemy.name} has been defeated!`
       })
     } else {
-      // Enemy counterattacks
-      const enemyDamage = calculateDamage(enemy.attack, character.defense, enemy.level)
+      // Enemy counterattacks (player uses zone-modified defense)
+      const enemyDamage = calculateDamage(enemy.attack, modifiedDefense, enemy.level)
       playerHealth -= enemyDamage
 
       combatLog.push({
@@ -427,14 +438,24 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
 
     if (!character || !enemy) throw new Error('Character or enemy not found')
 
+    // Apply zone modifiers to character stats
+    const { data: zoneModifiers } = await applyZoneCombatModifiers(
+      characterId,
+      character.attack,
+      character.defense
+    )
+
+    const modifiedAttack = zoneModifiers?.modified_damage || character.attack
+    const modifiedDefense = zoneModifiers?.modified_defense || character.defense
+
     let combatLog: CombatAction[] = combat.combat_log || []
     let playerHealth = combat.player_current_health
     let enemyHealth = combat.enemy_current_health
     let isOver = false
     let victory = false
 
-    // Player attacks first
-    const playerDamage = calculateDamage(character.attack, enemy.defense, character.level)
+    // Player attacks first (using zone-modified attack)
+    const playerDamage = calculateDamage(modifiedAttack, enemy.defense, character.level)
     enemyHealth -= playerDamage
 
     // Determine action message based on combat style
@@ -483,8 +504,8 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
         message: `${enemy.name} has been defeated!`
       })
     } else {
-      // Enemy counterattacks
-      const enemyDamage = calculateDamage(enemy.attack, character.defense, enemy.level)
+      // Enemy counterattacks (player uses zone-modified defense)
+      const enemyDamage = calculateDamage(enemy.attack, modifiedDefense, enemy.level)
       playerHealth -= enemyDamage
 
       combatLog.push({

@@ -41,7 +41,8 @@ export default function Inventory() {
     if (character) {
       loadInventory()
     }
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadInventory() {
     if (!character) return

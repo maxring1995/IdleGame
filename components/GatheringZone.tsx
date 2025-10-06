@@ -59,13 +59,14 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
   const [hotspots, setHotspots] = useState<Hotspot[]>([])
   const [hotspotTimers, setHotspotTimers] = useState<Map<string, any>>(new Map())
 
-  // Load nodes on mount and every 10 seconds for respawn checks
+  // Load nodes on mount and every 30 seconds for respawn checks (reduced from 10s)
   useEffect(() => {
     if (worldZone) {
       loadNodes()
-      const interval = setInterval(loadNodes, 10000)
+      const interval = setInterval(loadNodes, 30000)
       return () => clearInterval(interval)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worldZone])
 
   // Check for active encounters
@@ -114,7 +115,7 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
         hotspotTimers.delete(hotspot.id)
         loadNodes() // Reload to update hotspot status
       }
-    }, 1000)
+    }, 5000) // Increased to 5 seconds to reduce load
 
     hotspotTimers.set(hotspot.id, timer)
   }

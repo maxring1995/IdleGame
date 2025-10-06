@@ -46,6 +46,7 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRarity, setFilterRarity] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'rarity' | 'level' | 'attack' | 'defense'>('rarity')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [stats, setStats] = useState({
     attack: 0,
     defense: 0,
@@ -65,8 +66,10 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
       setCompareItem(null)
       setSearchQuery('')
       setFilterRarity('all')
+      setErrorMessage(null)
     }
-  }, [character, isOpen])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id, isOpen])
 
   async function loadInventory() {
     if (!character || isLoading) return
@@ -123,10 +126,17 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
   async function handleEquipToggle(item: InventoryItemWithDetails) {
     if (!character) return
 
+    setErrorMessage(null)
+
     if (item.equipped) {
       await unequipItem(item.id, character.id)
     } else {
-      await equipItem(character.id, item.id)
+      const { error } = await equipItem(character.id, item.id)
+      if (error) {
+        setErrorMessage((error as Error).message || 'Failed to equip item')
+        setTimeout(() => setErrorMessage(null), 5000)
+        return
+      }
     }
 
     await loadInventory()
@@ -263,6 +273,16 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
               </div>
             </div>
           </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg animate-pulse">
+              <div className="flex items-center gap-2 text-red-400">
+                <span className="text-xl">⚠️</span>
+                <span className="text-sm font-medium">{errorMessage}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}

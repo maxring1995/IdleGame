@@ -45,7 +45,8 @@ export default function DiscoveriesPanel() {
     if (character) {
       loadDiscoveries()
     }
-  }, [character])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   async function loadDiscoveries() {
     if (!character) return

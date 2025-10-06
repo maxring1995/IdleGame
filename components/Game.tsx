@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useGameStore } from '@/lib/store'
 import { signOut } from '@/app/actions'
 import Inventory from './Inventory'
@@ -17,6 +17,7 @@ import GatheringContracts from './GatheringContracts'
 import DiscoveriesPanel from './DiscoveriesPanel'
 import Character3DViewer from './Character3DViewer'
 import SettingsModal from './SettingsModal'
+import ZoneModifiersDisplay from './ZoneModifiersDisplay'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character, CharacterSkill } from '@/lib/supabase'
 import { getActiveBuffs, getBuffTimeRemaining, formatTimeRemaining, type ActiveBuff } from '@/lib/consumables'
@@ -87,7 +88,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
       setProfile(initialProfile)
       setCharacter(initialCharacter)
     }
-  }, [initialUser, initialProfile, initialCharacter, user, setUser, setProfile, setCharacter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUser, initialProfile, initialCharacter, user])
 
   // Load character skills once on mount
   useEffect(() => {
@@ -139,6 +141,12 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
   }, [character?.id])
 
   // Level-scaled idle generation with AFK penalty
+  const lastCharacterRef = useRef(character)
+
+  useEffect(() => {
+    lastCharacterRef.current = character
+  }, [character])
+
   useEffect(() => {
     if (!character?.id) return
 
@@ -146,11 +154,14 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
     const interval = setInterval(async () => {
       try {
+        const currentChar = lastCharacterRef.current
+        if (!currentChar) return
+
         // Get current character data for AFK calculation
         const { data: char } = await supabase
           .from('characters')
           .select('last_active, level')
-          .eq('id', character.id)
+          .eq('id', currentChar.id)
           .single()
 
         if (!char) return
@@ -168,27 +179,27 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
         // Level 1: 10 XP, 20 gold per 5 seconds
         // Level 50: 500 XP, 1000 gold per 5 seconds
         // Level 99: 990 XP, 1980 gold per 5 seconds
-        const idleXP = Math.floor(character.level * 10 * penalty)
-        const idleGold = Math.floor(character.level * 20 * penalty)
+        const idleXP = Math.floor(currentChar.level * 10 * penalty)
+        const idleGold = Math.floor(currentChar.level * 20 * penalty)
 
-        await addExperience(character.id, idleXP)
-        await addGold(character.id, idleGold)
+        await addExperience(currentChar.id, idleXP)
+        await addGold(currentChar.id, idleGold)
 
         // Update character in store - silently without triggering full re-render
         const { data: updatedChar } = await supabase
           .from('characters')
           .select('*')
-          .eq('id', character.id)
+          .eq('id', currentChar.id)
           .single()
 
         if (updatedChar) {
           // Only update if meaningful changes occurred (prevent re-render from timestamp changes)
           const hasSignificantChange =
-            updatedChar.experience !== character.experience ||
-            updatedChar.gold !== character.gold ||
-            updatedChar.level !== character.level ||
-            updatedChar.health !== character.health ||
-            updatedChar.mana !== character.mana
+            updatedChar.experience !== currentChar.experience ||
+            updatedChar.gold !== currentChar.gold ||
+            updatedChar.level !== currentChar.level ||
+            updatedChar.health !== currentChar.health ||
+            updatedChar.mana !== currentChar.mana
 
           if (hasSignificantChange) {
             setCharacter(updatedChar)
@@ -200,7 +211,8 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
     }, 5000) // Every 5 seconds
 
     return () => clearInterval(interval)
-  }, [character?.id, character?.level, setCharacter])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character?.id])
 
   // Load custom quick actions from localStorage
   useEffect(() => {
@@ -582,6 +594,11 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'magic') || null} icon="✨" label="Magic" />
                 <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'ranged') || null} icon="🏹" label="Ranged" />
               </div>
+            </div>
+
+            {/* Zone Modifiers */}
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.175s' }}>
+              <ZoneModifiersDisplay characterId={character.id} compact={true} />
             </div>
 
             {/* Customizable Quick Actions */}
