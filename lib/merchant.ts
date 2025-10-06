@@ -8,6 +8,7 @@ import type {
   Item,
   InventoryItem
 } from './supabase'
+import { getMerchantDiscount, calculateMerchantPrice } from './bonuses'
 
 /**
  * Get merchant inventory items available for purchase
@@ -131,8 +132,13 @@ export async function buyItem(
     }
   }
 
-  // Calculate total cost
-  const totalCost = merchantItem.buy_price * quantity
+  // Get merchant discount from permanent bonuses (quest rewards, etc.)
+  const { data: discount } = await getMerchantDiscount(characterId)
+  const merchantDiscount = discount || 0
+
+  // Calculate total cost with discount applied
+  const basePrice = merchantItem.buy_price * quantity
+  const totalCost = calculateMerchantPrice(basePrice, merchantDiscount)
 
   // Check if player has enough gold
   if (character.gold < totalCost) {
@@ -218,7 +224,11 @@ export async function buyItem(
   return {
     success: true,
     transaction: transaction || undefined,
-    newGold: character.gold - totalCost
+    newGold: character.gold - totalCost,
+    discountApplied: merchantDiscount,
+    originalPrice: basePrice,
+    finalPrice: totalCost,
+    goldSaved: basePrice - totalCost
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getGatheringSpeedBonus, calculateGatheringTime } from '@/lib/bonuses'
 
 export async function getMaterialsForSkill(characterId: string, skillType: string) {
   const supabase = await createClient()
@@ -99,7 +100,27 @@ export async function startGatheringSimple(
     return { success: false, error: error.message }
   }
 
-  const totalTime = material.gathering_time_ms * quantity
+  // Get skill level for bonus calculation
+  const { data: skill } = await supabase
+    .from('character_skills')
+    .select('level')
+    .eq('character_id', characterId)
+    .eq('skill_type', material.required_skill_type)
+    .maybeSingle()
+
+  const skillLevel = skill?.level || 1
+
+  // Calculate speed bonus from combat skills
+  const { data: speedBonus } = await getGatheringSpeedBonus(characterId, material.required_skill_type)
+
+  // Apply bonuses to gathering time
+  const gatheringTimePerUnit = calculateGatheringTime(
+    material.gathering_time_ms,
+    skillLevel,
+    speedBonus || 0
+  )
+
+  const totalTime = gatheringTimePerUnit * quantity
 
   revalidatePath('/game')
   return {
@@ -108,7 +129,9 @@ export async function startGatheringSimple(
     session: {
       totalTime,
       material: material.name,
-      quantity
+      quantity,
+      speedBonus: speedBonus || 0,
+      gatheringTimePerUnit
     }
   }
 }
@@ -132,10 +155,27 @@ export async function checkGatheringProgress(characterId: string) {
 
   if (!material || matError) return { data: null, error: 'Material not found' }
 
+  // Get skill level and speed bonus for accurate time calculations
+  const { data: skill } = await supabase
+    .from('character_skills')
+    .select('level')
+    .eq('character_id', characterId)
+    .eq('skill_type', session.skill_type)
+    .maybeSingle()
+
+  const skillLevel = skill?.level || 1
+  const { data: speedBonus } = await getGatheringSpeedBonus(characterId, session.skill_type)
+
+  // Calculate actual gathering time with bonuses applied
+  const gatheringTime = calculateGatheringTime(
+    material.gathering_time_ms,
+    skillLevel,
+    speedBonus || 0
+  )
+
   const now = new Date()
   const lastGathered = new Date(session.last_gathered_at)
   const timeSinceLastGather = now.getTime() - lastGathered.getTime()
-  const gatheringTime = material.gathering_time_ms
 
   const unitsGatherable = Math.floor(timeSinceLastGather / gatheringTime)
   const newQuantityGathered = Math.min(
@@ -164,7 +204,9 @@ export async function checkGatheringProgress(characterId: string) {
       quantityGoal: session.quantity_goal,
       progress,
       timeRemaining,
-      isComplete: newQuantityGathered >= session.quantity_goal
+      isComplete: newQuantityGathered >= session.quantity_goal,
+      speedBonus: speedBonus || 0,
+      gatheringTime: gatheringTime
     },
     error: null
   }

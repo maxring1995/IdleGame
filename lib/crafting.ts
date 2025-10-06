@@ -2,12 +2,14 @@
  * Crafting System
  *
  * Handles crafting recipes, ingredient checking, and item creation.
+ * Now includes cross-system bonus integration from exploration landmarks!
  */
 
 import { createClient } from '@/utils/supabase/client'
 import { CraftingRecipe, CraftingSkillType } from './supabase'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
+import { getCraftingBonuses, applyCraftingBonuses } from './bonuses'
 
 /**
  * Stub function for skill experience (gathering system removed)
@@ -212,6 +214,10 @@ export async function craftItem(characterId: string, recipeId: string) {
     }
   }
 
+  // Get crafting bonuses from discovered landmarks
+  const { data: bonuses } = await getCraftingBonuses(characterId)
+  const craftingBonuses = bonuses || { quality_bonus: 0, speed_bonus: 0, cost_reduction: 0 }
+
   // Check ingredients
   const { hasIngredients, missing, error: checkError } = await checkIngredients(characterId, recipeId)
 
@@ -223,10 +229,20 @@ export async function craftItem(characterId: string, recipeId: string) {
     }
   }
 
-  // Consume ingredients
+  // Apply cost reduction bonus to ingredients
+  const adjustedIngredients: Record<string, number> = {}
+  const originalIngredients = recipe.ingredients as Record<string, number>
+
+  for (const [materialId, quantity] of Object.entries(originalIngredients)) {
+    // Apply cost reduction (minimum 1 per ingredient)
+    const reducedCost = Math.max(1, Math.floor(quantity * (1 - craftingBonuses.cost_reduction)))
+    adjustedIngredients[materialId] = reducedCost
+  }
+
+  // Consume ingredients (with cost reduction applied!)
   const { error: consumeError } = await consumeIngredients(
     characterId,
-    recipe.ingredients as Record<string, number>
+    adjustedIngredients
   )
 
   if (consumeError) {
@@ -257,7 +273,11 @@ export async function craftItem(characterId: string, recipeId: string) {
       recipe,
       experienceGained: recipe.experience_reward,
       leveledUp,
-      newLevel
+      newLevel,
+      bonusesApplied: craftingBonuses,
+      materialsSaved: Object.entries(originalIngredients).reduce((total, [materialId, origQty]) => {
+        return total + (origQty - (adjustedIngredients[materialId] || 0))
+      }, 0)
     },
     error: null
   }

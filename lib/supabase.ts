@@ -1427,3 +1427,98 @@ export interface TransmogCollection {
 export interface TransmogCollectionWithItem extends TransmogCollection {
   item: Item
 }
+
+// ========== CROSS-SYSTEM FEEDBACK LOOPS ==========
+
+// Zone Skill Requirements
+export interface ZoneSkillRequirement {
+  id: string
+  zone_id: string
+  skill_type: string
+  required_level: number
+  is_optional: boolean
+  created_at: string
+}
+
+// Skill Synergy Bonuses
+export type BonusType = 'speed' | 'yield' | 'quality' | 'critical_chance' | 'stamina'
+export type TargetCategory = 'gathering' | 'crafting' | 'combat' | 'all'
+
+export interface SkillSynergyBonus {
+  id: string
+  source_skill_type: string
+  required_level: number
+  target_skill_type: string | null
+  target_category: TargetCategory
+  bonus_type: BonusType
+  bonus_value: number
+  display_name: string
+  description: string
+  icon: string
+  created_at: string
+}
+
+// Character Permanent Bonuses
+export type PermanentBonusType = 'merchant_discount' | 'xp_bonus' | 'gold_find' | 'crafting_speed' | 'gathering_speed'
+export type BonusSourceType = 'quest' | 'achievement' | 'exploration' | 'event'
+
+export interface CharacterPermanentBonus {
+  id: string
+  character_id: string
+  bonus_type: PermanentBonusType
+  bonus_value: number
+  source_type: BonusSourceType
+  source_id: string | null
+  display_name: string
+  description: string | null
+  granted_at: string
+  expires_at: string | null
+  is_active: boolean
+}
+
+// Bonus Calculation Results
+export interface CraftingBonuses {
+  quality_bonus: number
+  speed_bonus: number
+  cost_reduction: number
+}
+
+export interface SynergyBonusDetails {
+  source_skill: string
+  target_skill: string | null
+  target_category: TargetCategory
+  bonus_type: BonusType
+  bonus_value: number
+  display_name: string
+  description: string
+  icon: string
+}
+
+export interface AllCharacterBonuses {
+  landmark_bonuses: {
+    attack: number
+    defense: number
+    health: number
+    mana: number
+    speed_multiplier: number
+    discovery_bonus: number
+    gold_find_bonus: number
+    xp_bonus: number
+    crafting_quality: number
+    crafting_speed: number
+    crafting_cost_reduction: number
+  }
+  crafting_bonuses: CraftingBonuses
+  synergy_bonuses: SynergyBonusDetails[]
+  permanent_bonuses: CharacterPermanentBonus[]
+  merchant_discount: number
+}
+
+export interface ZoneSkillCheck {
+  meets_requirements: boolean
+  missing_requirements: Array<{
+    skill_type: string
+    required_level: number
+    current_level: number
+  }>
+}

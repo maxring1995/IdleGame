@@ -4,6 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📚 Documentation
 
+### ⚠️ IMPORTANT: Documentation Maintenance
+
+**🔄 ALWAYS UPDATE DOCUMENTATION when making changes to the game:**
+
+When implementing new features, modifying systems, or adding functionality:
+
+1. **Update [docs/GAME_WIKI.md](docs/GAME_WIKI.md)** - The primary comprehensive documentation
+   - Add new systems to the appropriate section
+   - Update existing system documentation with changes
+   - Document all database schema changes (tables, columns, relationships)
+   - Include code examples for new functionality
+   - Update system interconnection diagrams if relationships change
+
+2. **Update Feature-Specific Documentation** in `docs/features/[feature-name]/`
+   - Create/update README.md for the feature
+   - Document implementation details
+   - Include testing guidelines
+   - Add troubleshooting tips
+
+3. **Update This File (CLAUDE.md)**
+   - Add new features to the "Feature Documentation" section
+   - Update architecture descriptions if patterns change
+   - Add new development patterns as they emerge
+   - Document new database tables in "Database Architecture"
+
+4. **Document System Interconnections**
+   - Explain how new features connect to existing systems
+   - Update dependency diagrams
+   - Document data flow between systems
+   - Note any circular dependencies
+
+5. **Keep Examples Current**
+   - Update code examples to match current implementation
+   - Remove outdated patterns
+   - Add examples for new features
+
+**Why This Matters:** Documentation is the source of truth for understanding how all game systems connect. Without up-to-date documentation, it becomes impossible to understand the full scope of changes and their impact on other systems.
+
+---
+
 ### Primary Documentation
 
 🎯 **[docs/GAME_WIKI.md](docs/GAME_WIKI.md)** - **Complete Game Systems Documentation** (8,500+ lines)
@@ -21,9 +61,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **[docs/guides/ICONS.md](docs/guides/ICONS.md)** - Icon usage and visual reference
 - **[docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
 
-**Feature Documentation:**
-- **[docs/features/](docs/features/)** - Detailed feature-specific implementation guides
-  - Authentication, Character, Inventory, Combat, Skills, Gathering, Crafting, Quests, Adventure, Notifications
+**Feature Documentation (Updated & Current):**
+- **[Character System](docs/features/character/README.md)** - Character stats, class system, weapon proficiencies
+  - [Character Stats System](docs/features/character/CHARACTER_STATS_SYSTEM.md)
+  - [Class System](docs/features/character/CLASS_SYSTEM.md)
+- **[Skills System](docs/features/skills/README.md)** - Complete 20-skill system
+  - [Complete Skill System](docs/features/skills/COMPLETE_SKILL_SYSTEM.md)
+- **[Combat System](docs/features/combat/README.md)** - Turn-based combat, auto-attack, boss encounters
+  - [Phase 3 Combat](docs/features/combat/PHASE3_COMBAT.md)
+- **[Gathering System](docs/features/gathering/README.md)** - 6 gathering skills, 50+ materials
+  - [Phase 4 Gathering](docs/features/gathering/PHASE4_GATHERING.md)
+- **[Crafting System](docs/features/crafting/README.md)** - 60+ recipes, async crafting
+  - [Phase 6 Crafting](docs/features/crafting/PHASE6_CRAFTING.md)
+- **[Quest System](docs/features/quests/README.md)** - Quest tracking, progress, rewards
+- **[Adventure System](docs/features/adventure/README.md)** - Travel, exploration, zone discovery
+  - [Adventure Rewards](docs/features/adventure/ADVENTURE_REWARDS_SYSTEM.md)
+- **[Exploration 2.0 (Advanced)](docs/features/exploration/EXPLORATION_2.0.md)** - Advanced exploration features
+  - [Exploration Phase 2 & 3](docs/features/exploration/EXPLORATION_PHASE_2_3.md)
+  - Environmental hazards, companions, challenges, secret areas, journal system
+- **[Authentication](docs/features/authentication/README.md)** - Username-based auth system
+- **[Notifications](docs/features/notifications/README.md)** - Toast notifications, notification center
 
 ## Project Overview
 
@@ -187,6 +244,9 @@ export default async function TestDirectPage() {
 - `gathering_nodes` - Resource spawn locations across world zones
 - `active_gathering` - Ongoing gathering sessions
 - `crafting_recipes` - Crafting system recipes
+- `zone_skill_requirements` - Skill requirements for zone access
+- `skill_synergy_bonuses` - Combat skills unlocking gathering/crafting bonuses
+- `character_permanent_bonuses` - Quest rewards, merchant discounts, etc.
 
 **Security:**
 - All tables use Row Level Security (RLS)
@@ -327,7 +387,7 @@ supabase db reset
 
 ### Implementing New Features
 
-**⚠️ IMPORTANT: All new features must include comprehensive testing**
+**⚠️ IMPORTANT: All new features must include comprehensive testing AND documentation**
 
 1. **Database First**: Add tables/columns in new migration file
 2. **Types**: Update interfaces in `lib/supabase.ts`
@@ -338,6 +398,12 @@ supabase db reset
    - **Unit Tests**: Test business logic functions in `test/unit/`
    - **Frontend Tests**: Test component rendering in `test/frontend/`
    - **E2E Tests**: Test complete user flows with Playwright in `test/e2e/`
+7. **Documentation** (REQUIRED):
+   - **Update [docs/GAME_WIKI.md](docs/GAME_WIKI.md)**: Add/update system documentation
+   - **Update Feature Docs**: Create/update `docs/features/[feature-name]/README.md`
+   - **Update [CLAUDE.md](CLAUDE.md)**: Add to Feature Documentation section
+   - **Document Interconnections**: Explain how it connects to existing systems
+   - **Update Database Architecture**: Document new tables/relationships
 
 ### Feature Development Workflow (MANDATORY)
 
@@ -380,7 +446,7 @@ When implementing any new feature, follow this structured approach:
    - ✅ No TypeScript errors
    - ✅ No console errors in browser
    - ✅ Code reviewed (self-review)
-   - ✅ Documentation updated (if needed)
+   - ✅ **Documentation updated (REQUIRED, not optional)**
 
 **Example To-Do Structure:**
 ```
@@ -390,6 +456,10 @@ When implementing any new feature, follow this structured approach:
 4. [pending] Write frontend tests for [feature] UI
 5. [pending] Write E2E tests for [feature] workflow
 6. [pending] Test [feature] end-to-end
+7. [pending] Update GAME_WIKI.md with [feature] documentation
+8. [pending] Update feature-specific documentation in docs/features/
+9. [pending] Update CLAUDE.md with new feature links
+10. [pending] Document system interconnections for [feature]
 ```
 
 ### Real-time Updates
@@ -1069,3 +1139,184 @@ When implementing new game features:
 - [ ] Follows spacing system (gap-3, gap-4, gap-6)
 - [ ] Has proper text hierarchy (sizes, weights)
 - [ ] Icons/emojis match existing patterns
+- [ ] **Documentation updated in GAME_WIKI.md, feature docs, and CLAUDE.md**
+- [ ] **System interconnections documented**
+
+---
+
+## 🔄 Cross-System Feedback Loops (NEW!)
+
+**Version**: 1.0.0 | **Status**: ✅ Backend Complete, UI In Progress
+
+### Overview
+
+The Feedback Loops system creates interconnected progression where advancing in one system enhances others:
+
+```
+Combat → XP/Skills → Gathering Speed ↗
+Exploration → Landmarks → Crafting Bonuses ↗
+Quests → Permanent Bonuses → Merchant Discounts ↗
+Skills → Zone Unlocks → New Content ↗
+```
+
+### Key Features Implemented
+
+**1. Skill Requirements for Zone Access** ✅
+- Zones can require specific skill levels (e.g., "Need Mining 50 for Mountain Zone")
+- Function: `checkZoneSkillRequirements(characterId, zoneId)`
+- Table: `zone_skill_requirements`
+
+**2. Combat Skills → Gathering/Crafting Bonuses** ✅  
+- 24 synergies: Attack/Defense/Strength/Agility/Intelligence unlock gathering speed
+- Function: `getGatheringSpeedBonus(characterId, skillType)`
+- Table: `skill_synergy_bonuses`
+- Example: Attack 99 = +25% gathering speed!
+
+**3. Exploration → Crafting Bonuses** ✅
+- Landmarks grant crafting quality, speed, and cost reduction
+- Function: `getCraftingBonuses(characterId)`
+- Extended: `zone_landmarks` and `character_landmark_bonuses` tables
+
+**4. Quest Rewards → Merchant Discounts** ✅
+- Quests can grant permanent bonuses including merchant discounts
+- Function: `grantPermanentBonus(...)` and `getMerchantDiscount(characterId)`
+- Table: `character_permanent_bonuses`
+
+**5. Unified Bonus System** ✅
+- Single call to get ALL bonuses: `getAllCharacterBonuses(characterId)`
+- Returns JSONB with landmark, crafting, synergy, and permanent bonuses
+
+### Integration Points
+
+**Gathering System** (`app/actions/gathering-simple.ts`):
+- ✅ Speed bonuses applied to `gathering_time_ms`
+- ✅ Returns bonus info for UI display
+
+**Crafting System** (`lib/crafting.ts`):
+- ✅ Cost reduction applied to material consumption
+- ✅ Returns materials saved and bonuses applied
+
+**Merchant System** (`lib/merchant.ts`):
+- ✅ Discounts applied to purchase prices
+- ✅ Returns gold saved and discount percentage
+
+**Quest System** (todo):
+- ⏳ Call `grantPermanentBonus()` on quest completion
+- ⏳ Add merchant_discount to quest rewards
+
+**Zone System** (todo):
+- ⏳ Check `checkZoneSkillRequirements()` before zone entry
+- ⏳ Display skill requirements in UI
+
+### Library Functions
+
+**Core Library**: `/lib/bonuses.ts` (370 lines)
+
+```typescript
+// Zone access
+await checkZoneSkillRequirements(characterId, zoneId)
+await getZoneSkillRequirements(zoneId)
+
+// Gathering bonuses
+const { data: speedBonus } = await getGatheringSpeedBonus(characterId, 'woodcutting')
+const finalTime = calculateGatheringTime(baseTime, skillLevel, speedBonus)
+
+// Crafting bonuses  
+const { data: bonuses } = await getCraftingBonuses(characterId)
+const { time, cost, quality } = applyCraftingBonuses(baseTime, baseCost, bonuses)
+
+// Merchant discounts
+const { data: discount } = await getMerchantDiscount(characterId)
+const finalPrice = calculateMerchantPrice(basePrice, discount)
+
+// Grant rewards
+await grantPermanentBonus(characterId, 'merchant_discount', 0.05, 'quest', questId, 'Merchant Friend')
+
+// Get everything
+const { data: allBonuses } = await getAllCharacterBonuses(characterId)
+```
+
+### UI Components
+
+**BonusDisplay Component**: `/components/BonusDisplay.tsx`
+- Shows all active synergies, landmark bonuses, and permanent rewards
+- Compact and expanded modes
+- Real-time updates
+
+**Usage**:
+```tsx
+<BonusDisplay characterId={character.id} compact={false} />
+```
+
+### Documentation
+
+📖 **Complete Guide**: `/docs/features/feedback-loops/README.md` (450+ lines)
+
+Includes:
+- Feature overview and examples
+- Database schema (3 new tables, 8 SQL functions)
+- API reference with code examples
+- Developer guide
+- Testing checklist
+- Future enhancements
+
+### Next Steps (UI Integration)
+
+1. **Add BonusDisplay to Game.tsx** - Show active bonuses in sidebar
+2. **Update zone UI** - Display skill requirements (red/green indicators)
+3. **Update crafting UI** - Show "Saved X materials from bonuses!"
+4. **Update gathering UI** - Show speed bonus breakdown
+5. **Quest rewards** - Integrate `grantPermanentBonus()` on completion
+6. **Merchant UI** - Display discount percentage
+
+### Example Usage
+
+**Check if player can enter zone:**
+```typescript
+const { data } = await checkZoneSkillRequirements(characterId, zoneId)
+if (!data.meets_requirements) {
+  // Show: "Need Woodcutting 30, Mining 50"
+}
+```
+
+**Show gathering speed bonus:**
+```typescript
+const { data: speedBonus } = await getGatheringSpeedBonus(characterId, 'mining')
+// "Mining 20% faster from combat bonuses!"
+```
+
+**Apply crafting cost reduction:**
+```typescript
+const { data: bonuses } = await getCraftingBonuses(characterId)
+// Recipe needs 10 iron, but only costs 7 with 30% reduction!
+```
+
+**Grant quest reward:**
+```typescript
+await grantPermanentBonus(
+  characterId, 
+  'merchant_discount', 
+  0.05,
+  'quest',
+  questId,
+  'Merchant Friend Discount'
+)
+// All purchases now 5% cheaper!
+```
+
+### Testing
+
+Run with dev server to test:
+```bash
+npm run dev
+# Server on http://localhost:3002
+```
+
+Test flow:
+1. Create character, level up Attack to 25
+2. Check gathering speed (should be +5% faster)
+3. Discover crafting landmarks
+4. Check crafting bonuses (should show quality/speed/cost bonuses)
+5. Use BonusDisplay component to see all active bonuses
+
+---

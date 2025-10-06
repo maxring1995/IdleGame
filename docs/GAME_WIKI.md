@@ -22,15 +22,19 @@
 7. [Gathering System](#7-gathering-system)
 8. [Crafting System](#8-crafting-system)
 9. [Quest System](#9-quest-system)
-10. [Economy & Merchants](#10-economy--merchants)
+10. [Exploration & Adventure System](#10-exploration--adventure-system)
+11. [Economy & Merchants](#11-economy--merchants)
 
 ### 🔧 Support Systems
-11. [Notification System](#11-notification-system)
-12. [UI/UX Design System](#12-uiux-design-system)
+12. [Notification System](#12-notification-system)
+13. [UI/UX Design System](#13-uiux-design-system)
+
+### ⚡ Cross-System Features
+14. [Cross-System Feedback Loops](#14-cross-system-feedback-loops-)
 
 ### 📊 System Interconnections
-13. [System Dependencies Map](#13-system-dependencies-map)
-14. [Data Flow Diagrams](#14-data-flow-diagrams)
+15. [System Dependencies & Interconnections](#15-system-dependencies--interconnections)
+16. [Data Flow Diagrams](#16-data-flow-diagrams)
 
 ---
 
@@ -7411,11 +7415,443 @@ When implementing new game features:
 
 ---
 
-## 14. System Dependencies & Interconnections
+## 14. Cross-System Feedback Loops ⚡
+
+**Status**: ✅ Implemented (v1.0.0)
+**Documentation**: [docs/features/feedback-loops/README.md](features/feedback-loops/README.md)
+
+### 14.1 Overview
+
+The Cross-System Feedback Loops create **interconnected progression** where advancement in one system enhances performance in others. This creates a rich web of synergies and rewards that encourage diverse gameplay.
+
+**Before Feedback Loops**:
+```
+Combat → XP/Gold → Level Up (isolated systems)
+```
+
+**With Feedback Loops**:
+```
+Combat → XP/Gold/Skill XP → Level Up → Unlock Zones →
+    New Gathering → Better Crafting → Better Equipment →
+    Easier Combat + Gathering Bonuses ⟲
+```
+
+### 14.2 Core Feedback Loop Systems
+
+#### 14.2.1 Combat Skills Unlock Gathering/Crafting Bonuses
+
+**Concept**: Progressing combat skills grants permanent passive bonuses to gathering and crafting.
+
+**Implementation**:
+- **Database**: `skill_synergy_bonuses` table with 24 pre-defined synergies
+- **Function**: `get_character_synergy_bonuses(character_id)` - Returns all active bonuses
+- **Bonus Types**: Speed, quality, yield, stamina
+
+**Key Synergies**:
+
+| Source Skill | Level | Target | Bonus Type | Value | Display Name |
+|-------------|-------|--------|------------|-------|--------------|
+| Attack | 25 | All Gathering | Speed | +5% | Warrior's Efficiency I |
+| Attack | 50 | All Gathering | Speed | +10% | Warrior's Efficiency II |
+| Attack | 75 | All Gathering | Speed | +15% | Warrior's Efficiency III |
+| Attack | 99 | All Gathering | Speed | +25% | Warrior's Mastery |
+| Strength | 30 | Woodcutting/Mining | Speed | +10% | Powerful Strikes |
+| Strength | 60 | Woodcutting/Mining | Speed | +20% | Master Miner/Logger |
+| Agility | 30 | Fishing/Hunting | Speed | +10% | Swift Hands |
+| Agility | 60 | Fishing/Hunting | Speed | +20% | Master Hunter/Fisher |
+| Intelligence | 30 | Alchemy/Magic | Quality | +10% | Arcane Insight |
+| Intelligence | 60 | Alchemy/Magic | Quality | +20% | Arcane Mastery |
+| Defense | 25/50/75 | All Gathering | Yield | +3%/5%/8% | Hardy Gatherer I/II/III |
+| Constitution | 40/80 | All Gathering | Stamina | +10%/20% | Endurance I/II |
+
+**Code Example**:
+```typescript
+import { getGatheringSpeedBonus, calculateGatheringTime } from '@/lib/bonuses'
+
+// Get speed bonus from combat skills
+const { data: speedBonus } = await getGatheringSpeedBonus(characterId, 'woodcutting')
+// Returns: 0.20 (20%) if Attack is 50 (+10%) and Strength is 60 (+10%)
+
+// Apply to gathering time
+const finalTime = calculateGatheringTime(
+  material.gathering_time_ms,
+  characterSkillLevel,
+  speedBonus || 0
+)
+// Example: 10000ms * (1 - 0.20) = 8000ms (2 seconds faster!)
+```
+
+#### 14.2.2 Exploration Landmarks Grant Crafting Bonuses
+
+**Concept**: Discovering landmarks grants permanent crafting improvements.
+
+**Implementation**:
+- **Database**: Extended `zone_landmarks` and `character_landmark_bonuses` tables
+- **New Columns**: `crafting_quality_bonus`, `crafting_speed_bonus`, `crafting_cost_reduction`
+- **Function**: `get_character_crafting_bonuses(character_id)` - Returns total bonuses
+
+**Bonuses by Landmark Type**:
+
+| Landmark Type | Quality | Speed | Cost Reduction | Example |
+|--------------|---------|-------|---------------|---------|
+| Crafting | +10% | +15% | +10% | Ancient Forge, Master Workshop |
+| Shrine | +3% | +5% | 0% | Sacred Altar, Prayer Site |
+| Ruins | +5% | 0% | +5% | Ancient Library, Forgotten Temple |
+| Lore | +8% | 0% | 0% | Sage's Retreat, Scholar's Haven |
+| Vendor | 0% | +10% | +15% | Master Merchant, Guild Outpost |
+
+**Code Example**:
+```typescript
+import { getCraftingBonuses, applyCraftingBonuses } from '@/lib/bonuses'
+
+// Get total bonuses from discovered landmarks
+const { data: bonuses } = await getCraftingBonuses(characterId)
+// Returns: {quality_bonus: 0.36, speed_bonus: 0.60, cost_reduction: 0.45}
+
+// Apply to recipe
+const { time, cost, quality } = applyCraftingBonuses(
+  recipe.crafting_time_ms,
+  recipe.material_cost,
+  bonuses
+)
+
+// Example results:
+// - Time: 10000ms → 4000ms (60% faster!)
+// - Cost: 10 materials → 5 materials (45% cheaper!)
+// - Quality: 36% better chance for higher rarity
+```
+
+**Integration**: Crafting system automatically applies cost reduction to ingredients:
+```typescript
+// From lib/crafting.ts
+const adjustedIngredients: Record<string, number> = {}
+for (const [materialId, quantity] of Object.entries(originalIngredients)) {
+  const reducedCost = Math.max(1, Math.floor(quantity * (1 - craftingBonuses.cost_reduction)))
+  adjustedIngredients[materialId] = reducedCost
+}
+// Player saves materials with every craft!
+```
+
+#### 14.2.3 Quest Completion Grants Permanent Merchant Discounts
+
+**Concept**: Completing quests grants permanent bonuses including merchant discounts.
+
+**Implementation**:
+- **Database**: `character_permanent_bonuses` table
+- **Bonus Types**: merchant_discount, xp_bonus, gold_find, crafting_quality, etc.
+- **Function**: `get_character_merchant_discount(character_id)` - Returns discount (capped at 75%)
+
+**Granting Bonuses**:
+```typescript
+import { grantPermanentBonus } from '@/lib/bonuses'
+
+// Called from quest completion handler
+await grantPermanentBonus(
+  characterId,
+  'merchant_discount',
+  0.05, // 5%
+  'quest',
+  questId,
+  "Merchant's Friend Discount",
+  "The merchant remembers your kindness"
+)
+```
+
+**Applying Discounts**:
+```typescript
+import { getMerchantDiscount, calculateMerchantPrice } from '@/lib/bonuses'
+
+// Get total discount from all quest rewards
+const { data: discount } = await getMerchantDiscount(characterId)
+// Returns: 0.15 (15%) if player completed 3 quests granting 5% each
+
+// Apply to purchase
+const basePrice = 1000
+const finalPrice = calculateMerchantPrice(basePrice, discount)
+// 1000 * (1 - 0.15) = 850 gold (150 gold saved!)
+
+// Integration in merchant system
+return {
+  success: true,
+  discountApplied: discount,
+  originalPrice: basePrice,
+  finalPrice: finalPrice,
+  goldSaved: basePrice - finalPrice
+}
+```
+
+#### 14.2.4 Skill Requirements for Zone Access
+
+**Concept**: Zones can require specific skill levels for access, not just character levels.
+
+**Implementation**:
+- **Database**: `zone_skill_requirements` table
+- **Function**: `check_zone_skill_requirements(character_id, zone_id)` - Returns access status
+
+**Example Requirements**:
+```sql
+-- Whispering Woods requires Woodcutting 30
+INSERT INTO zone_skill_requirements VALUES
+  (gen_random_uuid(), 'whispering-woods-zone-id', 'woodcutting', 30, FALSE);
+
+-- Mountain Peaks requires Mining 40
+INSERT INTO zone_skill_requirements VALUES
+  (gen_random_uuid(), 'mountain-peaks-zone-id', 'mining', 40, FALSE);
+```
+
+**Code Example**:
+```typescript
+import { checkZoneSkillRequirements } from '@/lib/bonuses'
+
+const { data } = await checkZoneSkillRequirements(characterId, zoneId)
+
+if (!data.meets_requirements) {
+  console.log('Missing requirements:', data.missing_requirements)
+  // [
+  //   {skill_type: 'woodcutting', required_level: 30, current_level: 15},
+  //   {skill_type: 'mining', required_level: 20, current_level: 10}
+  // ]
+
+  // Show UI: "You need Woodcutting 30 and Mining 20 to enter this zone"
+}
+```
+
+### 14.3 Database Schema
+
+#### New Tables
+
+**`skill_synergy_bonuses`** (24 rows)
+```sql
+CREATE TABLE skill_synergy_bonuses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_skill_type TEXT NOT NULL,
+  required_level INTEGER NOT NULL,
+  target_skill_type TEXT,           -- NULL = all in category
+  target_category TEXT,              -- 'gathering', 'crafting', 'combat'
+  bonus_type TEXT NOT NULL,          -- 'speed', 'quality', 'yield', 'stamina'
+  bonus_value DECIMAL(5,3) NOT NULL, -- 0.05 = 5%
+  display_name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(source_skill_type, required_level, target_skill_type, bonus_type)
+);
+```
+
+**`character_permanent_bonuses`**
+```sql
+CREATE TABLE character_permanent_bonuses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  bonus_type TEXT NOT NULL,          -- 'merchant_discount', 'xp_bonus', etc.
+  bonus_value DECIMAL(5,3) NOT NULL,
+  source_type TEXT NOT NULL,         -- 'quest', 'achievement', 'event'
+  source_id UUID,
+  display_name TEXT NOT NULL,
+  description TEXT,
+  granted_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,            -- NULL = permanent
+  is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+**`zone_skill_requirements`**
+```sql
+CREATE TABLE zone_skill_requirements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  zone_id UUID NOT NULL REFERENCES world_zones(id) ON DELETE CASCADE,
+  skill_type TEXT NOT NULL,
+  required_level INTEGER NOT NULL CHECK (required_level >= 1 AND required_level <= 99),
+  is_optional BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### Extended Tables
+
+**`zone_landmarks`** - Added:
+- `crafting_quality_bonus DECIMAL(3,2) DEFAULT 0`
+- `crafting_speed_bonus DECIMAL(3,2) DEFAULT 0`
+- `crafting_cost_reduction DECIMAL(3,2) DEFAULT 0`
+
+**`character_landmark_bonuses`** - Added same 3 columns
+
+### 14.4 API Functions
+
+#### Skill Synergies
+```typescript
+// Get all active synergy bonuses
+getCharacterSynergyBonuses(characterId: string): Promise<SynergyBonusDetails[]>
+
+// Get gathering speed bonus for specific skill
+getGatheringSpeedBonus(characterId: string, skill: string): Promise<number>
+
+// Get all possible synergies (reference)
+getAllSynergyBonuses(): Promise<SkillSynergyBonus[]>
+
+// Calculate final gathering time with bonuses
+calculateGatheringTime(baseTime: number, skillLevel: number, speedBonus: number): number
+```
+
+#### Crafting Bonuses
+```typescript
+// Get total crafting bonuses from landmarks
+getCraftingBonuses(characterId: string): Promise<CraftingBonuses>
+
+// Apply bonuses to recipe
+applyCraftingBonuses(
+  baseTime: number,
+  baseCost: number,
+  bonuses: CraftingBonuses
+): {time: number, cost: number, quality: number}
+```
+
+#### Permanent Bonuses
+```typescript
+// Grant bonus from quest/achievement
+grantPermanentBonus(
+  characterId: string,
+  bonusType: string,
+  bonusValue: number,
+  sourceType: string,
+  sourceId: string,
+  displayName: string,
+  description?: string,
+  expiresAt?: string
+): Promise<string>
+
+// Get merchant discount (capped at 75%)
+getMerchantDiscount(characterId: string): Promise<number>
+
+// Get all active permanent bonuses
+getPermanentBonuses(characterId: string): Promise<CharacterPermanentBonus[]>
+
+// Calculate merchant price with discount
+calculateMerchantPrice(basePrice: number, discount: number): number
+```
+
+#### Zone Requirements
+```typescript
+// Check if meets zone requirements
+checkZoneSkillRequirements(
+  characterId: string,
+  zoneId: string
+): Promise<ZoneSkillCheck>
+
+// Get requirements for zone
+getZoneSkillRequirements(zoneId: string): Promise<ZoneSkillRequirement[]>
+```
+
+#### Unified System
+```typescript
+// Get ALL bonuses in single call
+getAllCharacterBonuses(characterId: string): Promise<AllCharacterBonuses>
+// Returns:
+// {
+//   landmark_bonuses: {...},
+//   crafting_bonuses: {...},
+//   synergy_bonuses: [...],
+//   permanent_bonuses: [...],
+//   merchant_discount: 0.15
+// }
+```
+
+### 14.5 Gameplay Impact
+
+**Level 1 → Level 50 Progression Example**:
+
+| System | Level 1 | Level 50 (with synergies) | Improvement |
+|--------|---------|---------------------------|-------------|
+| Combat | 5 min/enemy | 2 min/enemy | 2.5x faster |
+| Gathering | 10 sec/resource | 4 sec/resource | 2.5x faster |
+| Crafting | 30 sec/item | 12 sec/item | 2.5x faster |
+| Merchant | 100% prices | 85% prices | 15% discount |
+| Zones | 1 accessible | 6 accessible | 6x content |
+
+**Why It Matters**:
+- 🎯 **Rewards Diverse Gameplay**: Combat improves gathering, exploration improves crafting
+- 🔄 **Creates Positive Loops**: Better gear → easier combat → more skills → better bonuses
+- 🌟 **Encourages Experimentation**: Players discover hidden synergies
+- 📈 **Accelerates Progression**: Each system makes others more efficient
+- 🎮 **Deepens Engagement**: Everything connects and matters
+
+### 14.6 UI Integration
+
+**BonusDisplay Component** (`components/BonusDisplay.tsx`):
+```tsx
+<BonusDisplay characterId={character.id} compact={false} />
+```
+
+**Features**:
+- Shows all active synergy bonuses with descriptions
+- Displays landmark bonuses by type (quality, speed, cost)
+- Lists permanent bonuses from quests
+- Shows merchant discount percentage
+- Compact and expanded modes
+- Color-coded by bonus type
+
+**Display Example**:
+```
+✨ Active Bonuses [3 active]
+
+Combat Synergies
+⚔️ Warrior's Efficiency III      +15%
+  Combat expertise makes you 15% faster at all gathering skills
+  [gathering] [all skills]
+
+🗡️ Master Miner                  +20%
+  Your strength allows you to mine 20% faster
+  [gathering] [mining]
+
+Exploration Bonuses
+  Crafting Quality: +36%
+  Crafting Speed: +60%
+  Material Savings: +45%
+
+Permanent Rewards
+  Merchant's Friend Discount    +5%
+  Awarded: 2025-10-06
+  [quest]
+
+💰 Merchant Discount              15%
+  All purchases are cheaper!
+```
+
+### 14.7 Testing
+
+**Unit Tests** (`test/unit/bonuses.test.ts`): 49 tests covering:
+- `calculateGatheringTime()` with bonuses
+- `applyCraftingBonuses()` with edge cases
+- `calculateMerchantPrice()` with caps
+- Bonus stacking logic
+- Edge cases and minimums
+
+**E2E Tests** (`test/e2e/feedback-loops.spec.ts`): 12 tests covering:
+- Combat skills unlocking gathering bonuses
+- Landmarks granting crafting bonuses
+- Quest rewards granting discounts
+- Skill requirements for zones
+- Full progression flow integration
+
+### 14.8 Future Enhancements
+
+**Phase 2 Ideas**:
+- [ ] Class-specific synergies (Warriors get better mining)
+- [ ] Negative synergies (combat fatigue reduces crafting temporarily)
+- [ ] Synergy milestones (unlock special abilities at thresholds)
+- [ ] Bonus caps and diminishing returns
+- [ ] Seasonal events modifying synergy values
+- [ ] Guild bonuses (shared synergies)
+
+**Detailed Documentation**: See [docs/features/feedback-loops/README.md](features/feedback-loops/README.md) for complete implementation details, code examples, and developer guide.
+
+---
+
+## 15. System Dependencies & Interconnections
 
 This section maps the relationships and dependencies between all game systems, showing how they interact and support each other.
 
-### 14.1 Core System Hierarchy
+### 15.1 Core System Hierarchy
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -8065,9 +8501,9 @@ PHASE 4 (Long-term) 🔮
 
 ---
 
-## 14. Data Flow Diagrams
+## 16. Data Flow Diagrams
 
-### User Action: Equip Weapon
+### 16.1 User Action: Equip Weapon
 ```
 1. User clicks weapon in inventory
    ↓
