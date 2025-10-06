@@ -53,6 +53,29 @@ export async function signOut() {
   return { success: true }
 }
 
+export async function deleteAccount() {
+  const supabase = await createClient()
+
+  try {
+    // Call the RPC function to delete user (deletes auth.users + profile + cascade)
+    const { error: deleteError } = await supabase.rpc('delete_user')
+
+    if (deleteError) {
+      console.error('Error deleting account:', deleteError)
+      return { success: false, error: deleteError.message }
+    }
+
+    // Sign out is automatic since user is deleted, but call it to clean up session
+    await supabase.auth.signOut()
+
+    revalidatePath('/', 'layout')
+    return { success: true }
+  } catch (error) {
+    console.error('Delete account error:', error)
+    return { success: false, error: 'Failed to delete account' }
+  }
+}
+
 export async function createCharacterAction(userId: string, name: string) {
   const supabase = await createClient()
 

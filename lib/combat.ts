@@ -1,20 +1,24 @@
 import { createClient } from '@/utils/supabase/client'
 import { Enemy, Character, CombatAction, CombatResult, ActiveCombat, CombatLog } from './supabase'
-import { addExperience, addGold } from './character'
+import { addExperience, addGold, deleteCharacter } from './character'
 import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
 import { addSkillExperience } from './skills'
 
 /**
- * Calculate damage dealt by attacker to defender
+ * Calculate damage dealt by attacker to defender with level scaling
  */
-export function calculateDamage(attackerAttack: number, defenderDefense: number): number {
+export function calculateDamage(attackerAttack: number, defenderDefense: number, attackerLevel: number = 1): number {
   // Base damage formula: attack - (defense / 2)
   const baseDamage = attackerAttack - Math.floor(defenderDefense / 2)
 
+  // Level scaling: +1.5% damage per level
+  const levelMultiplier = 1 + (attackerLevel * 0.015)
+  const scaledDamage = baseDamage * levelMultiplier
+
   // Add random variance (85% to 115%)
   const variance = 0.85 + Math.random() * 0.3
-  const actualDamage = baseDamage * variance
+  const actualDamage = scaledDamage * variance
 
   // Minimum 1 damage
   return Math.max(1, Math.floor(actualDamage))
@@ -153,7 +157,7 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
     let victory = false
 
     // Player attacks first
-    const playerDamage = calculateDamage(character.attack, enemy.defense)
+    const playerDamage = calculateDamage(character.attack, enemy.defense, character.level)
     enemyHealth -= playerDamage
 
     // Determine action message based on combat style
@@ -172,20 +176,20 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
       combatStyle: combatStyle // Track which combat style was used
     })
 
-    // Award XP based on combat style
+    // Award XP based on combat style (10x increased for balance)
     if (combatStyle === 'melee') {
-      // Award Attack XP for attacking (2 XP per attack)
-      await addSkillExperience(characterId, 'attack', 2)
-      // Award Strength XP based on damage dealt (1 XP per 2 damage)
-      const strengthXP = Math.max(1, Math.floor(playerDamage / 2))
+      // Award Attack XP for attacking (20 XP per attack)
+      await addSkillExperience(characterId, 'attack', 20)
+      // Award Strength XP based on damage dealt (10 XP per 2 damage)
+      const strengthXP = Math.max(10, Math.floor(playerDamage * 5))
       await addSkillExperience(characterId, 'strength', strengthXP)
     } else if (combatStyle === 'magic') {
-      // Award Magic XP for casting spells (3 XP per cast + damage bonus)
-      const magicXP = 3 + Math.max(1, Math.floor(playerDamage / 2))
+      // Award Magic XP for casting spells (30 XP per cast + damage bonus)
+      const magicXP = 30 + Math.max(10, Math.floor(playerDamage * 5))
       await addSkillExperience(characterId, 'magic', magicXP)
     } else if (combatStyle === 'ranged') {
-      // Award Ranged XP for shooting (2 XP per shot + accuracy bonus)
-      const rangedXP = 2 + Math.max(1, Math.floor(playerDamage / 3))
+      // Award Ranged XP for shooting (20 XP per shot + accuracy bonus)
+      const rangedXP = 20 + Math.max(10, Math.floor(playerDamage * 3))
       await addSkillExperience(characterId, 'ranged', rangedXP)
     }
 
@@ -203,7 +207,7 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
       })
     } else {
       // Enemy counterattacks
-      const enemyDamage = calculateDamage(enemy.attack, character.defense)
+      const enemyDamage = calculateDamage(enemy.attack, character.defense, enemy.level)
       playerHealth -= enemyDamage
 
       combatLog.push({
@@ -214,8 +218,8 @@ export async function executeTurn(characterId: string, combatStyle: 'melee' | 'm
         message: `${enemy.name} hits you for ${enemyDamage} damage!`
       })
 
-      // Award Defense XP for taking damage (1 XP per 2 damage taken)
-      const defenseXP = Math.max(1, Math.floor(enemyDamage / 2))
+      // Award Defense XP for taking damage (10 XP per 2 damage taken)
+      const defenseXP = Math.max(10, Math.floor(enemyDamage * 5))
       await addSkillExperience(characterId, 'defense', defenseXP)
 
       // Check if player is defeated
@@ -405,22 +409,8 @@ export async function endCombat(
         })
         .eq('id', characterId)
     } else {
-      // Defeat penalty: restore to 50% health
-      const { data: char } = await supabase
-        .from('characters')
-        .select('max_health')
-        .eq('id', characterId)
-        .single()
-
-      const restoredHealth = Math.floor((char?.max_health || 100) * 0.5)
-
-      await supabase
-        .from('characters')
-        .update({
-          health: restoredHealth,
-          last_active: new Date().toISOString(),
-        })
-        .eq('id', characterId)
+      // Defeat: Delete the character (permanent death)
+      await deleteCharacter(characterId)
     }
 
     // Log combat to history

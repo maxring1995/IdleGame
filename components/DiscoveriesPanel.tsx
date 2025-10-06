@@ -144,17 +144,23 @@ export default function DiscoveriesPanel() {
         {/* Search and Filter */}
         <div className="flex gap-3 flex-wrap">
           <input
+            id="discoveries-search"
+            name="discoveries-search"
             type="text"
             placeholder="Search discoveries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            data-testid="discoveries-search"
             className="flex-1 min-w-[200px] px-4 py-2 bg-gray-800/50 border border-gray-700/50
                      rounded-lg text-white placeholder-gray-500 focus:outline-none
                      focus:border-amber-500/50"
           />
           <select
+            id="discoveries-filter"
+            name="discoveries-filter"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            data-testid="discoveries-filter"
             className="px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white
                      focus:outline-none focus:border-amber-500/50"
           >

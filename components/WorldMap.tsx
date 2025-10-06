@@ -103,16 +103,22 @@ export default function WorldMap({ onZoneSelect, selectedZoneId }: WorldMapProps
       {/* Search & Filter */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
+          id="zone-search"
+          name="zone-search"
           type="text"
           placeholder="Search zones..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          data-testid="zone-search"
           className="px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg
                    text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"
         />
         <select
+          id="zone-filter"
+          name="zone-filter"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
+          data-testid="zone-filter"
           className="px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg
                    text-white focus:outline-none focus:border-amber-500/50"
         >
@@ -189,7 +195,8 @@ interface ZoneCardProps {
 function ZoneCard({ zone, isSelected, onSelect, characterLevel, locked = false }: ZoneCardProps) {
   const config = ZONE_TYPE_CONFIG[zone.zone_type]
   const canAccess = characterLevel >= zone.required_level
-  const isLocked = locked || !canAccess
+  // Discovered zones are always accessible, even if level is too low
+  const isLocked = locked || (!zone.isDiscovered && !canAccess)
 
   return (
     <button

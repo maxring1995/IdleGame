@@ -473,15 +473,21 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
                 {/* Filters */}
                 <div className="grid grid-cols-12 gap-2 mb-3">
                   <input
+                    id="equipment-search"
+                    name="equipment-search"
                     type="text"
                     placeholder="Search items..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    data-testid="equipment-search"
                     className="col-span-12 sm:col-span-6 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500"
                   />
                   <select
+                    id="equipment-rarity-filter"
+                    name="equipment-rarity-filter"
                     value={filterRarity}
                     onChange={(e) => setFilterRarity(e.target.value)}
+                    data-testid="equipment-rarity-filter"
                     className="col-span-6 sm:col-span-3 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
                   >
                     <option value="all">All Rarity</option>
@@ -492,8 +498,11 @@ export default function EquipmentOverlay({ isOpen, onClose }: EquipmentOverlayPr
                     <option value="legendary">Legendary</option>
                   </select>
                   <select
+                    id="equipment-sort"
+                    name="equipment-sort"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
+                    data-testid="equipment-sort"
                     className="col-span-6 sm:col-span-3 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
                   >
                     <option value="rarity">Sort: Rarity</option>

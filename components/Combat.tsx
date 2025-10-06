@@ -197,10 +197,16 @@ export default function Combat() {
         } else if (result) {
           setCombatResult(result)
 
-          const { data: updatedChar } = await getCharacter(character.user_id)
+          // If defeated, character is deleted - don't try to fetch it
+          if (data.victory) {
+            const { data: updatedChar } = await getCharacter(character.user_id)
 
-          if (updatedChar) {
-            updateCharacterStats(updatedChar)
+            if (updatedChar) {
+              updateCharacterStats(updatedChar)
+            }
+          } else {
+            // Character was deleted, clear the store
+            updateCharacterStats(null as any)
           }
         }
       }
@@ -210,6 +216,12 @@ export default function Combat() {
   }
 
   function handleCloseResult() {
+    // If this was a defeat, character is deleted - reload the page to show character creation
+    if (combatResult && !combatResult.victory) {
+      window.location.reload()
+      return
+    }
+
     setCombatResult(null)
     setActiveCombat(null)
     setCurrentEnemy(null)
@@ -363,9 +375,12 @@ export default function Combat() {
             {/* Auto-Attack Toggle */}
             <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900/60 border border-gray-700/50 cursor-pointer hover:bg-gray-800/80 transition-all">
               <input
+                id="auto-attack-toggle"
+                name="auto-attack-toggle"
                 type="checkbox"
                 checked={autoAttack}
                 onChange={(e) => setAutoAttack(e.target.checked)}
+                data-testid="auto-attack-toggle"
                 className="w-4 h-4 rounded border-gray-600 text-amber-500 focus:ring-amber-500 focus:ring-offset-gray-900"
               />
               <span className="text-sm font-medium text-gray-300">Auto Battle</span>

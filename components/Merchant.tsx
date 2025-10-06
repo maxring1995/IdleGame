@@ -477,13 +477,16 @@ export default function Merchant() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Zone Selection */}
             <div>
-              <label className="text-sm text-gray-400 block mb-2">Current Zone:</label>
+              <label htmlFor="merchant-zone-select" className="text-sm text-gray-400 block mb-2">Current Zone:</label>
               <select
+                id="merchant-zone-select"
+                name="merchant-zone-select"
                 value={selectedZone?.id || ''}
                 onChange={(e) => {
                   const zone = zones.find(z => z.id === e.target.value)
                   if (zone) handleZoneChange(zone)
                 }}
+                data-testid="merchant-zone-select"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500/50"
               >
                 {zones.map((zone) => (
@@ -497,13 +500,16 @@ export default function Merchant() {
             {/* Merchant Selection */}
             {zoneMerchants.length > 0 ? (
               <div>
-                <label className="text-sm text-gray-400 block mb-2">Merchant:</label>
+                <label htmlFor="merchant-select" className="text-sm text-gray-400 block mb-2">Merchant:</label>
                 <select
+                  id="merchant-select"
+                  name="merchant-select"
                   value={selectedMerchant?.id || ''}
                   onChange={(e) => {
                     const merchant = zoneMerchants.find(m => m.id === e.target.value)
                     if (merchant) handleMerchantChange(merchant)
                   }}
+                  data-testid="merchant-select"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500/50"
                 >
                   {zoneMerchants.map((merchant) => (
@@ -647,15 +653,21 @@ export default function Merchant() {
         <div className="panel p-4">
           <div className="flex gap-4">
             <input
+              id="merchant-search"
+              name="merchant-search"
               type="text"
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              data-testid="merchant-search"
               className="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"
             />
             <select
+              id="merchant-filter"
+              name="merchant-filter"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as typeof filterType)}
+              data-testid="merchant-filter"
               className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500/50"
             >
               <option value="all">All Types</option>
@@ -805,13 +817,16 @@ export default function Merchant() {
 
                       {/* Quantity */}
                       <div className="border-t border-white/10 pt-4">
-                        <label className="text-sm text-gray-400 block mb-2">Quantity:</label>
+                        <label htmlFor="buy-quantity" className="text-sm text-gray-400 block mb-2">Quantity:</label>
                         <input
+                          id="buy-quantity"
+                          name="buy-quantity"
                           type="number"
                           min="1"
                           max={selectedItem.stock_quantity === -1 ? 999 : selectedItem.stock_quantity}
                           value={quantity}
                           onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          data-testid="buy-quantity"
                           className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-amber-500/50"
                         />
                       </div>
@@ -939,13 +954,16 @@ export default function Merchant() {
 
                       {/* Quantity */}
                       <div className="border-t border-white/10 pt-4">
-                        <label className="text-sm text-gray-400 block mb-2">Quantity:</label>
+                        <label htmlFor="sell-quantity" className="text-sm text-gray-400 block mb-2">Quantity:</label>
                         <input
+                          id="sell-quantity"
+                          name="sell-quantity"
                           type="number"
                           min="1"
                           max={selectedItem.quantity}
                           value={quantity}
                           onChange={(e) => setQuantity(Math.max(1, Math.min(selectedItem.quantity, parseInt(e.target.value) || 1)))}
+                          data-testid="sell-quantity"
                           className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-green-500/50"
                         />
                       </div>

@@ -131,9 +131,13 @@ export async function completeGatheringAction(characterId: string) {
       })
   }
 
-  // Add experience to skill
+  // Add experience to skill with tier scaling
   if (material) {
-    const totalExperience = material.experience_reward * activeGathering.quantity_goal
+    // Scale XP by material tier (balance update)
+    const materialTier = material.tier || 1
+    const baseXP = material.experience_reward * activeGathering.quantity_goal
+    const tierMultiplier = 1 + (materialTier * 0.6)
+    const totalExperience = Math.floor(baseXP * tierMultiplier)
 
     // Get or create skill
     const { data: existingSkill } = await supabase

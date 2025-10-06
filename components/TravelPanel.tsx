@@ -33,6 +33,12 @@ export default function TravelPanel({ onTravelComplete }: TravelPanelProps) {
     if (data) {
       setTravel(data)
       await loadZones(data)
+
+      // Immediately calculate initial progress (don't wait for interval)
+      const { data: progressData } = await processTravel(character.id)
+      if (progressData) {
+        setUpdate(progressData)
+      }
     }
     setLoading(false)
   }
@@ -51,7 +57,7 @@ export default function TravelPanel({ onTravelComplete }: TravelPanelProps) {
   }
 
   async function updateProgress() {
-    if (!character || !travel) return
+    if (!character) return
 
     const { data } = await processTravel(character.id)
     if (data) {

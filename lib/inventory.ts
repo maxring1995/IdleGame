@@ -366,11 +366,44 @@ export async function updateCharacterStats(characterId: string) {
       })
     }
 
-    // Base stats (from level)
-    const baseAttack = 10 + (character.level - 1) * 2
-    const baseDefense = 5 + (character.level - 1) * 1
-    const baseHealth = 100 + (character.level - 1) * 20
-    const baseMana = 50 + (character.level - 1) * 10
+    // Get bonuses from skill levels (new balance system)
+    const { data: skills } = await supabase
+      .from('character_skills')
+      .select('skill_type, level')
+      .eq('character_id', characterId)
+
+    if (skills) {
+      skills.forEach(skill => {
+        const skillLevel = skill.level
+
+        // Combat skills grant stat bonuses every 10 levels (+5 per 10 levels)
+        if (skill.skill_type === 'attack' || skill.skill_type === 'strength') {
+          attackBonus += Math.floor(skillLevel / 10) * 5
+        }
+        if (skill.skill_type === 'defense') {
+          defenseBonus += Math.floor(skillLevel / 10) * 5
+        }
+        if (skill.skill_type === 'constitution') {
+          healthBonus += Math.floor(skillLevel / 10) * 50
+        }
+
+        // Gathering skills grant HP bonuses at milestones
+        const gatheringSkills = ['woodcutting', 'mining', 'fishing', 'hunting', 'alchemy', 'herbalism']
+        if (gatheringSkills.includes(skill.skill_type)) {
+          if (skillLevel >= 99) {
+            healthBonus += 30
+          } else if (skillLevel >= 50) {
+            healthBonus += 15
+          }
+        }
+      })
+    }
+
+    // Base stats (from level) - now using exponential formula
+    const baseAttack = Math.floor(10 * Math.pow(character.level, 1.3))
+    const baseDefense = Math.floor(5 * Math.pow(character.level, 1.3))
+    const baseHealth = Math.floor(100 * Math.pow(character.level, 1.3))
+    const baseMana = Math.floor(50 * Math.pow(character.level, 1.3))
 
     // Update character with new stats
     await supabase

@@ -54,10 +54,12 @@ export default function CharacterCreation({ userId }: CharacterCreationProps) {
           </label>
           <input
             id="characterName"
+            name="characterName"
             type="text"
             value={characterName}
             onChange={(e) => setCharacterName(e.target.value)}
             placeholder="Enter character name"
+            data-testid="character-name-input"
             className="w-full px-4 py-3 bg-bg-card border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition"
             required
             minLength={2}
@@ -109,6 +111,7 @@ export default function CharacterCreation({ userId }: CharacterCreationProps) {
         <button
           type="submit"
           disabled={isLoading}
+          data-testid="create-character-button"
           className="w-full py-3 px-4 bg-primary text-bg-dark font-semibold rounded-lg hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Creating Character...' : 'Begin Adventure'}

@@ -16,10 +16,13 @@ import ToastNotification from './ToastNotification'
 import GatheringContracts from './GatheringContracts'
 import DiscoveriesPanel from './DiscoveriesPanel'
 import Character3DViewer from './Character3DViewer'
+import SettingsModal from './SettingsModal'
 import { User } from '@supabase/supabase-js'
 import { Profile, Character, CharacterSkill } from '@/lib/supabase'
 import { getActiveBuffs, getBuffTimeRemaining, formatTimeRemaining, type ActiveBuff } from '@/lib/consumables'
 import { getCharacterSkills } from '@/lib/skills'
+import { addExperience, addGold } from '@/lib/character'
+import { createClient } from '@/utils/supabase/client'
 
 interface GameProps {
   initialUser: User
@@ -33,23 +36,7 @@ type AdventureSubTab = 'exploration' | 'combat' | 'quests' | 'discoveries' | 'ga
 type MarketSubTab = 'merchant'
 
 // Component for displaying combat skills in sidebar
-function CombatSkillDisplay({ skillType, icon, label }: { skillType: string; icon: string; label: string }) {
-  const { character } = useGameStore()
-  const [skill, setSkill] = useState<CharacterSkill | null>(null)
-
-  useEffect(() => {
-    if (!character) return
-
-    async function loadSkill() {
-      const { data } = await getCharacterSkills(character!.id)
-      if (data) {
-        const found = data.find(s => s.skill_type === skillType)
-        if (found) setSkill(found)
-      }
-    }
-    loadSkill()
-  }, [character?.id, skillType])
-
+function CombatSkillDisplay({ skill, icon, label }: { skill: CharacterSkill | null; icon: string; label: string }) {
   if (!skill) return null
 
   const xpForNextLevel = skill.level * 100
@@ -83,9 +70,11 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
   const [adventureSubTab, setAdventureSubTab] = useState<AdventureSubTab>('exploration')
   const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>('merchant')
   const [activeBuffs, setActiveBuffs] = useState<ActiveBuff[]>([])
+  const [characterSkills, setCharacterSkills] = useState<CharacterSkill[]>([])
   const [isTabTransitioning, setIsTabTransitioning] = useState(false)
   const [showQuickMenu, setShowQuickMenu] = useState(false)
   const [showQuickActionsSettings, setShowQuickActionsSettings] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [customQuickActions, setCustomQuickActions] = useState<Array<{tab: MainTab, subTab?: string, label: string, icon: string}>>([
     { tab: 'market', subTab: 'merchant', label: 'Merchant', icon: '🏪' },
     { tab: 'adventure', subTab: 'gathering_contracts', label: 'Gathering Contracts', icon: '📋' },
@@ -100,9 +89,22 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
     }
   }, [initialUser, initialProfile, initialCharacter, user, setUser, setProfile, setCharacter])
 
-  // Poll for active buffs every 2 seconds
+  // Load character skills once on mount
   useEffect(() => {
     if (!character?.id) return
+
+    async function loadSkills() {
+      const { data } = await getCharacterSkills(character!.id)
+      if (data) setCharacterSkills(data)
+    }
+    loadSkills()
+  }, [character?.id])
+
+  // Event-based active buffs loading with Realtime subscription
+  useEffect(() => {
+    if (!character?.id) return
+
+    const supabase = createClient()
 
     async function loadBuffs() {
       if (!character?.id) return
@@ -110,11 +112,95 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
       setActiveBuffs(buffs)
     }
 
+    // Initial load
     loadBuffs()
-    const interval = setInterval(loadBuffs, 2000)
+
+    // Subscribe to realtime changes on active_buffs table
+    const channel = supabase
+      .channel(`active_buffs_${character.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'active_buffs',
+          filter: `character_id=eq.${character.id}`
+        },
+        () => {
+          // Reload buffs when any change occurs
+          loadBuffs()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [character?.id])
+
+  // Level-scaled idle generation with AFK penalty
+  useEffect(() => {
+    if (!character?.id) return
+
+    const supabase = createClient()
+
+    const interval = setInterval(async () => {
+      try {
+        // Get current character data for AFK calculation
+        const { data: char } = await supabase
+          .from('characters')
+          .select('last_active, level')
+          .eq('id', character.id)
+          .single()
+
+        if (!char) return
+
+        // Calculate AFK penalty (diminishing returns after 8 hours)
+        const lastActive = char.last_active ? new Date(char.last_active) : new Date()
+        const afkSeconds = Math.floor((Date.now() - lastActive.getTime()) / 1000)
+        let penalty = 1.0
+
+        if (afkSeconds > 28800) { // 8 hours
+          penalty = 0.5 + (0.5 / (1 + (afkSeconds - 28800) / 14400))
+        }
+
+        // Apply level-scaled idle gains with AFK penalty
+        // Level 1: 10 XP, 20 gold per 5 seconds
+        // Level 50: 500 XP, 1000 gold per 5 seconds
+        // Level 99: 990 XP, 1980 gold per 5 seconds
+        const idleXP = Math.floor(character.level * 10 * penalty)
+        const idleGold = Math.floor(character.level * 20 * penalty)
+
+        await addExperience(character.id, idleXP)
+        await addGold(character.id, idleGold)
+
+        // Update character in store - silently without triggering full re-render
+        const { data: updatedChar } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('id', character.id)
+          .single()
+
+        if (updatedChar) {
+          // Only update if meaningful changes occurred (prevent re-render from timestamp changes)
+          const hasSignificantChange =
+            updatedChar.experience !== character.experience ||
+            updatedChar.gold !== character.gold ||
+            updatedChar.level !== character.level ||
+            updatedChar.health !== character.health ||
+            updatedChar.mana !== character.mana
+
+          if (hasSignificantChange) {
+            setCharacter(updatedChar)
+          }
+        }
+      } catch (error) {
+        console.error('Idle generation error:', error)
+      }
+    }, 5000) // Every 5 seconds
 
     return () => clearInterval(interval)
-  }, [character?.id])
+  }, [character?.id, character?.level, setCharacter])
 
   // Load custom quick actions from localStorage
   useEffect(() => {
@@ -159,8 +245,18 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
   if (!character) return null
 
-  const experienceForNextLevel = character.level * 100
-  const experienceProgress = (character.experience / experienceForNextLevel) * 100
+  // Calculate XP for next level using exponential formula (level^2.5 * 100)
+  const calculateXPForLevel = (level: number) => {
+    if (level <= 1) return 0
+    return Math.floor(Math.pow(level, 2.5) * 100)
+  }
+
+  const experienceForNextLevel = calculateXPForLevel(character.level + 1)
+  const experienceForCurrentLevel = calculateXPForLevel(character.level)
+  const experienceInCurrentLevel = character.experience - experienceForCurrentLevel
+  const experienceNeededForLevel = experienceForNextLevel - experienceForCurrentLevel
+  const experienceProgress = (experienceInCurrentLevel / experienceNeededForLevel) * 100
+
   const healthPercent = (character.health / character.max_health) * 100
   const manaPercent = (character.mana / character.max_mana) * 100
 
@@ -317,6 +413,15 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
               {/* Notification Bell */}
               <NotificationCenter />
 
+              {/* Settings Icon */}
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="relative p-2 rounded-lg bg-gray-800/50 border border-gray-700/50 hover:bg-gray-700/50 hover:border-gray-600/50 transition-all duration-200 group"
+                title="Settings"
+              >
+                <span className="text-xl transition-transform duration-200 group-hover:rotate-90">⚙️</span>
+              </button>
+
               <button
                 onClick={handleSignOut}
                 disabled={isLoading}
@@ -470,12 +575,12 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 Combat Skills
               </h3>
               <div className="space-y-2">
-                <CombatSkillDisplay skillType="attack" icon="⚔️" label="Attack" />
-                <CombatSkillDisplay skillType="strength" icon="💪" label="Strength" />
-                <CombatSkillDisplay skillType="defense" icon="🛡️" label="Defense" />
-                <CombatSkillDisplay skillType="constitution" icon="❤️" label="Constitution" />
-                <CombatSkillDisplay skillType="magic" icon="✨" label="Magic" />
-                <CombatSkillDisplay skillType="ranged" icon="🏹" label="Ranged" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'attack') || null} icon="⚔️" label="Attack" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'strength') || null} icon="💪" label="Strength" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'defense') || null} icon="🛡️" label="Defense" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'constitution') || null} icon="❤️" label="Constitution" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'magic') || null} icon="✨" label="Magic" />
+                <CombatSkillDisplay skill={characterSkills.find(s => s.skill_type === 'ranged') || null} icon="🏹" label="Ranged" />
               </div>
             </div>
 
@@ -764,7 +869,6 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
                 onClick={(e) => {
                   e.stopPropagation()
                   handleMainTabChange('character')
-                  setCharacterSubTab('overview')
                   setShowQuickMenu(false)
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-400 hover:to-blue-500 transition-all duration-300 hover:scale-105 whitespace-nowrap text-sm font-semibold flex items-center gap-2"
@@ -791,6 +895,16 @@ export default function Game({ initialUser, initialProfile, initialCharacter }: 
 
       {/* Toast Notifications */}
       <ToastNotification />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onCharacterDeleted={() => {
+          // Character was deleted, redirect to character creation
+          window.location.href = '/'
+        }}
+      />
     </div>
   )
 }

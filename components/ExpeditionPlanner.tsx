@@ -118,6 +118,51 @@ export default function ExpeditionPlanner({ zone, onStart, onClose }: Expedition
     }
   }
 
+  function getRiskLevel(characterLevel: number, zoneDanger: number, expType: string): {
+    text: string
+    color: string
+    description: string
+  } {
+    // Calculate approximate failure chance (same formula as backend)
+    const levelDiff = zoneDanger - characterLevel
+    let baseChance = Math.max(0, levelDiff * 2)
+
+    const typeModifiers = {
+      scout: 0.5,
+      standard: 1.0,
+      deep: 1.5,
+      legendary: 2.0
+    }
+    baseChance *= typeModifiers[expType as keyof typeof typeModifiers] || 1.0
+    const failureChance = Math.min(Math.max(baseChance, 5), 60)
+
+    if (failureChance <= 15) {
+      return {
+        text: `${failureChance.toFixed(0)}% - Low Risk ✅`,
+        color: 'bg-green-900/30 border-green-500/50 text-green-400',
+        description: 'Safe expedition with minimal danger'
+      }
+    } else if (failureChance <= 30) {
+      return {
+        text: `${failureChance.toFixed(0)}% - Moderate Risk ⚠️`,
+        color: 'bg-yellow-900/30 border-yellow-500/50 text-yellow-400',
+        description: 'Some risk involved, be prepared'
+      }
+    } else if (failureChance <= 45) {
+      return {
+        text: `${failureChance.toFixed(0)}% - High Risk 🔥`,
+        color: 'bg-orange-900/30 border-orange-500/50 text-orange-400',
+        description: 'Dangerous! Failure may result in losses'
+      }
+    } else {
+      return {
+        text: `${failureChance.toFixed(0)}% - EXTREME RISK ☠️`,
+        color: 'bg-red-900/30 border-red-500/50 text-red-400',
+        description: 'Very dangerous! Likely to fail with severe penalties'
+      }
+    }
+  }
+
   async function handleStartExpedition() {
     if (!character) return
 
@@ -128,14 +173,23 @@ export default function ExpeditionPlanner({ zone, onStart, onClose }: Expedition
       // Validate gold
       const totalCost = getTotalCost()
       if (character.gold < totalCost) {
-        throw new Error('Insufficient gold')
+        throw new Error('Insufficient gold for expedition supplies')
       }
 
-      // Start the expedition (simplified for now - just start exploration)
+      // Prepare supplies array
+      const supplies = selectedSupplies.map(s => ({
+        id: s.supply.id,
+        quantity: s.quantity
+      }))
+
+      // Start exploration with supplies and expedition type
       const { error: exploreError } = await startExploration(
         character.id,
         zone.id,
-        expeditionType === 'scout' // Auto mode for scout expeditions
+        expeditionType === 'scout', // Auto mode for scout expeditions
+        undefined, // autoStopAt
+        supplies,
+        expeditionType
       )
 
       if (exploreError) throw exploreError
@@ -249,6 +303,22 @@ export default function ExpeditionPlanner({ zone, onStart, onClose }: Expedition
                     ))}
                   </div>
                 </div>
+
+                {/* Risk Warning */}
+                {character && (
+                  <div className="text-sm">
+                    <div className="text-gray-500 mb-1">Failure Risk</div>
+                    <div className={`
+                      font-bold p-2 rounded-lg border
+                      ${getRiskLevel(character.level, zone.danger_level, expeditionType).color}
+                    `}>
+                      {getRiskLevel(character.level, zone.danger_level, expeditionType).text}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {getRiskLevel(character.level, zone.danger_level, expeditionType).description}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -348,11 +418,14 @@ export default function ExpeditionPlanner({ zone, onStart, onClose }: Expedition
                         </div>
                         <div className="flex items-center gap-2">
                           <input
+                            id={`supply-quantity-${supply.id}`}
+                            name={`supply-quantity-${supply.id}`}
                             type="number"
                             value={quantity}
                             onChange={(e) => updateQuantity(supply.id, parseInt(e.target.value) || 1)}
                             min="1"
                             max={supply.stack_size}
+                            data-testid={`supply-quantity-${supply.id}`}
                             className="w-16 px-2 py-1 bg-gray-900 border border-gray-700 rounded
                                      text-white text-center text-sm"
                           />

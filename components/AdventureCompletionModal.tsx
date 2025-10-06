@@ -18,6 +18,8 @@ interface AdventureCompletionModalProps {
     quantity: number
   }>
   onItemRemoved?: (inventoryId: string) => void
+  failed?: boolean
+  failureReason?: string
 }
 
 export default function AdventureCompletionModal({
@@ -29,7 +31,9 @@ export default function AdventureCompletionModal({
   totalGold,
   totalXP,
   itemsFound,
-  onItemRemoved
+  onItemRemoved,
+  failed = false,
+  failureReason = ''
 }: AdventureCompletionModalProps) {
   const [items, setItems] = useState(itemsFound)
   const [removingItem, setRemovingItem] = useState<string | null>(null)
@@ -101,14 +105,25 @@ export default function AdventureCompletionModal({
       <div className="w-full max-w-5xl max-h-[90vh] overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 animate-in zoom-in-95 duration-300">
 
         {/* Header */}
-        <div className="relative p-6 border-b border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/10">
+        <div className={`relative p-6 border-b ${
+          failed
+            ? 'border-red-500/30 bg-gradient-to-r from-red-500/10 to-orange-500/10'
+            : 'border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/10'
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                <span className="text-4xl">🎉</span>
-                Adventure Complete!
+              <h2 className={`text-3xl font-bold flex items-center gap-3 ${
+                failed ? 'text-red-400' : 'text-white'
+              }`}>
+                <span className="text-4xl">{failed ? '💥' : '🎉'}</span>
+                {failed ? 'Expedition Failed!' : 'Adventure Complete!'}
               </h2>
-              <p className="text-gray-400 mt-1">You have finished exploring {zoneName}</p>
+              <p className="text-gray-400 mt-1">
+                {failed
+                  ? `${failureReason} - ${zoneName}`
+                  : `You have finished exploring ${zoneName}`
+                }
+              </p>
             </div>
             <button
               onClick={onClose}

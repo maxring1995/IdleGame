@@ -41,6 +41,8 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
   const [currentEvent, setCurrentEvent] = useState<ExplorationEvent | null>(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [showSkills, setShowSkills] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [failureReason, setFailureReason] = useState<string>('')
 
   useEffect(() => {
     if (character) {
@@ -49,11 +51,11 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
   }, [character])
 
   useEffect(() => {
-    if (!character || !exploration) return
+    if (!character?.id || !exploration?.id) return
 
     const interval = setInterval(updateProgress, 1000)
     return () => clearInterval(interval)
-  }, [character, exploration])
+  }, [character?.id, exploration?.id])
 
   async function loadExploration() {
     if (!character) return
@@ -96,6 +98,12 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
       if (data) {
         setProgress(data.progress)
         setTimeSpent(data.timeSpent)
+
+        // Check for failure
+        if ((data as any).failed) {
+          setFailed(true)
+          setFailureReason((data as any).failureReason || 'Expedition failed')
+        }
 
         // Check for triggered events
         if (data.event) {
@@ -238,6 +246,8 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
           totalXP={totalXP}
           itemsFound={sessionItems}
           onItemRemoved={handleItemRemoved}
+          failed={failed}
+          failureReason={failureReason}
         />
       </>
     )
@@ -572,6 +582,8 @@ export default function ExplorationPanel({ onExplorationComplete }: ExplorationP
         totalXP={totalXP}
         itemsFound={sessionItems}
         onItemRemoved={handleItemRemoved}
+        failed={failed}
+        failureReason={failureReason}
       />
     </div>
   )

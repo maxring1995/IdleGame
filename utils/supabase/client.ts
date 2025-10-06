@@ -19,7 +19,6 @@ export function createClient() {
     )
   }
 
-  console.log('[Supabase Client] ✅ Initialized successfully')
-
+  // Removed excessive logging - client is initialized frequently
   return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }

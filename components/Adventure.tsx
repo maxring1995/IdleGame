@@ -29,10 +29,11 @@ export default function Adventure() {
   useEffect(() => {
     if (character) {
       checkActiveStates()
-      const interval = setInterval(checkActiveStates, 3000)
+      // Poll every 10 seconds instead of 3 to reduce server load
+      const interval = setInterval(checkActiveStates, 10000)
       return () => clearInterval(interval)
     }
-  }, [character])
+  }, [character?.id]) // Only re-run if character ID changes
 
   async function initializeCharacter() {
     if (!character) return
@@ -57,22 +58,25 @@ export default function Adventure() {
       getActiveExploration(character.id)
     ])
 
-    setHasActiveTravel(!!travelData.data)
+    // Only update state if values actually changed
+    const newHasActiveTravel = !!travelData.data
+    const newHasActiveExploration = !!explorationData.data
 
-    // Manage exploration panel visibility
-    if (explorationData.data) {
-      // Active exploration - show panel
+    if (newHasActiveTravel !== hasActiveTravel) {
+      setHasActiveTravel(newHasActiveTravel)
+    }
+
+    // Manage exploration panel visibility - only update if changed
+    if (newHasActiveExploration && !hasActiveExploration) {
+      // Started exploring
       setHasActiveExploration(true)
       setShowingExplorationPanel(true)
-    } else if (hasActiveExploration && !explorationData.data) {
-      // Exploration just stopped - keep panel mounted for modal
+    } else if (!newHasActiveExploration && hasActiveExploration) {
+      // Stopped exploring - keep panel mounted for modal
       setHasActiveExploration(false)
       setShowingExplorationPanel(true)
-    } else {
-      // No exploration at all
-      setHasActiveExploration(false)
-      // Don't set showingExplorationPanel here - let handleExplorationComplete control it
     }
+    // If both are false and showingExplorationPanel is true, let handleExplorationComplete clear it
   }
 
   function handleZoneSelect(zoneId: string) {

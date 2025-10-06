@@ -48,6 +48,7 @@ export default function LoginPage() {
               name="email"
               type="email"
               required
+              data-testid="email-input"
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="your@email.com"
             />
@@ -63,6 +64,7 @@ export default function LoginPage() {
               type="password"
               required
               minLength={6}
+              data-testid="password-input"
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="••••••••"
             />
@@ -77,6 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
+            data-testid="submit-button"
             className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-md transition-colors"
           >
             {loading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Log In'}
@@ -89,6 +92,7 @@ export default function LoginPage() {
               setIsSignUp(!isSignUp)
               setError(null)
             }}
+            data-testid="toggle-auth-mode"
             className="text-purple-400 hover:text-purple-300 text-sm"
           >
             {isSignUp

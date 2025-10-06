@@ -26,7 +26,9 @@ export async function startExploration(
   characterId: string,
   zoneId: string,
   auto: boolean = false,
-  autoStopAt?: number
+  autoStopAt?: number,
+  supplies?: Array<{ id: string; quantity: number }>,
+  expeditionType: 'scout' | 'standard' | 'deep' | 'legendary' = 'standard'
 ): Promise<{ data: ActiveExploration | null; error: Error | null }> {
   const supabase = createClient()
   try {
@@ -41,6 +43,62 @@ export async function startExploration(
       throw new Error('Already exploring a zone')
     }
 
+    // Get character stats for failure calculation
+    const { data: character } = await supabase
+      .from('characters')
+      .select('level, gold, attack, defense, health')
+      .eq('id', characterId)
+      .single()
+
+    if (!character) throw new Error('Character not found')
+
+    // Get zone danger level
+    const { data: zone } = await supabase
+      .from('world_zones')
+      .select('danger_level')
+      .eq('id', zoneId)
+      .single()
+
+    if (!zone) throw new Error('Zone not found')
+
+    // Calculate total supply cost
+    let totalCost = 0
+    if (supplies && supplies.length > 0) {
+      const { data: supplyData } = await supabase
+        .from('expedition_supplies')
+        .select('*')
+        .in('id', supplies.map(s => s.id))
+
+      if (supplyData) {
+        totalCost = supplyData.reduce((total, supply) => {
+          const selected = supplies.find(s => s.id === supply.id)
+          return total + (supply.cost * (selected?.quantity || 0))
+        }, 0)
+      }
+    }
+
+    // Check if character can afford supplies
+    if (character.gold < totalCost) {
+      throw new Error('Insufficient gold for expedition supplies')
+    }
+
+    // Deduct gold for supplies
+    if (totalCost > 0) {
+      await supabase
+        .from('characters')
+        .update({ gold: character.gold - totalCost })
+        .eq('id', characterId)
+    }
+
+    // Calculate failure chance based on danger vs stats
+    const failureChance = calculateFailureChance(
+      character.level,
+      character.attack,
+      character.defense,
+      zone.danger_level,
+      expeditionType
+    )
+
     // Create exploration session
     const { data, error } = await supabase
       .from('active_explorations')
@@ -52,6 +110,10 @@ export async function startExploration(
         discoveries_found: 0,
         is_auto: auto,
         auto_stop_at: autoStopAt,
+        supplies_used: supplies || [],
+        expedition_cost: totalCost,
+        expedition_type: expeditionType,
+        failure_chance: failureChance,
         updated_at: new Date().toISOString()
       })
       .select()
@@ -63,6 +125,39 @@ export async function startExploration(
     console.error('Error starting exploration:', err)
     return { data: null, error: err as Error }
   }
+}
+
+/**
+ * Calculate failure chance based on character stats vs zone danger
+ */
+function calculateFailureChance(
+  characterLevel: number,
+  attack: number,
+  defense: number,
+  zoneDanger: number,
+  expeditionType: string
+): number {
+  // Base chance from level difference
+  const levelDiff = zoneDanger - characterLevel
+  let baseChance = Math.max(0, levelDiff * 2) // 2% per level below zone requirement
+
+  // Adjust for character stats (attack + defense reduces risk)
+  const statScore = (attack + defense) / 2
+  const statReduction = Math.min(statScore / 20, 15) // Max 15% reduction from stats
+  baseChance = Math.max(0, baseChance - statReduction)
+
+  // Expedition type modifiers
+  const typeModifiers = {
+    scout: 0.5,      // 50% less risk (quick and safe)
+    standard: 1.0,   // Normal risk
+    deep: 1.5,       // 50% more risk (higher rewards, higher danger)
+    legendary: 2.0   // 100% more risk (extreme danger)
+  }
+
+  baseChance *= typeModifiers[expeditionType as keyof typeof typeModifiers] || 1.0
+
+  // Cap between 5% and 60%
+  return Math.min(Math.max(baseChance, 5), 60)
 }
 
 /**
@@ -129,26 +224,27 @@ async function checkExplorationRewards(
 
       if (!config) continue
 
-      // MASSIVELY IMPROVED REWARDS - 10x better loot
-      // Boost reward chance to minimum 80% (was using config which was only 5-35%)
-      const boostedRewardChance = Math.max(config.reward_chance, 0.80)
-
-      // BONUS: Every 10% milestone gives GUARANTEED MEGA LOOT
+      // Balanced reward system - quality over quantity
+      // Use configured reward chance (5-35% based on milestone)
       const isMilestone = percent % 10 === 0
-      const guaranteedReward = isMilestone || Math.random() <= boostedRewardChance
+      const rewardChance = config.reward_chance
 
-      if (guaranteedReward) {
+      // Roll for reward
+      const shouldGiveReward = Math.random() <= rewardChance
+
+      if (shouldGiveReward) {
         const items: string[] = []
-        // 3x gold multiplier (5x on milestones!)
-        const goldMultiplier = isMilestone ? 5 : 3
-        const gold = (Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min) * goldMultiplier
-        // 3x XP multiplier (5x on milestones!)
-        const xpMultiplier = isMilestone ? 5 : 3
-        const xp = (Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min) * xpMultiplier
+        // Modest gold multiplier (1-1.5x, slightly higher on milestones)
+        const goldMultiplier = isMilestone ? 1.5 : (1 + Math.random() * 0.5)
+        const gold = Math.floor((Math.floor(Math.random() * (config.gold_max - config.gold_min + 1)) + config.gold_min) * goldMultiplier)
 
-        // Roll 10-20 items from loot table (30-50 items on milestones!)
-        const baseItemCount = isMilestone ? 30 : 10
-        const itemRange = isMilestone ? 21 : 11
+        // Modest XP multiplier (1-1.5x, slightly higher on milestones)
+        const xpMultiplier = isMilestone ? 1.5 : (1 + Math.random() * 0.5)
+        const xp = Math.floor((Math.floor(Math.random() * (config.xp_max - config.xp_min + 1)) + config.xp_min) * xpMultiplier)
+
+        // Roll 1-2 items from loot table (2-3 items on milestones)
+        const baseItemCount = isMilestone ? 2 : 1
+        const itemRange = isMilestone ? 2 : 2
         const itemCount = Math.floor(Math.random() * itemRange) + baseItemCount
         for (let i = 0; i < itemCount; i++) {
           const itemId = rollLootTable(config.loot_table)
@@ -186,7 +282,7 @@ async function checkExplorationRewards(
         if (xp > 0) rewardSummary.push(`${xp} XP`)
 
         if (rewardSummary.length > 0) {
-          const treasureType = isMilestone ? '🎁 MEGA TREASURE CHEST' : '💰 Treasure'
+          const treasureType = isMilestone ? '🎁 Treasure Chest' : '💰 Treasure'
           await addTravelLogEntry(
             characterId,
             zoneId,
@@ -341,8 +437,43 @@ export async function processExploration(
       }
     }
 
-    // Check if completed or should auto-stop
+    // Roll for failure (once at 50% progress)
+    let failed = false
+    let failureReason = ''
+
+    if (progress >= 50 && !exploration.failed && exploration.failure_chance > 0) {
+      const failRoll = Math.random() * 100
+
+      if (failRoll < exploration.failure_chance) {
+        failed = true
+
+        // Determine failure type
+        const failureTypes = [
+          'Ambushed by enemies and forced to retreat!',
+          'Equipment failure - expedition aborted for safety.',
+          'Lost in the wilderness, had to turn back.',
+          'Dangerous conditions forced an early return.',
+          'Encountered overwhelming force - retreat necessary.'
+        ]
+        failureReason = failureTypes[Math.floor(Math.random() * failureTypes.length)]
+
+        // Mark exploration as failed
+        await supabase
+          .from('active_explorations')
+          .update({
+            failed: true,
+            failure_reason: failureReason
+          })
+          .eq('id', exploration.id)
+
+        // Apply failure penalties
+        await applyFailurePenalties(characterId, exploration)
+      }
+    }
+
+    // Check if completed, failed, or should auto-stop
     const completed = progress >= 100 ||
+                     failed ||
                      (exploration.is_auto && exploration.auto_stop_at != null && progress >= exploration.auto_stop_at)
 
     return {
@@ -352,6 +483,8 @@ export async function processExploration(
         rewards,
         timeSpent,
         completed,
+        failed,
+        failureReason,
         event: triggeredEvent as any // Include the triggered event if any
       },
       error: null
@@ -359,6 +492,66 @@ export async function processExploration(
   } catch (err) {
     console.error('Error processing exploration:', err)
     return { data: null, error: err as Error }
+  }
+}
+
+/**
+ * Apply penalties when expedition fails
+ */
+async function applyFailurePenalties(
+  characterId: string,
+  exploration: ActiveExploration
+): Promise<void> {
+  const supabase = createClient()
+
+  try {
+    // Get character stats
+    const { data: character } = await supabase
+      .from('characters')
+      .select('health, max_health, gold')
+      .eq('id', characterId)
+      .single()
+
+    if (!character) return
+
+    // Calculate penalties based on expedition type
+    const penalties = {
+      scout: { healthLoss: 0.10, goldLoss: 0.20 },      // 10% health, 20% gold
+      standard: { healthLoss: 0.20, goldLoss: 0.30 },   // 20% health, 30% gold
+      deep: { healthLoss: 0.35, goldLoss: 0.40 },       // 35% health, 40% gold
+      legendary: { healthLoss: 0.50, goldLoss: 0.50 }   // 50% health, 50% gold
+    }
+
+    const expeditionType = (exploration as any).expedition_type || 'standard'
+    const penalty = penalties[expeditionType as keyof typeof penalties] || penalties.standard
+
+    // Calculate health loss (percentage of max health)
+    const healthLoss = Math.floor(character.max_health * penalty.healthLoss)
+    const newHealth = Math.max(1, character.health - healthLoss) // Never go below 1 HP
+
+    // Calculate gold loss (percentage of current gold, plus any expedition cost)
+    const expeditionCost = (exploration as any).expedition_cost || 0
+    const goldLoss = Math.floor(character.gold * penalty.goldLoss) + Math.floor(expeditionCost * 0.5) // Lose 50% of supply cost too
+    const newGold = Math.max(0, character.gold - goldLoss)
+
+    // Apply penalties
+    await supabase
+      .from('characters')
+      .update({
+        health: newHealth,
+        gold: newGold
+      })
+      .eq('id', characterId)
+
+    // Log the failure
+    await addTravelLogEntry(
+      characterId,
+      exploration.zone_id,
+      'exploration_completed',
+      `Expedition FAILED: ${(exploration as any).failure_reason} Lost ${healthLoss} HP and ${goldLoss} gold.`
+    )
+  } catch (err) {
+    console.error('Error applying failure penalties:', err)
   }
 }
 

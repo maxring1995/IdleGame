@@ -4,6 +4,9 @@ import { addExperience, addGold } from './character'
 import { addItem } from './inventory'
 import { notificationHelpers } from './notificationStore'
 
+// Debug flag - set to true to enable verbose quest tracking logs
+const DEBUG_QUEST_TRACKING = false
+
 // Quest definition interface
 export interface QuestDefinition {
   id: string
@@ -438,10 +441,12 @@ export async function trackQuestProgress(
 ) {
   const supabase = createClient()
 
-  console.log('[Quest Tracking] ============ START ============')
-  console.log('[Quest Tracking] Character ID:', characterId)
-  console.log('[Quest Tracking] Event Type:', eventType)
-  console.log('[Quest Tracking] Event Data:', JSON.stringify(eventData))
+  if (DEBUG_QUEST_TRACKING) {
+    console.log('[Quest Tracking] ============ START ============')
+    console.log('[Quest Tracking] Character ID:', characterId)
+    console.log('[Quest Tracking] Event Type:', eventType)
+    console.log('[Quest Tracking] Event Data:', JSON.stringify(eventData))
+  }
 
   // Get all active quests for this character with quest definitions
   const { data: quests, error: fetchError } = await supabase
@@ -455,13 +460,15 @@ export async function trackQuestProgress(
     return
   }
 
-  console.log('[Quest Tracking] Active quests found:', quests?.length || 0)
-  if (quests && quests.length > 0) {
-    console.log('[Quest Tracking] Quest IDs:', quests.map(q => q.quest_id).join(', '))
+  if (DEBUG_QUEST_TRACKING) {
+    console.log('[Quest Tracking] Active quests found:', quests?.length || 0)
+    if (quests && quests.length > 0) {
+      console.log('[Quest Tracking] Quest IDs:', quests.map(q => q.quest_id).join(', '))
+    }
   }
 
   if (!quests || quests.length === 0) {
-    console.log('[Quest Tracking] No active quests - exiting early')
+    if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking] No active quests - exiting early')
     return
   }
 
@@ -469,20 +476,22 @@ export async function trackQuestProgress(
   for (const quest of quests) {
     const progress = quest.progress as QuestProgress
 
-    console.log('[Quest Tracking] ----------')
-    console.log('[Quest Tracking] Checking quest:', quest.quest_id)
-    console.log('[Quest Tracking]   Progress:', JSON.stringify(progress))
-    console.log('[Quest Tracking]   Quest Type:', progress.type)
-    console.log('[Quest Tracking]   Quest TargetId:', progress.targetId)
-    console.log('[Quest Tracking]   Quest Current:', progress.current)
-    console.log('[Quest Tracking]   Quest Goal:', progress.goal)
+    if (DEBUG_QUEST_TRACKING) {
+      console.log('[Quest Tracking] ----------')
+      console.log('[Quest Tracking] Checking quest:', quest.quest_id)
+      console.log('[Quest Tracking]   Progress:', JSON.stringify(progress))
+      console.log('[Quest Tracking]   Quest Type:', progress.type)
+      console.log('[Quest Tracking]   Quest TargetId:', progress.targetId)
+      console.log('[Quest Tracking]   Quest Current:', progress.current)
+      console.log('[Quest Tracking]   Quest Goal:', progress.goal)
+    }
 
     // Check if quest type matches event type
     const typeMatches = progress.type === eventType
-    console.log('[Quest Tracking]   Type Match?', typeMatches, `("${progress.type}" === "${eventType}")`)
+    if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   Type Match?', typeMatches, `("${progress.type}" === "${eventType}")`)
 
     if (!typeMatches) {
-      console.log('[Quest Tracking]   ❌ SKIP: Type mismatch')
+      if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   ❌ SKIP: Type mismatch')
       continue
     }
 
@@ -502,14 +511,14 @@ export async function trackQuestProgress(
       targetMatches = progress.targetId === eventData.targetId
     }
 
-    console.log('[Quest Tracking]   Target Match?', targetMatches, `("${progress.targetId}" ~= "${eventData.targetId}")`)
+    if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   Target Match?', targetMatches, `("${progress.targetId}" ~= "${eventData.targetId}")`)
 
     if (!targetMatches) {
-      console.log('[Quest Tracking]   ❌ SKIP: TargetId mismatch')
+      if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   ❌ SKIP: TargetId mismatch')
       continue
     }
 
-    console.log('[Quest Tracking]   ✅ MATCH! Updating progress...')
+    if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   ✅ MATCH! Updating progress...')
 
     // Update progress
     let newCurrent: number
@@ -523,14 +532,16 @@ export async function trackQuestProgress(
 
     const finalProgress = Math.min(newCurrent, progress.goal)
 
-    console.log(`[Quest Tracking]   Calculation: ${progress.current} + ${eventData.amount} = ${newCurrent}`)
-    console.log(`[Quest Tracking]   Final (capped): ${finalProgress} / ${progress.goal}`)
+    if (DEBUG_QUEST_TRACKING) {
+      console.log(`[Quest Tracking]   Calculation: ${progress.current} + ${eventData.amount} = ${newCurrent}`)
+      console.log(`[Quest Tracking]   Final (capped): ${finalProgress} / ${progress.goal}`)
+    }
 
     try {
       await updateQuestProgress(characterId, quest.quest_id, {
         current: finalProgress
       })
-      console.log('[Quest Tracking]   ✅ Update SUCCESS!')
+      if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   ✅ Update SUCCESS!')
 
       // Send progress notification if quest progressed
       if (finalProgress > progress.current) {
@@ -551,17 +562,17 @@ export async function trackQuestProgress(
             icon: questIcon,
           })
 
-          console.log('[Quest Tracking]   📬 Notification sent!')
+          if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking]   📬 Notification sent!')
         } catch (notifError) {
-          console.error('[Quest Tracking]   ⚠️ Notification failed:', notifError)
+          if (DEBUG_QUEST_TRACKING) console.error('[Quest Tracking]   ⚠️ Notification failed:', notifError)
         }
       }
     } catch (error) {
-      console.error('[Quest Tracking]   ❌ Update FAILED:', error)
+      if (DEBUG_QUEST_TRACKING) console.error('[Quest Tracking]   ❌ Update FAILED:', error)
     }
   }
 
-  console.log('[Quest Tracking] ============ END ============')
+  if (DEBUG_QUEST_TRACKING) console.log('[Quest Tracking] ============ END ============')
 }
 
 // Abandon a quest

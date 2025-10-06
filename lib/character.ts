@@ -127,6 +127,26 @@ export async function updateCharacter(
 }
 
 /**
+ * Calculate total XP required to reach a specific level (exponential formula)
+ * Formula: level^2.5 * 100
+ */
+function calculateXPForLevel(level: number): number {
+  if (level <= 1) return 0
+  return Math.floor(Math.pow(level, 2.5) * 100)
+}
+
+/**
+ * Calculate what level a character should be based on their total XP
+ */
+function calculateLevelFromXP(totalXP: number): number {
+  let level = 1
+  while (calculateXPForLevel(level + 1) <= totalXP) {
+    level++
+  }
+  return level
+}
+
+/**
  * Add experience and handle level ups
  */
 export async function addExperience(
@@ -145,31 +165,31 @@ export async function addExperience(
     if (fetchError) throw fetchError
 
     const newExperience = character.experience + amount
-    const experienceForNextLevel = character.level * 100
-    let newLevel = character.level
-    let leveledUp = false
+    const newLevel = calculateLevelFromXP(newExperience)
+    const leveledUp = newLevel > character.level
 
     // Check if leveled up
-    if (newExperience >= experienceForNextLevel) {
-      newLevel = character.level + 1
-      leveledUp = true
+    if (leveledUp) {
+      // Calculate stat increases based on levels gained
+      const levelsGained = newLevel - character.level
 
-      // Increase stats on level up
-      const statIncrease = {
-        max_health: character.max_health + 20,
-        max_mana: character.max_mana + 10,
-        attack: character.attack + 2,
-        defense: character.defense + 1,
-      }
+      // Exponential stat scaling: base * level^1.3
+      const newMaxHealth = Math.floor(100 * Math.pow(newLevel, 1.3))
+      const newMaxMana = Math.floor(50 * Math.pow(newLevel, 1.3))
+      const newAttack = Math.floor(10 * Math.pow(newLevel, 1.3))
+      const newDefense = Math.floor(5 * Math.pow(newLevel, 1.3))
 
       const { data, error } = await supabase
         .from('characters')
         .update({
           experience: newExperience,
           level: newLevel,
-          health: statIncrease.max_health, // Restore health on level up
-          mana: statIncrease.max_mana, // Restore mana on level up
-          ...statIncrease,
+          health: newMaxHealth, // Restore health on level up
+          mana: newMaxMana, // Restore mana on level up
+          max_health: newMaxHealth,
+          max_mana: newMaxMana,
+          attack: newAttack,
+          defense: newDefense,
           last_active: new Date().toISOString(),
         })
         .eq('id', characterId)
@@ -239,6 +259,28 @@ export async function addGold(characterId: string, amount: number) {
   } catch (error) {
     console.error('Add gold error:', error)
     return { data: null, error }
+  }
+}
+
+/**
+ * Delete a character (keeps account intact)
+ */
+export async function deleteCharacter(characterId: string): Promise<{ success: boolean; error: any }> {
+  try {
+    const supabase = createClient()
+
+    // Delete character (cascade will handle related records)
+    const { error } = await supabase
+      .from('characters')
+      .delete()
+      .eq('id', characterId)
+
+    if (error) throw error
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Delete character error:', error)
+    return { success: false, error }
   }
 }
 

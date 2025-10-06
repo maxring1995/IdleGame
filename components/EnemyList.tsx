@@ -195,13 +195,16 @@ export default function EnemyList({ onSelectEnemy }: EnemyListProps) {
         <div className="panel p-4">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="text-sm text-gray-400 block mb-2">Filter by Zone:</label>
+              <label htmlFor="enemy-zone-filter" className="text-sm text-gray-400 block mb-2">Filter by Zone:</label>
               <select
+                id="enemy-zone-filter"
+                name="enemy-zone-filter"
                 value={selectedZone?.id || ''}
                 onChange={(e) => {
                   const zone = zones.find(z => z.id === e.target.value)
                   handleZoneChange(zone || null)
                 }}
+                data-testid="enemy-zone-filter"
                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-red-500/50"
               >
                 <option value="">All Zones</option>

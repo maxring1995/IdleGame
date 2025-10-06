@@ -301,8 +301,11 @@ export default function CraftingPanel() {
         <div className="panel p-4">
           <h4 className="font-bold text-white mb-3">Sort By</h4>
           <select
+            id="recipe-sort"
+            name="recipe-sort"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
+            data-testid="recipe-sort"
             className="w-full bg-bg-card border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500/50"
           >
             <option value="level">Level Required</option>
@@ -316,10 +319,13 @@ export default function CraftingPanel() {
         {/* Search */}
         <div className="panel p-4">
           <input
+            id="recipe-search"
+            name="recipe-search"
             type="text"
             placeholder="Search recipes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            data-testid="recipe-search"
             className="w-full bg-bg-card border border-white/10 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"
           />
         </div>

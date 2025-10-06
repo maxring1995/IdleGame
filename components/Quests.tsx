@@ -93,7 +93,7 @@ export default function Quests() {
       if (error) throw error
 
       await loadQuests()
-      setFilter('active')
+      // Stay on available quests tab after accepting
     } catch (err: any) {
       setError(err.message)
     } finally {

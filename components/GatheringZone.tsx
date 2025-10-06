@@ -212,10 +212,10 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
     // Check for skills that can unlock specializations
     const eligibilityResult = await checkSpecializationEligibility(character.id)
 
-    if (eligibilityResult.success && eligibilityResult.data && eligibilityResult.data.length > 0) {
+    if (!eligibilityResult.error && eligibilityResult.data && eligibilityResult.data.length > 0) {
       // Show modal for the first eligible skill
       const firstEligible = eligibilityResult.data[0]
-      setSpecModalSkill(firstEligible)
+      setSpecModalSkill({ type: firstEligible.skillType, level: firstEligible.level })
       setShowSpecModal(true)
     }
 
@@ -225,7 +225,7 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
 
     for (const skill of skillTypes) {
       const specResult = await getCharacterSpecialization(character.id, skill)
-      if (specResult.success && specResult.data?.specialization) {
+      if (!specResult.error && specResult.data?.specialization) {
         specs.set(skill, specResult.data.specialization)
       }
     }
@@ -238,10 +238,10 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
 
     const result = await selectSpecialization(character.id, specModalSkill.type, specializationId)
 
-    if (result.success) {
+    if (!result.error) {
       addNotification({
         type: 'success',
-        category: 'specialization',
+        category: 'gathering',
         title: '🎉 Specialization Unlocked!',
         message: `You've specialized in ${specModalSkill.type}!`,
         icon: '⭐'
@@ -254,7 +254,7 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
     } else {
       addNotification({
         type: 'error',
-        category: 'specialization',
+        category: 'gathering',
         title: 'Failed to select specialization',
         message: result.error?.message || 'Unknown error',
         icon: '❌'
@@ -339,9 +339,11 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
           <button
             onClick={async () => {
               const result = await spawnHotspotAction(worldZone, 1)
-              if (result.success) {
+              if (!result.error) {
                 addNotification({
                   type: 'success',
+                  category: 'gathering',
+                  title: 'Hotspot Spawned',
                   message: '🔥 Hotspot spawned!',
                   icon: '⭐'
                 })
@@ -349,6 +351,8 @@ export default function GatheringZone({ worldZone, zoneName }: GatheringZoneProp
               } else {
                 addNotification({
                   type: 'error',
+                  category: 'gathering',
+                  title: 'Hotspot Failed',
                   message: result.error || 'Failed to spawn hotspot',
                   icon: '❌'
                 })

@@ -162,9 +162,9 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
         {!victory && (
           <div className="bg-red-900/20 border border-red-400/30 rounded-lg p-4 mb-4">
             <div className="text-sm text-red-400">
-              <div className="font-semibold mb-1">⚠️ Defeat Penalty</div>
+              <div className="font-semibold mb-1">💀 Permanent Death</div>
               <div className="text-red-300">
-                Your health has been restored to 50% of maximum
+                Your character has fallen in battle and has been permanently deleted. Create a new character to continue your journey.
               </div>
             </div>
           </div>
@@ -188,20 +188,12 @@ export default function VictoryModal({ result, enemyName, onClose, onContinue }:
               </button>
             </>
           ) : (
-            <>
-              <button
-                onClick={onContinue}
-                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors font-semibold"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
-              >
-                Retreat
-              </button>
-            </>
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors font-semibold"
+            >
+              Create New Character
+            </button>
           )}
         </div>
       </div>
