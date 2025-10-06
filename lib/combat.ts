@@ -5,6 +5,27 @@ import { addItem } from './inventory'
 import { trackQuestProgress } from './quests'
 import { addSkillExperience } from './skills'
 
+export interface ClassAbility {
+  id: string
+  class_id: string
+  name: string
+  description: string
+  icon: string
+  required_level: number
+  required_talent_points: number
+  resource_cost: number
+  cooldown_seconds: number
+  effects: any
+  ability_type: 'active' | 'passive'
+  damage_type: string | null
+}
+
+export interface AbilityCooldown {
+  ability_id: string
+  last_used: string
+  available_at: string
+}
+
 /**
  * Calculate damage dealt by attacker to defender with level scaling
  */
@@ -45,6 +66,262 @@ export function rollLoot(lootTable: Record<string, number>): string[] {
  */
 export function rollGold(goldMin: number, goldMax: number): number {
   return Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin
+}
+
+/**
+ * Get character's learned abilities
+ */
+export async function getCharacterAbilities(characterId: string): Promise<{
+  data: ClassAbility[] | null
+  error: any
+}> {
+  try {
+    const supabase = createClient()
+
+    // Get character's class
+    const { data: character } = await supabase
+      .from('characters')
+      .select('class_id, level')
+      .eq('id', characterId)
+      .single()
+
+    if (!character || !character.class_id) {
+      return { data: [], error: null }
+    }
+
+    // Get all abilities for this class that the character meets requirements for
+    const { data: abilities, error } = await supabase
+      .from('class_abilities')
+      .select('*')
+      .eq('class_id', character.class_id)
+      .lte('required_level', character.level)
+      .eq('ability_type', 'active')
+      .order('required_level', { ascending: true })
+
+    if (error) throw error
+
+    return { data: abilities as ClassAbility[], error: null }
+  } catch (error) {
+    console.error('Get character abilities error:', error)
+    return { data: null, error }
+  }
+}
+
+/**
+ * Check ability cooldown status
+ */
+export function isAbilityOnCooldown(
+  abilityId: string,
+  cooldowns: Record<string, number>
+): boolean {
+  const cooldownEnd = cooldowns[abilityId]
+  if (!cooldownEnd) return false
+  return Date.now() < cooldownEnd
+}
+
+/**
+ * Calculate ability damage
+ */
+export function calculateAbilityDamage(
+  ability: ClassAbility,
+  character: Character
+): number {
+  const effects = ability.effects
+
+  if (effects.type !== 'damage' && effects.type !== 'aoe_dot') {
+    return 0
+  }
+
+  let baseDamage = effects.amount || 0
+  const multiplier = effects.multiplier || 1
+
+  // Scale based on character stats
+  if (effects.scaling === 'attack') {
+    baseDamage = character.attack * multiplier
+  } else if (effects.scaling === 'mana') {
+    baseDamage = character.max_mana * multiplier
+  }
+
+  // Add variance
+  const variance = 0.9 + Math.random() * 0.2
+  return Math.max(1, Math.floor(baseDamage * variance))
+}
+
+/**
+ * Use a class ability in combat
+ */
+export async function useAbilityInCombat(
+  characterId: string,
+  abilityId: string,
+  cooldowns: Record<string, number>
+): Promise<{
+  data: { combat: ActiveCombat; isOver: boolean; victory?: boolean } | null
+  error: any
+  cooldowns?: Record<string, number>
+}> {
+  try {
+    const supabase = createClient()
+
+    // Get active combat
+    const { data: combat, error: combatError } = await supabase
+      .from('active_combat')
+      .select('*')
+      .eq('character_id', characterId)
+      .single()
+
+    if (combatError) throw combatError
+    if (!combat) throw new Error('No active combat found')
+
+    // Get ability details
+    const { data: ability, error: abilityError } = await supabase
+      .from('class_abilities')
+      .select('*')
+      .eq('id', abilityId)
+      .single()
+
+    if (abilityError) throw abilityError
+    if (!ability) throw new Error('Ability not found')
+
+    // Check cooldown
+    if (isAbilityOnCooldown(abilityId, cooldowns)) {
+      throw new Error('Ability is on cooldown')
+    }
+
+    // Get character and enemy data
+    const { data: character } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('id', characterId)
+      .single()
+
+    const { data: enemy } = await supabase
+      .from('enemies')
+      .select('*')
+      .eq('id', combat.enemy_id)
+      .single()
+
+    if (!character || !enemy) throw new Error('Character or enemy not found')
+
+    // Check mana cost
+    if (character.mana < ability.resource_cost) {
+      throw new Error('Not enough mana')
+    }
+
+    let combatLog: CombatAction[] = combat.combat_log || []
+    let playerHealth = combat.player_current_health
+    let enemyHealth = combat.enemy_current_health
+    let isOver = false
+    let victory = false
+
+    // Apply ability effects
+    const effects = ability.effects
+
+    if (effects.type === 'damage') {
+      // Damage ability
+      const abilityDamage = calculateAbilityDamage(ability as ClassAbility, character)
+      enemyHealth -= abilityDamage
+
+      combatLog.push({
+        turn: combat.turn_number,
+        actor: 'player',
+        action: 'ability',
+        damage: abilityDamage,
+        message: `${ability.icon} ${ability.name} hits ${enemy.name} for ${abilityDamage} ${ability.damage_type || 'magical'} damage!`,
+        abilityUsed: ability.name
+      })
+    } else if (effects.type === 'heal') {
+      // Healing ability
+      const healAmount = Math.floor(character.max_mana * (effects.multiplier || 1))
+      const actualHeal = Math.min(healAmount, character.max_health - playerHealth)
+      playerHealth += actualHeal
+
+      combatLog.push({
+        turn: combat.turn_number,
+        actor: 'player',
+        action: 'ability',
+        message: `${ability.icon} ${ability.name} heals you for ${actualHeal} health!`,
+        abilityUsed: ability.name
+      })
+    }
+
+    // Deduct mana
+    await supabase
+      .from('characters')
+      .update({ mana: character.mana - ability.resource_cost })
+      .eq('id', characterId)
+
+    // Set cooldown
+    const newCooldowns = { ...cooldowns }
+    newCooldowns[abilityId] = Date.now() + (ability.cooldown_seconds * 1000)
+
+    // Check if enemy is defeated
+    if (enemyHealth <= 0) {
+      enemyHealth = 0
+      isOver = true
+      victory = true
+
+      combatLog.push({
+        turn: combat.turn_number,
+        actor: 'enemy',
+        action: 'defeat',
+        message: `${enemy.name} has been defeated!`
+      })
+    } else {
+      // Enemy counterattacks
+      const enemyDamage = calculateDamage(enemy.attack, character.defense, enemy.level)
+      playerHealth -= enemyDamage
+
+      combatLog.push({
+        turn: combat.turn_number,
+        actor: 'enemy',
+        action: 'attack',
+        damage: enemyDamage,
+        message: `${enemy.name} hits you for ${enemyDamage} damage!`
+      })
+
+      // Check if player is defeated
+      if (playerHealth <= 0) {
+        playerHealth = 0
+        isOver = true
+        victory = false
+
+        combatLog.push({
+          turn: combat.turn_number,
+          actor: 'player',
+          action: 'defeat',
+          message: 'You have been defeated!'
+        })
+      }
+    }
+
+    // Update active combat
+    const { data: updatedCombat, error: updateError } = await supabase
+      .from('active_combat')
+      .update({
+        player_current_health: playerHealth,
+        enemy_current_health: enemyHealth,
+        turn_number: combat.turn_number + 1,
+        combat_log: combatLog,
+      })
+      .eq('character_id', characterId)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+
+    return {
+      data: {
+        combat: updatedCombat,
+        isOver,
+        victory
+      },
+      error: null,
+      cooldowns: newCooldowns
+    }
+  } catch (error) {
+    console.error('Use ability error:', error)
+    return { data: null, error }
+  }
 }
 
 /**

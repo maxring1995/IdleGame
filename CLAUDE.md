@@ -4,13 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 📚 Documentation
 
-**All project documentation is located in the [`/docs`](docs/) folder.**
+### Primary Documentation
 
-For detailed information about implementation phases, bug fixes, and technical guides, see:
-- **[docs/README.md](docs/README.md)** - Complete documentation index
-- **[docs/guides/QUICKSTART.md](docs/guides/QUICKSTART.md)** - Quick start guide
-- **[docs/guides/ICONS.md](docs/guides/ICONS.md)** - Icon usage guide
+🎯 **[docs/GAME_WIKI.md](docs/GAME_WIKI.md)** - **Complete Game Systems Documentation** (8,500+ lines)
+- **⭐ START HERE** - Comprehensive reference for all 13 game systems
+- Full database schemas with code examples
+- System interconnections and dependencies
+- Quick reference guides and troubleshooting
+- Implementation patterns and best practices
+
+### Additional Documentation
+
+**User Guides:**
+- **[docs/README.md](docs/README.md)** - Documentation index and navigation
+- **[docs/guides/QUICKSTART.md](docs/guides/QUICKSTART.md)** - Quick start guide for developers
+- **[docs/guides/ICONS.md](docs/guides/ICONS.md)** - Icon usage and visual reference
 - **[docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
+
+**Feature Documentation:**
+- **[docs/features/](docs/features/)** - Detailed feature-specific implementation guides
+  - Authentication, Character, Inventory, Combat, Skills, Gathering, Crafting, Quests, Adventure, Notifications
 
 ## Project Overview
 

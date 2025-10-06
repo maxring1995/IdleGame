@@ -25,7 +25,17 @@ export interface Character {
   gold: number
   gems: number
   class_id?: string
+  race_id?: string
+  gender?: 'male' | 'female'
+  appearance?: Record<string, any>
+  talent_points?: number
+  total_talent_points?: number
   mastery_points: number
+  // Dual spec fields
+  active_spec?: 1 | 2
+  spec_1_name?: string
+  spec_2_name?: string
+  dual_spec_unlocked?: boolean
   created_at: string
   updated_at: string
   last_active: string
@@ -53,7 +63,8 @@ export interface Item {
   defense_bonus: number
   health_bonus: number
   mana_bonus: number
-  equipment_slot?: 'weapon' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'ring' | 'amulet'
+  equipment_slot?: 'weapon' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'ring' | 'amulet' | 'shield'
+  weapon_type?: 'sword' | 'axe' | 'mace' | 'spear' | 'dagger' | 'bow' | 'crossbow' | 'staff' | 'wand' | 'shield' | 'scythe' | 'fishing_rod'
   required_level: number
   sell_price: number
   stackable: boolean
@@ -140,9 +151,11 @@ export interface ActiveCombat {
 export interface CombatAction {
   turn: number
   actor: 'player' | 'enemy'
-  action: 'attack' | 'critical' | 'miss' | 'defeat'
+  action: 'attack' | 'critical' | 'miss' | 'defeat' | 'ability'
   damage?: number
   message: string
+  combatStyle?: 'melee' | 'magic' | 'ranged'
+  abilityUsed?: string
 }
 
 export interface CombatResult {
@@ -1207,4 +1220,210 @@ export interface CharacterExplorationAchievement {
   achievement_id: string
   unlocked_at: string
   progress: Record<string, any>
+}
+
+// ========== RACE, GENDER, CLASS & TALENT SYSTEM ==========
+
+// Race System
+export interface Race {
+  id: string
+  name: string
+  description: string
+  lore?: string
+  icon?: string
+  health_bonus: number
+  mana_bonus: number
+  attack_bonus: number
+  defense_bonus: number
+  combat_xp_bonus: number
+  gathering_xp_bonus: number
+  crafting_xp_bonus: number
+  special_traits: string[]
+  created_at: string
+}
+
+// Gender & Appearance
+export type Gender = 'male' | 'female'
+
+export interface AppearancePreset {
+  id: string
+  name: string
+  race_id: string
+  gender: Gender
+  preset_data: {
+    skin_tone: string
+    hair_color: string
+    hair_style: string
+    eye_color: string
+    facial_hair?: string
+    body_type: string
+    beast_trait?: string
+  }
+  icon?: string
+  created_at: string
+}
+
+// Class System
+export type PrimaryStat = 'strength' | 'intelligence' | 'agility'
+export type ArmorType = 'cloth' | 'leather' | 'mail' | 'plate'
+export type ResourceType = 'mana' | 'rage' | 'energy' | 'combo_points'
+
+export interface Class {
+  id: string
+  name: string
+  description: string
+  lore?: string
+  icon?: string
+  health_modifier: number
+  mana_modifier: number
+  attack_modifier: number
+  defense_modifier: number
+  primary_stat: PrimaryStat
+  armor_type: ArmorType
+  weapon_proficiency: string[]
+  resource_type: ResourceType
+  created_at: string
+}
+
+// Abilities & Spells
+export type AbilityType = 'active' | 'passive'
+export type DamageType = 'physical' | 'magical' | 'holy' | 'shadow' | 'nature'
+
+export interface ClassAbility {
+  id: string
+  class_id: string
+  name: string
+  description: string
+  icon?: string
+  required_level: number
+  required_talent_points: number
+  resource_cost: number
+  cooldown_seconds: number
+  effects: Record<string, any>
+  ability_type: AbilityType
+  damage_type?: DamageType
+  created_at: string
+}
+
+export interface CharacterAbility {
+  id: string
+  character_id: string
+  ability_id: string
+  learned_at: string
+}
+
+export interface AbilityCooldown {
+  id: string
+  character_id: string
+  ability_id: string
+  cooldown_end: string
+}
+
+// Talent Tree System
+export type SpecializationType = 'dps' | 'tank' | 'healer'
+
+export interface TalentTree {
+  id: string
+  class_id: string
+  name: string
+  description: string
+  icon?: string
+  specialization_type: SpecializationType
+  created_at: string
+}
+
+export interface TalentNode {
+  id: string
+  tree_id: string
+  name: string
+  description: string
+  icon?: string
+  tier: number // 1-7
+  column_position: number // 1-3
+  max_points: number // 1-5
+  required_points_in_tree: number
+  requires_talent_id?: string
+  effects: Record<string, any>
+  created_at: string
+}
+
+export interface CharacterTalent {
+  id: string
+  character_id: string
+  talent_id: string
+  points_spent: number
+  learned_at: string
+}
+
+// Talent Builds System
+export interface TalentBuild {
+  id: string
+  character_id: string
+  name: string
+  description?: string
+  class_id: string
+  spec_type: string
+  talent_data: Record<string, number> // talent_id -> points_spent
+  is_active: boolean
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Dual Specialization System
+export interface CharacterTalentSpec {
+  id: string
+  character_id: string
+  spec_number: 1 | 2
+  talent_id: string
+  points_spent: number
+  learned_at: string
+}
+
+// Class Trainer System
+export interface ClassTrainer {
+  id: string
+  name: string
+  title?: string
+  class_id: string
+  description?: string
+  lore?: string
+  icon?: string
+  zone_id?: string
+  location_name?: string
+  created_at: string
+}
+
+export interface TrainerAbility {
+  id: string
+  trainer_id: string
+  ability_id: string
+  gold_cost: number
+  additional_requirements?: string
+  created_at: string
+}
+
+export interface TrainerWithAbilities extends ClassTrainer {
+  abilities: (TrainerAbility & { ability: ClassAbility })[]
+}
+
+// Transmogrification System
+export interface Transmogrification {
+  id: string
+  character_id: string
+  slot: string
+  actual_item_id: string // item providing stats
+  visual_item_id: string // item providing appearance
+  created_at: string
+}
+
+export interface TransmogCollection {
+  id: string
+  character_id: string
+  item_id: string
+  unlocked_at: string
+}
+
+export interface TransmogCollectionWithItem extends TransmogCollection {
+  item: Item
 }

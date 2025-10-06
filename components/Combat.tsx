@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Enemy, ActiveCombat as ActiveCombatType, CombatResult } from '@/lib/supabase'
 import { useGameStore } from '@/lib/store'
-import { startCombat, executeTurn, endCombat, getActiveCombat, abandonCombat } from '@/lib/combat'
+import { startCombat, executeTurn, endCombat, getActiveCombat, abandonCombat, getCharacterAbilities, useAbilityInCombat, type ClassAbility, isAbilityOnCooldown } from '@/lib/combat'
 import { getEnemyById } from '@/lib/enemies'
 import { getCharacter } from '@/lib/character'
 import { getInventory } from '@/lib/inventory'
@@ -27,20 +27,25 @@ export default function Combat() {
   const [isHealing, setIsHealing] = useState(false)
   const [healMessage, setHealMessage] = useState<string | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [abilities, setAbilities] = useState<ClassAbility[]>([])
+  const [abilityCooldowns, setAbilityCooldowns] = useState<Record<string, number>>({})
+  const [isUsingAbility, setIsUsingAbility] = useState(false)
 
   useEffect(() => {
     // Only check active combat on initial load, not on every character update
     if (!isInitialized && character) {
       checkActiveCombat()
       loadHealthPotions()
+      loadAbilities()
       setIsInitialized(true)
     }
   }, [character, isInitialized])
 
-  // Separate effect for reloading potions when character changes
+  // Separate effect for reloading potions and abilities when character changes
   useEffect(() => {
     if (character) {
       loadHealthPotions()
+      loadAbilities()
     }
   }, [character?.id])
 
@@ -94,6 +99,57 @@ export default function Combat() {
       )
       setHealthPotions(potions)
     }
+  }
+
+  async function loadAbilities() {
+    if (!character) return
+
+    const { data } = await getCharacterAbilities(character.id)
+    if (data) {
+      setAbilities(data)
+    }
+  }
+
+  async function handleUseAbility(abilityId: string) {
+    if (!character || !activeCombat || isUsingAbility) return
+
+    setIsUsingAbility(true)
+    setError(null)
+
+    const { data, error, cooldowns } = await useAbilityInCombat(character.id, abilityId, abilityCooldowns)
+
+    if (error) {
+      setError(error.message || 'Failed to use ability')
+      setTimeout(() => setError(null), 3000)
+      setIsUsingAbility(false)
+      return
+    }
+
+    if (data && cooldowns) {
+      setActiveCombat(data.combat)
+      setAbilityCooldowns(cooldowns)
+
+      if (data.isOver) {
+        const result = await endCombat(character.id, data.victory || false)
+        if (result.data) {
+          setCombatResult(result.data)
+        }
+
+        setAutoAttack(false)
+        if (autoAttackInterval) {
+          clearInterval(autoAttackInterval)
+          setAutoAttackInterval(null)
+        }
+      }
+
+      // Refresh character data
+      const { data: updatedChar } = await getCharacter(character.id)
+      if (updatedChar) {
+        updateCharacterStats(updatedChar)
+      }
+    }
+
+    setIsUsingAbility(false)
   }
 
   async function handleHeal() {
@@ -627,6 +683,65 @@ export default function Combat() {
                 {healMessage}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Class Abilities */}
+        {abilities.length > 0 && (
+          <div className="w-full max-w-3xl">
+            <div className="text-sm text-gray-400 mb-2 text-center">Class Abilities</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {abilities.map((ability) => {
+                const isOnCooldown = isAbilityOnCooldown(ability.id, abilityCooldowns)
+                const cooldownEnd = abilityCooldowns[ability.id]
+                const remainingCooldown = cooldownEnd ? Math.max(0, Math.ceil((cooldownEnd - Date.now()) / 1000)) : 0
+                const canAfford = character.mana >= ability.resource_cost
+
+                return (
+                  <button
+                    key={ability.id}
+                    onClick={() => handleUseAbility(ability.id)}
+                    disabled={isUsingAbility || autoAttack || isOnCooldown || !canAfford}
+                    className={`relative group p-3 rounded-lg border-2 transition-all ${
+                      isOnCooldown || !canAfford
+                        ? 'bg-gray-800 border-gray-700 opacity-50 cursor-not-allowed'
+                        : 'bg-gradient-to-br from-purple-900/40 to-blue-900/40 border-purple-500/50 hover:border-purple-400 hover:scale-105 active:scale-95'
+                    }`}
+                    title={ability.description}
+                  >
+                    {/* Icon */}
+                    <div className="text-3xl mb-1">{ability.icon}</div>
+
+                    {/* Name */}
+                    <div className="text-xs font-semibold text-white truncate mb-1">{ability.name}</div>
+
+                    {/* Mana Cost */}
+                    <div className={`text-xs ${canAfford ? 'text-blue-400' : 'text-red-400'}`}>
+                      💧 {ability.resource_cost}
+                    </div>
+
+                    {/* Cooldown Display */}
+                    {isOnCooldown && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
+                        <span className="text-lg font-bold text-white">{remainingCooldown}s</span>
+                      </div>
+                    )}
+
+                    {/* Hover tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10 w-48">
+                      <div className="bg-gray-900 border border-purple-500/50 rounded-lg p-2 text-xs">
+                        <div className="font-bold text-purple-400 mb-1">{ability.name}</div>
+                        <div className="text-gray-300 mb-2">{ability.description}</div>
+                        <div className="flex justify-between text-gray-400">
+                          <span>💧 {ability.resource_cost}</span>
+                          {ability.cooldown_seconds > 0 && <span>⏱️ {ability.cooldown_seconds}s</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 

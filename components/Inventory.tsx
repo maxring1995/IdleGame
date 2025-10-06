@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
 import { getInventory, equipItem, unequipItem, getAllItems } from '@/lib/inventory'
 import { useConsumable, parseConsumableEffects, getEffectDescription } from '@/lib/consumables'
+import { canEquipWeapon } from '@/lib/classSystem'
 import GatheringTools from './GatheringTools'
 
 interface InventoryItemWithDetails {
@@ -18,6 +19,13 @@ interface InventoryItemWithDetails {
   item: any
 }
 
+interface ProficiencyCheck {
+  [itemId: string]: {
+    canEquip: boolean
+    reason?: string
+  }
+}
+
 export default function Inventory() {
   const { character, updateCharacterStats } = useGameStore()
   const [inventory, setInventory] = useState<InventoryItemWithDetails[]>([])
@@ -26,6 +34,8 @@ export default function Inventory() {
   const [isUsing, setIsUsing] = useState(false)
   const [useMessage, setUseMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [activeTab, setActiveTab] = useState<'equipment' | 'consumables' | 'materials' | 'tools'>('equipment')
+  const [proficiencyChecks, setProficiencyChecks] = useState<ProficiencyCheck>({})
+  const [showOnlyUsable, setShowOnlyUsable] = useState(false)
 
   useEffect(() => {
     if (character) {
@@ -40,6 +50,21 @@ export default function Inventory() {
     const { data } = await getInventory(character.id)
     if (data) {
       setInventory(data as InventoryItemWithDetails[])
+
+      // Check proficiency for all equipment items
+      if (character.class_id) {
+        const checks: ProficiencyCheck = {}
+        for (const invItem of data) {
+          if (invItem.item.type === 'weapon' || invItem.item.type === 'armor') {
+            const result = await canEquipWeapon(character.id, invItem.item.id)
+            checks[invItem.item.id] = {
+              canEquip: result.canEquip,
+              reason: result.reason
+            }
+          }
+        }
+        setProficiencyChecks(checks)
+      }
     }
     setIsLoading(false)
   }
@@ -47,10 +72,31 @@ export default function Inventory() {
   async function handleEquip(invItem: InventoryItemWithDetails) {
     if (!character) return
 
+    // Check proficiency before equipping
+    if (!invItem.equipped) {
+      const profCheck = proficiencyChecks[invItem.item.id]
+      if (profCheck && !profCheck.canEquip) {
+        setUseMessage({
+          type: 'error',
+          text: profCheck.reason || 'Cannot equip this item'
+        })
+        setTimeout(() => setUseMessage(null), 3000)
+        return
+      }
+    }
+
     if (invItem.equipped) {
       await unequipItem(invItem.id, character.id)
     } else {
-      await equipItem(character.id, invItem.id)
+      const { error } = await equipItem(character.id, invItem.id)
+      if (error) {
+        setUseMessage({
+          type: 'error',
+          text: error.message || 'Failed to equip item'
+        })
+        setTimeout(() => setUseMessage(null), 3000)
+        return
+      }
     }
 
     // Reload inventory
@@ -115,7 +161,9 @@ export default function Inventory() {
     }
   }
 
-  function getRarityBorder(rarity: string) {
+  function getRarityBorder(rarity: string, canEquip: boolean = true) {
+    if (!canEquip) return 'border-red-500/50'
+
     switch (rarity) {
       case 'common': return 'border-gray-500'
       case 'uncommon': return 'border-green-500'
@@ -123,6 +171,24 @@ export default function Inventory() {
       case 'epic': return 'border-purple-500'
       case 'legendary': return 'border-yellow-500'
       default: return 'border-white/10'
+    }
+  }
+
+  function getWeaponTypeIcon(weaponType?: string) {
+    if (!weaponType) return '⚔️'
+    switch (weaponType) {
+      case 'sword': return '⚔️'
+      case 'axe': return '🪓'
+      case 'mace': return '🔨'
+      case 'spear': return '🗡️'
+      case 'dagger': return '🔪'
+      case 'bow': return '🏹'
+      case 'crossbow': return '🏹'
+      case 'staff': return '🪄'
+      case 'wand': return '✨'
+      case 'shield': return '🛡️'
+      case 'scythe': return '⚰️'
+      default: return '⚔️'
     }
   }
 
@@ -146,13 +212,25 @@ export default function Inventory() {
   const equipmentItems = inventory.filter(i => i.item.type === 'weapon' || i.item.type === 'armor')
   const consumableItems = inventory.filter(i => i.item.type === 'consumable')
   const materialItems = inventory.filter(i => i.item.type === 'material')
-  const displayItems = activeTab === 'equipment'
-    ? equipmentItems
-    : activeTab === 'consumables'
-      ? consumableItems
-      : activeTab === 'materials'
-        ? materialItems
-        : []
+
+  // Filter by usability if toggle is on
+  const filterByUsability = (items: InventoryItemWithDetails[]) => {
+    if (!showOnlyUsable || activeTab !== 'equipment') return items
+    return items.filter(item => {
+      const profCheck = proficiencyChecks[item.item.id]
+      return !profCheck || profCheck.canEquip
+    })
+  }
+
+  const displayItems = filterByUsability(
+    activeTab === 'equipment'
+      ? equipmentItems
+      : activeTab === 'consumables'
+        ? consumableItems
+        : activeTab === 'materials'
+          ? materialItems
+          : []
+  )
 
   // If Tools tab is active, render GatheringTools component instead
   if (activeTab === 'tools') {
@@ -241,24 +319,49 @@ export default function Inventory() {
             </button>
           </div>
         </div>
+
+        {/* Filter Toggle for Equipment */}
+        {activeTab === 'equipment' && character?.class_id && (
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setShowOnlyUsable(!showOnlyUsable)}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition ${
+                showOnlyUsable
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-bg-card text-gray-400 hover:text-white border border-gray-700'
+              }`}
+            >
+              {showOnlyUsable ? '✓ ' : ''}Show Only Usable Items
+            </button>
+            <span className="text-xs text-gray-500">
+              ({displayItems.length} items shown)
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
           {displayItems.map((invItem) => {
             const item = invItem.item
+            const profCheck = proficiencyChecks[item.id]
+            const canEquip = !profCheck || profCheck.canEquip
+
             return (
               <button
                 key={invItem.id}
                 onClick={() => setSelectedItem(invItem)}
+                title={!canEquip ? profCheck.reason : ''}
                 className={`
                   relative aspect-square bg-bg-card rounded-lg border-2 p-2
                   hover:bg-bg-card-hover transition cursor-pointer
-                  ${getRarityBorder(item.rarity)}
+                  ${getRarityBorder(item.rarity, canEquip)}
                   ${selectedItem?.id === invItem.id ? 'ring-2 ring-primary' : ''}
                   ${invItem.equipped ? 'bg-primary/10' : ''}
+                  ${!canEquip ? 'opacity-50 grayscale' : ''}
                 `}
               >
-                {/* Item Icon Placeholder */}
+                {/* Item Icon */}
                 <div className="w-full h-full flex items-center justify-center text-2xl">
-                  {item.type === 'weapon' && '⚔️'}
+                  {item.type === 'weapon' && getWeaponTypeIcon(item.weapon_type)}
                   {item.type === 'armor' && '🛡️'}
                   {item.type === 'consumable' && '🧪'}
                   {item.type === 'material' && (
@@ -291,6 +394,13 @@ export default function Inventory() {
                 {invItem.equipped && (
                   <div className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
                 )}
+
+                {/* Restriction Badge */}
+                {!canEquip && !invItem.equipped && (
+                  <div className="absolute top-1 left-1 text-xs" title={profCheck.reason}>
+                    🚫
+                  </div>
+                )}
               </button>
             )
           })}
@@ -312,6 +422,35 @@ export default function Inventory() {
               <p className="text-sm text-gray-300 mb-4">
                 {selectedItem.item.description}
               </p>
+            )}
+
+            {/* Proficiency Warning */}
+            {(() => {
+              const profCheck = proficiencyChecks[selectedItem.item.id]
+              if (profCheck && !profCheck.canEquip && !selectedItem.equipped) {
+                return (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xl">🚫</span>
+                      <div>
+                        <p className="text-xs text-red-400 font-semibold uppercase mb-1">Cannot Equip</p>
+                        <p className="text-sm text-red-300">{profCheck.reason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+              return null
+            })()}
+
+            {/* Weapon Type */}
+            {selectedItem.item.weapon_type && (
+              <div className="mb-4 p-2 bg-blue-500/10 border border-blue-500/20 rounded">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-xl">{getWeaponTypeIcon(selectedItem.item.weapon_type)}</span>
+                  <span className="text-blue-400 capitalize">{selectedItem.item.weapon_type}</span>
+                </div>
+              </div>
             )}
 
             {/* Stats */}
@@ -397,21 +536,29 @@ export default function Inventory() {
 
             {/* Actions */}
             <div className="space-y-2">
-              {selectedItem.item.equipment_slot && (
-                <button
-                  onClick={() => handleEquip(selectedItem)}
-                  className={`
-                    w-full py-2 px-4 rounded-lg font-medium transition
-                    ${
-                      selectedItem.equipped
-                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                        : 'bg-primary/20 text-primary hover:bg-primary/30'
-                    }
-                  `}
-                >
-                  {selectedItem.equipped ? 'Unequip' : 'Equip'}
-                </button>
-              )}
+              {selectedItem.item.equipment_slot && (() => {
+                const profCheck = proficiencyChecks[selectedItem.item.id]
+                const canEquipItem = !profCheck || profCheck.canEquip
+
+                return (
+                  <button
+                    onClick={() => handleEquip(selectedItem)}
+                    disabled={!selectedItem.equipped && !canEquipItem}
+                    className={`
+                      w-full py-2 px-4 rounded-lg font-medium transition
+                      ${
+                        selectedItem.equipped
+                          ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                          : canEquipItem
+                            ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                            : 'bg-gray-500/20 text-gray-500 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    {selectedItem.equipped ? 'Unequip' : canEquipItem ? 'Equip' : 'Cannot Equip'}
+                  </button>
+                )
+              })()}
 
               {selectedItem.item.type === 'consumable' && (
                 <button

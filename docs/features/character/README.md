@@ -13,6 +13,16 @@ Complete documentation for the Character Stats System, including:
 - Testing guidelines
 - Future enhancement ideas
 
+### [CLASS_SYSTEM.md](CLASS_SYSTEM.md) ⭐ **NEW**
+Complete documentation for the Class System, including:
+- **Weapon Proficiency System** - Class-based weapon restrictions with 10 weapon types
+- **Class Abilities System** - Active combat abilities with cooldowns and resource management
+- Database schema and server-side validation (triggers, functions)
+- Client-side implementation (TypeScript, React components)
+- Rich UI feedback (visual indicators, tooltips, cooldowns)
+- Testing guidelines and troubleshooting
+- Future enhancements (talent trees, weapon mastery, ultimate abilities)
+
 ## 🎯 Quick Links
 
 **Need to...**
@@ -20,6 +30,10 @@ Complete documentation for the Character Stats System, including:
 - **Add new stat breakdowns?** → See [Helper Functions](CHARACTER_STATS_SYSTEM.md#helper-functions)
 - **Customize the UI?** → See [UI/UX Design](CHARACTER_STATS_SYSTEM.md#uiux-design)
 - **Test the system?** → See [Testing](CHARACTER_STATS_SYSTEM.md#testing)
+- **Understand weapon proficiencies?** → See [Weapon Proficiency System](CLASS_SYSTEM.md#1-weapon-proficiency-system)
+- **Implement class abilities?** → See [Class Abilities System](CLASS_SYSTEM.md#2-class-abilities-system)
+- **Add new weapon types?** → See [Database Schema](CLASS_SYSTEM.md#database-schema)
+- **Debug proficiency issues?** → See [Troubleshooting](CLASS_SYSTEM.md#troubleshooting)
 
 ## 🔍 Feature Overview
 
@@ -40,6 +54,23 @@ Located at: **Character Tab → Overview → Character Stats**
 1. Navigate to Character tab
 2. Click Character Stats card (📈 icon)
 3. View comprehensive character information
+
+### Class System ⭐ **NEW**
+Located at: **Inventory Tab (Weapon Restrictions) + Combat Tab (Abilities)**
+
+**Key Features**:
+- ✅ **Weapon Proficiency** - Class-based weapon restrictions (10 weapon types)
+- ✅ **Visual Indicators** - Grayscale unusable items, 🚫 badges, red borders
+- ✅ **Database Enforcement** - Server-side triggers prevent bypassing restrictions
+- ✅ **Class Abilities** - Active combat skills with icons, cooldowns, mana costs
+- ✅ **Ability Tooltips** - Hover for detailed descriptions and costs
+- ✅ **Real-time Cooldowns** - Live countdown timers on ability buttons
+- ✅ **Smart Filtering** - "Show Only Usable Items" toggle in inventory
+
+**Access**:
+1. **Weapon Proficiency**: Open Inventory → See weapon type icons and restrictions
+2. **Class Abilities**: Enter Combat → Ability grid appears below enemy info
+3. **Proficiency Info**: Character Stats → Class card shows weapon proficiencies
 
 ## 📁 Files
 

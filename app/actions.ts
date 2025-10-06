@@ -76,26 +76,67 @@ export async function deleteAccount() {
   }
 }
 
-export async function createCharacterAction(userId: string, name: string) {
+export async function createCharacterAction(
+  userId: string,
+  name: string,
+  raceId: string,
+  gender: 'male' | 'female',
+  appearance: Record<string, any>,
+  classId: string
+) {
   const supabase = await createClient()
 
   try {
+    // Get race and class data to calculate starting stats
+    const { data: race } = await supabase
+      .from('races')
+      .select('*')
+      .eq('id', raceId)
+      .single()
+
+    const { data: classData } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('id', classId)
+      .single()
+
+    if (!race || !classData) {
+      return { error: 'Invalid race or class selection' }
+    }
+
+    // Calculate starting stats with bonuses
+    let health = 100 + race.health_bonus
+    let mana = 50 + race.mana_bonus
+    let attack = 10 + race.attack_bonus
+    let defense = 5 + race.defense_bonus
+
+    health = Math.floor(health * classData.health_modifier)
+    mana = Math.floor(mana * classData.mana_modifier)
+    attack = Math.floor(attack * classData.attack_modifier)
+    defense = Math.floor(defense * classData.defense_modifier)
+
     // Create character
     const { data: character, error: characterError } = await supabase
       .from('characters')
       .insert({
         user_id: userId,
         name,
+        race_id: raceId,
+        gender,
+        appearance,
+        class_id: classId,
         level: 1,
         experience: 0,
-        health: 100,
-        max_health: 100,
-        mana: 50,
-        max_mana: 50,
-        attack: 10,
-        defense: 5,
+        health,
+        max_health: health,
+        mana,
+        max_mana: mana,
+        attack,
+        defense,
         gold: 100,
         gems: 0,
+        talent_points: 0,
+        total_talent_points: 0,
       })
       .select()
       .single()

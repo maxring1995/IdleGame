@@ -4,7 +4,10 @@
  * Advanced Character Stats Panel
  *
  * Shows detailed breakdown of all character attributes from all sources:
- * - Base stats (from level)
+ * - Race and Class information
+ * - Base stats (from level + race + class)
+ * - Talent points and specialization
+ * - Abilities learned
  * - Equipment bonuses
  * - Landmark discovery bonuses
  * - Exploration skill bonuses
@@ -14,7 +17,7 @@
 
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
-import type { ExplorationSkill } from '@/lib/supabase'
+import type { ExplorationSkill, Race, Class, ClassAbility } from '@/lib/supabase'
 import { getActiveBuffs, type ActiveBuff } from '@/lib/consumables'
 
 interface StatBreakdown {
@@ -55,9 +58,36 @@ interface StatBreakdown {
   }
 }
 
+interface CharacterIdentity {
+  race: Race | null
+  class: Class | null
+  talentPointsAvailable: number
+  talentPointsSpent: number
+  abilitiesLearned: number
+  totalAbilities: number
+}
+
+function getWeaponTypeIcon(weaponType: string): string {
+  switch (weaponType) {
+    case 'sword': return '⚔️'
+    case 'axe': return '🪓'
+    case 'mace': return '🔨'
+    case 'spear': return '🗡️'
+    case 'dagger': return '🔪'
+    case 'bow': return '🏹'
+    case 'crossbow': return '🏹'
+    case 'staff': return '🪄'
+    case 'wand': return '✨'
+    case 'shield': return '🛡️'
+    case 'scythe': return '⚰️'
+    default: return '⚔️'
+  }
+}
+
 export default function CharacterStatsDetailed() {
   const { character } = useGameStore()
   const [stats, setStats] = useState<StatBreakdown | null>(null)
+  const [identity, setIdentity] = useState<CharacterIdentity | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [discoveries, setDiscoveries] = useState(0)
 
@@ -75,7 +105,63 @@ export default function CharacterStatsDetailed() {
       const { createClient } = await import('@/utils/supabase/client')
       const supabase = createClient()
 
-      // Calculate base stats
+      // Get race and class information
+      let race: Race | null = null
+      let classData: Class | null = null
+
+      if (character.race_id) {
+        const { data } = await supabase
+          .from('races')
+          .select('*')
+          .eq('id', character.race_id)
+          .single()
+        race = data
+      }
+
+      if (character.class_id) {
+        const { data } = await supabase
+          .from('classes')
+          .select('*')
+          .eq('id', character.class_id)
+          .single()
+        classData = data
+      }
+
+      // Get talent information
+      const { data: talents } = await supabase
+        .from('character_talents')
+        .select('points_spent')
+        .eq('character_id', character.id)
+
+      const talentPointsSpent = talents?.reduce((sum, t) => sum + t.points_spent, 0) || 0
+      const talentPointsAvailable = (character.talent_points || 0)
+
+      // Get abilities information
+      const { data: learnedAbilities } = await supabase
+        .from('character_abilities')
+        .select('id')
+        .eq('character_id', character.id)
+
+      let totalAbilities = 0
+      if (character.class_id) {
+        const { data: classAbilities } = await supabase
+          .from('class_abilities')
+          .select('id')
+          .eq('class_id', character.class_id)
+        totalAbilities = classAbilities?.length || 0
+      }
+
+      setIdentity({
+        race,
+        class: classData,
+        talentPointsAvailable,
+        talentPointsSpent,
+        abilitiesLearned: learnedAbilities?.length || 0,
+        totalAbilities
+      })
+
+      // Calculate base stats (includes level scaling)
+      // Note: Character stats already include race/class bonuses from creation
       const baseAttack = 10 + (character.level - 1) * 2
       const baseDefense = 5 + (character.level - 1) * 1
       const baseHealth = 100 + (character.level - 1) * 20
@@ -177,10 +263,10 @@ export default function CharacterStatsDetailed() {
         explorationSkills: skillsMap,
         buffs,
         totals: {
-          attack: baseAttack + equipmentAttack + landmarkAttack,
-          defense: baseDefense + equipmentDefense + landmarkDefense,
-          health: baseHealth + equipmentHealth + landmarkHealth,
-          mana: baseMana + equipmentMana + landmarkMana
+          attack: character.attack,
+          defense: character.defense,
+          health: character.max_health,
+          mana: character.max_mana
         }
       })
     } catch (err) {
@@ -190,7 +276,7 @@ export default function CharacterStatsDetailed() {
     setIsLoading(false)
   }
 
-  if (isLoading || !stats) {
+  if (isLoading || !stats || !identity) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
@@ -211,6 +297,154 @@ export default function CharacterStatsDetailed() {
         </p>
       </div>
 
+      {/* Character Identity */}
+      <div className="panel p-6 space-y-4">
+        <h3 className="text-xl font-bold text-white border-b border-gray-700/50 pb-3">
+          🎭 Character Identity
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Race */}
+          {identity.race && (
+            <div className="card p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl">{identity.race.icon || '🧬'}</span>
+                <div>
+                  <div className="text-sm text-gray-400">Race</div>
+                  <div className="text-lg font-bold text-white">{identity.race.name}</div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 space-y-1 mt-3">
+                <div>HP: +{identity.race.health_bonus} | MP: +{identity.race.mana_bonus}</div>
+                <div>ATK: +{identity.race.attack_bonus} | DEF: +{identity.race.defense_bonus}</div>
+                <div className="text-emerald-400">Combat XP: +{(identity.race.combat_xp_bonus * 100).toFixed(0)}%</div>
+              </div>
+            </div>
+          )}
+
+          {/* Class */}
+          {identity.class && (
+            <div className="card p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl">{identity.class.icon || '⚔️'}</span>
+                <div>
+                  <div className="text-sm text-gray-400">Class</div>
+                  <div className="text-lg font-bold text-white">{identity.class.name}</div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 space-y-1 mt-3">
+                <div className="capitalize">Primary: {identity.class.primary_stat}</div>
+                <div className="capitalize">Armor: {identity.class.armor_type}</div>
+                <div className="capitalize">Resource: {identity.class.resource_type}</div>
+              </div>
+
+              {/* Weapon Proficiencies */}
+              {identity.class.weapon_proficiency && identity.class.weapon_proficiency.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-700/30">
+                  <div className="text-xs text-gray-400 mb-2">Weapon Proficiency</div>
+                  <div className="flex flex-wrap gap-1">
+                    {identity.class.weapon_proficiency.map((weaponType: string) => (
+                      <span
+                        key={weaponType}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400"
+                      >
+                        {getWeaponTypeIcon(weaponType)}
+                        <span className="capitalize">{weaponType}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gender */}
+          {character?.gender && (
+            <div className="card p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl">{character.gender === 'male' ? '♂️' : '♀️'}</span>
+                <div>
+                  <div className="text-sm text-gray-400">Gender</div>
+                  <div className="text-lg font-bold text-white capitalize">{character.gender}</div>
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 mt-3">
+                Appearance customized
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Progression Stats */}
+      <div className="panel p-6 space-y-4">
+        <h3 className="text-xl font-bold text-white border-b border-gray-700/50 pb-3">
+          🌟 Progression
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Talent Points */}
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">🌳</span>
+              <span>Talent Points</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-green-400">{identity.talentPointsAvailable}</span>
+              <span className="text-sm text-gray-500">available</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {identity.talentPointsSpent} points spent
+            </div>
+          </div>
+
+          {/* Abilities */}
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">✨</span>
+              <span>Abilities</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-blue-400">{identity.abilitiesLearned}</span>
+              <span className="text-sm text-gray-500">/ {identity.totalAbilities}</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {identity.totalAbilities - identity.abilitiesLearned} to learn
+            </div>
+          </div>
+
+          {/* Dual Spec */}
+          {character?.dual_spec_unlocked && (
+            <div className="stat-box">
+              <div className="flex items-center gap-2 text-gray-400">
+                <span className="text-xl">🔄</span>
+                <span>Dual Spec</span>
+              </div>
+              <div className="text-lg font-bold text-purple-400">
+                {character.active_spec === 1 ? character.spec_1_name || 'Primary' : character.spec_2_name || 'Secondary'}
+              </div>
+              <div className="text-xs text-emerald-400 mt-1">
+                ✓ Unlocked
+              </div>
+            </div>
+          )}
+
+          {/* Level */}
+          <div className="stat-box">
+            <div className="flex items-center gap-2 text-gray-400">
+              <span className="text-xl">⭐</span>
+              <span>Level</span>
+            </div>
+            <div className="text-2xl font-bold text-amber-400">
+              {character?.level}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {character?.experience.toLocaleString()} XP
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Combat Stats */}
       <div className="panel p-6 space-y-4">
         <h3 className="text-xl font-bold text-white border-b border-gray-700/50 pb-3">
@@ -226,7 +460,7 @@ export default function CharacterStatsDetailed() {
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-400">
-                <span>Base (Level {character?.level})</span>
+                <span>Base (Level {character?.level}){identity.race && identity.class ? ' + Race + Class' : ''}</span>
                 <span className="text-white">+{stats.base.attack}</span>
               </div>
               {stats.equipment.attack > 0 && (
@@ -252,7 +486,7 @@ export default function CharacterStatsDetailed() {
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-400">
-                <span>Base (Level {character?.level})</span>
+                <span>Base (Level {character?.level}){identity.race && identity.class ? ' + Race + Class' : ''}</span>
                 <span className="text-white">+{stats.base.defense}</span>
               </div>
               {stats.equipment.defense > 0 && (
@@ -278,7 +512,7 @@ export default function CharacterStatsDetailed() {
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-400">
-                <span>Base (Level {character?.level})</span>
+                <span>Base (Level {character?.level}){identity.race && identity.class ? ' + Race + Class' : ''}</span>
                 <span className="text-white">+{stats.base.health}</span>
               </div>
               {stats.equipment.health > 0 && (
@@ -304,7 +538,7 @@ export default function CharacterStatsDetailed() {
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-400">
-                <span>Base (Level {character?.level})</span>
+                <span>Base (Level {character?.level}){identity.race && identity.class ? ' + Race + Class' : ''}</span>
                 <span className="text-white">+{stats.base.mana}</span>
               </div>
               {stats.equipment.mana > 0 && (

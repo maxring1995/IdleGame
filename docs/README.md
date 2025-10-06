@@ -2,11 +2,20 @@
 
 Comprehensive documentation for the Eternal Realms idle RPG project.
 
+## 📖 Primary Documentation
+
+🎯 **[GAME_WIKI.md](GAME_WIKI.md)** - **Complete Game Systems Documentation** (8,000+ lines)
+- All 13 game systems fully documented
+- System dependencies and interconnections
+- Database schemas and code examples
+- Complete technical reference
+
 ## 📂 Documentation Structure
 
 ```
 docs/
-├── features/          # Feature-specific documentation
+├── GAME_WIKI.md       # ⭐ PRIMARY DOCUMENTATION - Complete game reference
+├── features/          # Feature-specific detailed docs
 │   ├── quests/        # Quest system
 │   ├── combat/        # Combat system
 │   ├── gathering/     # Gathering skills
@@ -14,25 +23,45 @@ docs/
 │   ├── adventure/     # Travel & exploration
 │   ├── notifications/ # Notification system
 │   ├── skills/        # 20-Skill system
-│   ├── character/     # Character stats system (NEW!)
+│   ├── character/     # Character stats system
 │   └── authentication/# Auth system
-├── bugfixes/          # Bug fix reports
-├── guides/            # User guides
+├── guides/            # User guides & quickstarts
+├── archive/           # Historical docs (outdated)
 └── README.md          # This file
 ```
 
-## 🎮 Features Documentation
+## 🎮 Game Systems Overview
 
-### Core Game Systems
-- **[Quest System](features/quests/README.md)** - Quest tracking, progress, rewards
-- **[Combat System](features/combat/README.md)** - Turn-based combat, auto-attack, bosses
-- **[20-Skill System](features/skills/COMPLETE_SKILL_SYSTEM.md)** - All 20 skills, 60+ recipes, 70+ materials
-- **[Character Stats System](features/character/CHARACTER_STATS_SYSTEM.md)** ⭐ **NEW!** - Stat breakdowns, equipment bonuses, active buffs
-- **[Gathering System](features/gathering/README.md)** - 6 gathering skills, 50+ materials
-- **[Crafting System](features/crafting/README.md)** - 60+ recipes, async crafting
-- **[Adventure System](features/adventure/README.md)** - World map, travel, exploration
-- **[Notification System](features/notifications/README.md)** - Toast notifications, notification center
-- **[Authentication](features/authentication/README.md)** - Username-based auth
+**For complete documentation of all systems, see [GAME_WIKI.md](GAME_WIKI.md)**
+
+### 13 Documented Systems
+
+1. **[Authentication & Account](GAME_WIKI.md#1-authentication--account-system)** - Username-based auth, profiles
+2. **[Character System](GAME_WIKI.md#2-character-system)** - Stats, classes, races, progression
+3. **[Inventory & Equipment](GAME_WIKI.md#3-inventory--equipment-system)** - Items, equipment slots, rarity
+4. **[Combat System](GAME_WIKI.md#4-combat-system)** - Turn-based combat, enemies, bosses, abilities
+5. **[Skills & Leveling](GAME_WIKI.md#5-skills--leveling-system)** - 20 skills, XP, progression
+6. **[Gathering System](GAME_WIKI.md#6-gathering-system)** - 6 gathering skills, 50+ materials
+7. **[Crafting System](GAME_WIKI.md#7-crafting-system)** - 60+ recipes, professions
+8. **[Quest System](GAME_WIKI.md#8-quest-system)** - Quest types, tracking, rewards
+9. **[Exploration & Adventure](GAME_WIKI.md#10-exploration--adventure)** - Zones, landmarks, travel
+10. **[Economy & Merchants](GAME_WIKI.md#11-economy--merchants)** - Gold, trading, merchants
+11. **[Notification System](GAME_WIKI.md#12-notification-system)** - Toast notifications, notification center
+12. **[UI/UX Design System](GAME_WIKI.md#13-uiux-design-system)** - Design patterns, components
+13. **[System Dependencies](GAME_WIKI.md#14-system-dependencies--interconnections)** - How systems connect
+
+### Detailed Feature Documentation
+
+For implementation details and deep dives:
+- **[Quest System](features/quests/README.md)** - Implementation details
+- **[Combat System](features/combat/README.md)** - Combat mechanics
+- **[20-Skill System](features/skills/COMPLETE_SKILL_SYSTEM.md)** - All skill details
+- **[Character Stats System](features/character/CHARACTER_STATS_SYSTEM.md)** - Stat calculations
+- **[Gathering System](features/gathering/README.md)** - Gathering mechanics
+- **[Crafting System](features/crafting/README.md)** - Recipe details
+- **[Adventure System](features/adventure/README.md)** - Travel & exploration
+- **[Notification System](features/notifications/README.md)** - Notification implementation
+- **[Authentication](features/authentication/README.md)** - Auth implementation
 
 ## 📖 Guides
 
@@ -42,45 +71,42 @@ docs/
 - **[ICONS.md](guides/ICONS.md)** - Icon usage guide and visual reference
 - **[FEATURE2_SUMMARY.md](guides/FEATURE2_SUMMARY.md)** - Feature 2 implementation summary
 
-## 🐛 Bug Fixes
+## 📦 Archived Documentation
 
-All bug fix reports are located in **[bugfixes/](bugfixes/)**:
-- Latest bug fixes and solutions
-- Root cause analysis
-- Verification steps
-- Files changed
+Historical documentation has been moved to **[archive/](archive/)**:
+- Bug fix reports (resolved issues)
+- Phase documentation (superseded by GAME_WIKI.md)
+- Balance change summaries (historical)
+- System overhaul docs (historical)
+
+These files are kept for historical reference but are no longer maintained.
 
 ## 🔍 Quick Navigation
 
 **Need to...**
-- **Start developing?** → [guides/QUICKSTART.md](guides/QUICKSTART.md)
-- **View all 20 skills?** → [features/skills/COMPLETE_SKILL_SYSTEM.md](features/skills/COMPLETE_SKILL_SYSTEM.md)
-- **Understand character stats?** → [features/character/CHARACTER_STATS_SYSTEM.md](features/character/CHARACTER_STATS_SYSTEM.md) ⭐
-- **Understand auth?** → [features/authentication/](features/authentication/)
-- **Fix a bug?** → [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)
-- **Add icons?** → [guides/ICONS.md](guides/ICONS.md)
-- **Write tests?** → [guides/TESTING.md](guides/TESTING.md)
-- **Implement quests?** → [features/quests/](features/quests/)
-- **Add combat?** → [features/combat/](features/combat/)
-- **Create gathering?** → [features/gathering/](features/gathering/)
-- **Build crafting?** → [features/crafting/](features/crafting/)
-- **Design adventure?** → [features/adventure/](features/adventure/)
-- **Send notifications?** → [features/notifications/](features/notifications/)
+- **📖 Understand the entire game?** → [GAME_WIKI.md](GAME_WIKI.md) ⭐ **START HERE**
+- **🚀 Start developing?** → [guides/QUICKSTART.md](guides/QUICKSTART.md)
+- **🎮 View all 13 systems?** → [GAME_WIKI.md - Table of Contents](GAME_WIKI.md#table-of-contents)
+- **🔗 Understand system dependencies?** → [GAME_WIKI.md - Section 14](GAME_WIKI.md#14-system-dependencies--interconnections)
+- **💾 See database schema?** → [GAME_WIKI.md](GAME_WIKI.md) (each system section)
+- **🎨 Follow design patterns?** → [GAME_WIKI.md - UI/UX](GAME_WIKI.md#13-uiux-design-system)
+- **🐛 Fix a bug?** → [guides/TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md)
+- **✨ Add icons?** → [guides/ICONS.md](guides/ICONS.md)
+- **🧪 Write tests?** → [guides/TESTING.md](guides/TESTING.md)
+- **⚔️ Implement features?** → See feature folders in [features/](features/)
 
 ## 📅 Latest Updates
 
-- **2025-10-05** - ⭐ **CHARACTER STATS SYSTEM** - Complete stat breakdowns, equipment bonuses, active buffs ([Changelog](CHANGELOG_2025-10-05.md))
-- **2025-10-05** - Moved "Gathering Contracts" from Market tab to Adventure tab
-- **2025-10-05** - Fixed Equipment Manager z-index rendering issue
-- **2025-10-04** - ⭐ **COMPLETE 20-SKILL SYSTEM IMPLEMENTED** - All skills functional with 60+ recipes
+- **2025-10-06** - 🎉 **COMPREHENSIVE GAME WIKI CREATED** - All 13 systems documented in [GAME_WIKI.md](GAME_WIKI.md) (8,000+ lines)
+  - Complete system documentation (Authentication, Character, Inventory, Combat, Skills, Gathering, Crafting, Quests, Exploration, Economy, Notifications, UI/UX)
+  - System interconnection diagrams
+  - Database schemas for all tables
+  - Code examples and implementation patterns
+  - Archived outdated documentation to `archive/`
+- **2025-10-05** - CHARACTER STATS SYSTEM - Complete stat breakdowns, equipment bonuses, active buffs
+- **2025-10-04** - COMPLETE 20-SKILL SYSTEM IMPLEMENTED - All skills functional with 60+ recipes
 - **2025-10-04** - Added Magic & Ranged combat styles with UI selector
-- **2025-10-04** - Implemented Farming, Cooking, Fletching, Runecrafting skills
-- **2025-10-04** - Implemented Agility, Thieving, Slayer support skills
 - **2025-10-04** - Reorganized documentation into feature-based structure
-- **2025-10-04** - Added quest notification system
-- **2025-10-04** - Created comprehensive E2E tests for quest system
-- **2025-10-03** - PHASE6_CRAFTING.md - Complete crafting system
-- **2025-10-02** - PHASE4_GATHERING.md - Complete gathering system
 
 ## 🤝 Contributing to Documentation
 
@@ -149,7 +175,17 @@ UI/UX design patterns and component guidelines:
 - Layout patterns
 - Animation guidelines
 
+## 📊 Documentation Statistics
+
+- **GAME_WIKI.md**: 8,000+ lines of comprehensive documentation
+- **13 Game Systems**: Fully documented
+- **Database Tables**: 40+ tables documented with schemas
+- **Code Examples**: 100+ code snippets and examples
+- **Feature Docs**: 10+ detailed feature guides
+- **User Guides**: 5+ quickstart and troubleshooting guides
+
 ---
 
-**Last Updated:** 2025-10-04
+**Last Updated:** 2025-10-06
+**Primary Documentation:** [GAME_WIKI.md](GAME_WIKI.md)
 **Maintained by:** Development Team

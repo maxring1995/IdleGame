@@ -6,6 +6,8 @@ import EquipmentOverlay from './EquipmentOverlay'
 import SkillsPanel from './SkillsPanel'
 import CharacterStats from './CharacterStats'
 import Character3DShowcase from './Character3DShowcase'
+import TalentTree from './TalentTree'
+import ClassAbilities from './ClassAbilities'
 
 export default function CharacterTab() {
   const { character } = useGameStore()
@@ -13,6 +15,21 @@ export default function CharacterTab() {
   const [showSkillsPanel, setShowSkillsPanel] = useState(false)
   const [showCharacterStats, setShowCharacterStats] = useState(false)
   const [show3DShowcase, setShow3DShowcase] = useState(false)
+  const [showTalentTree, setShowTalentTree] = useState(false)
+  const [showAbilities, setShowAbilities] = useState(false)
+
+  // Refresh character data (for when talents/abilities are learned)
+  async function refreshCharacter() {
+    // This will trigger a re-render through the store
+    if (character) {
+      const { getCharacter } = await import('@/lib/character')
+      const { data } = await getCharacter(character.user_id)
+      if (data) {
+        const { setCharacter } = useGameStore.getState()
+        setCharacter(data)
+      }
+    }
+  }
 
   if (!character) return null
 
@@ -51,6 +68,7 @@ export default function CharacterTab() {
           <button
             onClick={() => setShowSkillsPanel(false)}
             className="btn btn-secondary mb-4"
+            data-testid="back-to-character-menu"
           >
             ← Back to Character Menu
           </button>
@@ -60,6 +78,30 @@ export default function CharacterTab() {
               // Refresh character data if needed
             }}
           />
+        </div>
+      ) : showTalentTree ? (
+        /* Talent Tree View */
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowTalentTree(false)}
+            className="btn btn-secondary mb-4"
+            data-testid="back-to-character-menu"
+          >
+            ← Back to Character Menu
+          </button>
+          <TalentTree character={character} onTalentSpent={refreshCharacter} />
+        </div>
+      ) : showAbilities ? (
+        /* Class Abilities View */
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowAbilities(false)}
+            className="btn btn-secondary mb-4"
+            data-testid="back-to-character-menu"
+          >
+            ← Back to Character Menu
+          </button>
+          <ClassAbilities character={character} onAbilityLearned={refreshCharacter} />
         </div>
       ) : (
         <div className="space-y-6">
@@ -81,6 +123,7 @@ export default function CharacterTab() {
           {/* Equipment Manager Card */}
           <button
             onClick={() => setShowEquipmentManager(true)}
+            data-testid="equipment-manager-button"
             className="panel p-6 text-left hover:bg-white/5 transition-all group"
           >
             <div className="flex items-start gap-4">
@@ -101,6 +144,7 @@ export default function CharacterTab() {
           {/* Skills & Abilities Card */}
           <button
             onClick={() => setShowSkillsPanel(true)}
+            data-testid="skills-panel-button"
             className="panel p-6 text-left hover:bg-white/5 transition-all group"
           >
             <div className="flex items-start gap-4">
@@ -111,6 +155,48 @@ export default function CharacterTab() {
                 <h3 className="text-lg font-bold text-white mb-1">Skills & Abilities</h3>
                 <p className="text-sm text-gray-400 mb-3">View skills, choose specializations, and prestige</p>
                 <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <span>Click to open</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Talent Tree Card */}
+          <button
+            onClick={() => setShowTalentTree(true)}
+            data-testid="talent-tree-button"
+            className="panel p-6 text-left hover:bg-white/5 transition-all group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
+                🌳
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-1">Talent Tree</h3>
+                <p className="text-sm text-gray-400 mb-3">Customize your character with powerful talents</p>
+                <div className="flex items-center gap-2 text-xs text-violet-400">
+                  <span>{character.talent_points || 0} points available</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Class Abilities Card */}
+          <button
+            onClick={() => setShowAbilities(true)}
+            data-testid="class-abilities-button"
+            className="panel p-6 text-left hover:bg-white/5 transition-all group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
+                ✨
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-white mb-1">Class Abilities</h3>
+                <p className="text-sm text-gray-400 mb-3">Learn and master your class's unique spells</p>
+                <div className="flex items-center gap-2 text-xs text-rose-400">
                   <span>Click to open</span>
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </div>
@@ -135,6 +221,7 @@ export default function CharacterTab() {
           {/* Character Stats Card */}
           <button
             onClick={() => setShowCharacterStats(true)}
+            data-testid="character-stats-button"
             className="panel p-6 text-left hover:bg-white/5 transition-all group"
           >
             <div className="flex items-start gap-4">
@@ -155,6 +242,7 @@ export default function CharacterTab() {
           {/* 3D Showcase Card */}
           <button
             onClick={() => setShow3DShowcase(true)}
+            data-testid="3d-showcase-button"
             className="panel p-6 text-left hover:bg-white/5 transition-all group"
           >
             <div className="flex items-start gap-4">

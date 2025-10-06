@@ -2,7 +2,9 @@
 
 An immersive idle RPG built with Next.js, Supabase, and TypeScript.
 
-> 📚 **Documentation**: All detailed documentation, implementation guides, and technical references are in [`/docs`](docs/README.md)
+> 📚 **Documentation**:
+> - **[GAME WIKI](docs/GAME_WIKI.md)** ⭐ - Complete game systems documentation (8,500+ lines)
+> - **[Documentation Index](docs/README.md)** - All guides and references
 
 ## Features
 
@@ -185,8 +187,8 @@ npm run lint     # Run ESLint
 ## Troubleshooting
 
 For detailed troubleshooting guides, see:
+- **[docs/GAME_WIKI.md](docs/GAME_WIKI.md)** - Complete troubleshooting section with solutions
 - **[docs/guides/TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[docs/bugfixes/BUG_FIX_REPORT.md](docs/bugfixes/BUG_FIX_REPORT.md)** - Recent bug fixes
 
 ### Quick Fixes
 
